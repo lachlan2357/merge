@@ -943,7 +943,7 @@ function setSetting(settingName: string, value: string | boolean) {
     const setting = settings[settingName];
 
     if (setting.setLocalStorage) {
-        localStorage.setItem(settingName, value.toString());
+        window.localStorage.setItem(settingName, value.toString());
     } else {
         settings[settingName].value = value;
     }
@@ -953,10 +953,9 @@ function setSetting(settingName: string, value: string | boolean) {
 
 function getSetting(settingName: string): string {
     const setting = settings[settingName];
-    let rawValue: string;
 
     if (setting.setLocalStorage) {
-        return localStorage.getItem(settingName) || "";
+        return window.localStorage.getItem(settingName) || "";
     } else {
         return setting.value.toString();
     }
@@ -1354,8 +1353,8 @@ editInJOSM.addEventListener("click", () => { openJOSM(`http://127.0.0.1:8111/loa
 //localStorage setup
 Object.keys(settings).forEach(settingName => {
     const setting = settings[settingName];
-    if (setting.setLocalStorage && !localStorage.getItem(settingName)) {
-        localStorage.setItem(settingName, setting.value.toString());
+    if (setting.setLocalStorage && !window.localStorage.getItem(settingName)) {
+        window.localStorage.setItem(settingName, setting.value.toString());
     }
 });
 
@@ -1403,6 +1402,6 @@ settingUpdate();
 
 // show first launch popup if first launch
 if (bool(getSetting("First Launch"))) {
+    setSetting("First Launch", "false");
     togglePopup("welcome");
-    setSetting("First Launch", false);
 }
