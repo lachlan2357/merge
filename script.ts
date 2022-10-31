@@ -1097,7 +1097,7 @@ async function togglePopup(reason?: "share" | "settings" | "help" | "about" | "w
             popup.append(tempAdvanced);
             break;
         case "welcome":
-            const img = element("img", { id: "welcome-img", src: "assets/merge.png" });
+            const img = element("img", { id: "welcome-img", src: "assets/icon.png" });
             const heading = element("h2", { id: "welcome-heading", textContent: "Merge" });
             const desc = element("p", { textContent: "Welcome to Merge! To get started, use the search box to lookup a relation by either RelationID or name. Note: once each request has successfully returned information, the data is cached and when requested again, it pulls from the cache. To re-request data, toggle the options in settings."});
 
