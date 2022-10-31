@@ -1,0 +1,17 @@
+# cspell
+cspell.json
+
+# file backups, legacy, etc.
+*.backup
+*.old
+
+output.html
+branchChecking.*
+inputs
+
+# misc markdown
+todo.md
+
+# python
+cache
+*.py
