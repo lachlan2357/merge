@@ -967,7 +967,7 @@ function bool(value: string | boolean) {
 
 function settingUpdate() {
     // update page to reflect changes
-    document.body.setAttribute("darkmode", getSetting("Dark Mode").toString());
+    document.documentElement.setAttribute("darkmode", getSetting("Dark Mode").toString());
 }
 
 function popupHeading(title: string): HTMLElement {

@@ -4,7 +4,6 @@
     padding: 0;
     box-sizing: border-box;
     scrollbar-width: thin;
-    transition: color 0.1s, background-color 0.1s, box-shadow 0.1s, border 0.1s;
 
     // tooltips
     &[tooltip] {
@@ -28,32 +27,27 @@
     }
 }
 
+button:hover, input:hover {
+    transition: background-color 0.1s;
+}
+
 :root {
     --canvas-width: 100%;
     --canvas-height: 750px;
 }
 
-body {
-    overflow: hidden;
-    background: var(--background-colour);
+:root {
+    body {
+        --copy: darkgreen;
+        --copy-hover: green;
+        --copy-active: lightgreen;
+    
+        --open-with: darkcyan;
+        --open-with-hover: lightseagreen;
+        --open-with-active: lightblue;
+    }
 
-    --background-colour: #ddd;
-    --foreground-colour: #eee;
-    --accent: #fff;
-    --canvas: #fff;
-    --shadow: #ccc;
-    --text: #000;
-    --link: darkblue;
-
-    --copy: darkgreen;
-    --copy-hover: green;
-    --copy-active: lightgreen;
-
-    --open-with: darkcyan;
-    --open-with-hover: lightseagreen;
-    --open-with-active: lightblue;
-
-    &[darkmode = true] {
+    &[darkmode] body {
         --background-colour: #111;
         --foreground-colour: #222;
         --accent: #333;
@@ -62,6 +56,21 @@ body {
         --text: #fff;
         --link: lightblue;
     }
+
+    &[darkmode = false] body {
+        --background-colour: #ddd;
+        --foreground-colour: #eee;
+        --accent: #fff;
+        --canvas: #fff;
+        --shadow: #ccc;
+        --text: #000;
+        --link: darkblue;
+    }
+}
+
+body {
+    overflow: hidden;
+    background-color: var(--background-colour);
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -178,12 +187,12 @@ main {
 }
 
 #canvas-overlay > button:hover, #search-sequence > button:hover, .button:hover {
-    background: var(--accent);
+    background-color: var(--accent);
     cursor: pointer;
 }
 
 #canvas-overlay > button:active, #search-sequence > button:active, .button:active {
-    background: var(--canvas);
+    background-color: var(--canvas);
     cursor: pointer;
 }
 
@@ -224,15 +233,15 @@ main {
         }
 
         th {
-            background: var(--background-colour);
+            background-color: var(--background-colour);
         }
 
         &:nth-child(2n - 1) td {
-            background: var(--foreground-colour);
+            background-color: var(--foreground-colour);
         }
 
         &:nth-child(2n) td {
-            background: var(--accent);
+            background-color: var(--accent);
         }
     }
 }
@@ -270,12 +279,12 @@ main {
     background-color: var(--copy);
 
     &:hover {
-        background: var(--copy-hover);
+        background-color: var(--copy-hover);
         cursor: pointer;
     }
 
     &:active {
-        background: var(--copy-active);
+        background-color: var(--copy-active);
         cursor: pointer;
     }
 }
@@ -296,12 +305,12 @@ main {
     background-color: var(--open-with);
 
     &:hover {
-        background: var(--open-with-hover);
+        background-color: var(--open-with-hover);
         cursor: pointer;
     }
 
     &:active {
-        background: var(--open-with-active);
+        background-color: var(--open-with-active);
         cursor: pointer;
     }
 }
@@ -379,7 +388,7 @@ main {
     left: 0;
     width: 100%;
     height: 100%;
-    background: var(--foreground-colour);
+    background-color: var(--foreground-colour);
 }
 
 // settings window
@@ -394,7 +403,7 @@ main {
     justify-content: space-between;
     align-items: center;
     gap: 20px;
-    background: var(--accent);
+    background-color: var(--accent);
     padding: 1em;
     border-radius: 5px;
 
@@ -420,7 +429,7 @@ input {
         }
 
         &:active, &:checked {
-            background: var(--link);
+            background-color: var(--link);
         }
 
         &:after {
