@@ -1,0 +1,557 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  scrollbar-width: thin;
+}
+*[tooltip]:after {
+  content: attr(tooltip);
+  position: absolute;
+  padding: 5px 10px;
+  transform: translateX(calc(17.5px - var(--width))) translateY(-5px);
+  color: var(--text);
+  background-color: var(--foreground-colour);
+  border-radius: 5px;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow: 0 0 5px var(--shadow);
+  transition: 0.1s;
+}
+*[tooltip]:hover:after {
+  opacity: 1;
+}
+
+button:hover, input:hover {
+  transition: background-color 0.1s;
+}
+
+:root {
+  --canvas-width: 100%;
+  --canvas-height: 750px;
+}
+
+:root body {
+  --copy: darkgreen;
+  --copy-hover: green;
+  --copy-active: lightgreen;
+  --open-with: darkcyan;
+  --open-with-hover: lightseagreen;
+  --open-with-active: lightblue;
+}
+:root[darkmode] body {
+  --background-colour: #111;
+  --foreground-colour: #222;
+  --accent: #333;
+  --canvas: #666;
+  --shadow: #000;
+  --text: #fff;
+  --link: lightblue;
+}
+:root[darkmode=false] body {
+  --background-colour: #ddd;
+  --foreground-colour: #eee;
+  --accent: #fff;
+  --canvas: #fff;
+  --shadow: #ccc;
+  --text: #000;
+  --link: darkblue;
+}
+
+body {
+  overflow: hidden;
+  background-color: var(--background-colour);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  font-family: "Montserrat", "Arial", sans-serif;
+}
+
+p, input, button {
+  color: var(--text);
+  font-family: "Roboto", "Arial", sans-serif;
+  font-weight: 300;
+}
+
+a, a:visited {
+  color: var(--link);
+}
+
+header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 20px;
+  background-color: var(--foreground-colour);
+  padding-block: 50px;
+  padding-inline: max(10%, 25px);
+  margin-block-end: 20px;
+  box-shadow: 0px 0px 10px var(--shadow);
+}
+header #banner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+main {
+  margin-inline: 25px;
+}
+
+#pfp {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+}
+
+#canvas {
+  width: var(--canvas-width);
+  height: var(--canvas-height);
+  background-color: var(--canvas);
+  border-radius: 5px;
+}
+#canvas[fullscreen=true] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+}
+#canvas[fullscreen=true] ~ #canvas-overlay {
+  width: 100vw;
+  height: 100vh;
+}
+#canvas[fullscreen=true] ~ #canvas-overlay > #messages {
+  height: calc(100vh - 20px);
+}
+
+#canvas-overlay {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0;
+  height: var(--canvas-height);
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 10px;
+  overflow: hidden;
+  pointer-events: none;
+}
+#canvas-overlay * {
+  pointer-events: initial;
+}
+#canvas-overlay > * {
+  display: block;
+}
+#canvas-overlay input {
+  height: 30px;
+  border: none;
+  border-radius: 15px;
+  color: var(--text);
+  background-color: var(--foreground-colour);
+  padding-inline: 15px;
+}
+
+#canvas-overlay > button, #search-sequence > button, .button {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  color: var(--text);
+  background-color: var(--foreground-colour);
+}
+
+#canvas-overlay > button i, #search-sequence > button i, .button i {
+  pointer-events: none;
+}
+
+#canvas-overlay > button:hover, #search-sequence > button:hover, .button:hover {
+  background-color: var(--accent);
+  cursor: pointer;
+}
+
+#canvas-overlay > button:active, #search-sequence > button:active, .button:active {
+  background-color: var(--canvas);
+  cursor: pointer;
+}
+
+#search-sequence {
+  display: flex;
+  gap: 5px;
+  pointer-events: none;
+}
+
+#way-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: calc(100% - 40px);
+  overflow-y: auto;
+  background-color: var(--foreground-colour);
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  border-radius: 10px;
+  padding: 25px;
+  box-shadow: 0px 0px 10px var(--shadow);
+}
+#way-info[hidden] {
+  display: none;
+}
+
+#tags {
+  color: white;
+  border: none;
+  border-spacing: 0;
+  border-collapse: collapse;
+}
+#tags tr * {
+  padding: 0.5em 1em;
+}
+#tags tr th {
+  background-color: var(--background-colour);
+}
+#tags tr:nth-child(2n-1) td {
+  background-color: var(--foreground-colour);
+}
+#tags tr:nth-child(2n) td {
+  background-color: var(--accent);
+}
+
+#copyright {
+  font-size: 12px;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  color: var(--text);
+  background-color: var(--foreground-colour);
+  margin: 0;
+  padding: 5px;
+  text-align: right;
+  border-radius: 5px;
+}
+
+#copy-container {
+  height: 40px;
+  background-color: var(--accent);
+  border-radius: 5px;
+}
+#copy-container span {
+  padding: 10px;
+}
+
+.copy {
+  height: 100%;
+  aspect-ratio: 1;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  background-color: var(--copy);
+}
+.copy:hover {
+  background-color: var(--copy-hover);
+  cursor: pointer;
+}
+.copy:active {
+  background-color: var(--copy-active);
+  cursor: pointer;
+}
+
+.open-with-container {
+  display: flex;
+  gap: 5px;
+}
+
+.open-with {
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  background-color: var(--open-with);
+}
+.open-with:hover {
+  background-color: var(--open-with-hover);
+  cursor: pointer;
+}
+.open-with:active {
+  background-color: var(--open-with-active);
+  cursor: pointer;
+}
+
+#edit-in {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+}
+
+#popup {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: absolute;
+  max-width: 50vw;
+  border: none;
+  color: var(--text);
+  background-color: var(--foreground-colour);
+  padding: 25px;
+  border-radius: 5px;
+  box-shadow: 0px 0px 10px var(--shadow);
+  z-index: 100;
+}
+#popup::backdrop {
+  display: none;
+}
+#popup[open] {
+  animation: fade-in 0.25s;
+}
+#popup[open] ~ #popup-backdrop {
+  display: block;
+  animation: fade-in-backdrop 0.25s;
+  opacity: 0.5;
+}
+#popup:not([open]) {
+  display: none;
+}
+#popup:not([open]) ~ #popup-backdrop {
+  opacity: 0;
+}
+#popup[closing] {
+  animation: fade-out 0.25s;
+}
+#popup[closing] ~ #popup-backdrop {
+  animation: fade-out-backdrop 0.25s;
+}
+#popup > :last-child {
+  margin-block-end: 0;
+}
+#popup #popup-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+#popup h2 {
+  text-transform: capitalize;
+}
+
+#popup-backdrop {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--foreground-colour);
+}
+
+#settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
+
+.setting-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  background-color: var(--accent);
+  padding: 1em;
+  border-radius: 5px;
+}
+.setting-container h3 {
+  font-size: 1em;
+}
+
+input[type=checkbox] {
+  flex-shrink: 0;
+  position: relative;
+  appearance: none;
+  width: 1.5em;
+  height: 1.5em;
+  background-color: var(--background-colour);
+  border-radius: 5px;
+  cursor: pointer;
+  user-select: none;
+}
+input[type=checkbox]:hover {
+  background-color: var(--foreground-colour);
+}
+input[type=checkbox]:active, input[type=checkbox]:checked {
+  background-color: var(--link);
+}
+input[type=checkbox]:after {
+  opacity: 0;
+}
+input[type=checkbox]:checked:after {
+  content: "";
+  display: block;
+  opacity: 1;
+  position: relative;
+  border: 2px var(--background-colour);
+  border-style: none solid solid none;
+  width: 25%;
+  height: 50%;
+  left: 50%;
+  top: 50%;
+  transform: translateX(-50%) translateY(calc(-50% - 1px)) rotate(45deg);
+}
+input[type=text] {
+  flex-shrink: 0;
+  height: 2.5em;
+  background-color: var(--background-colour);
+  border-radius: 5px;
+  border: none;
+  padding-inline: 10px;
+}
+
+#messages {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 25vw;
+  height: calc(var(--canvas-height) - 20px);
+  overflow: hidden;
+  pointer-events: none;
+}
+#messages:empty {
+  display: none;
+}
+
+.message-box {
+  display: none;
+  background-color: var(--foreground-colour);
+  padding: 10px;
+  border-radius: 5px;
+  text-align: center;
+  width: 100%;
+  margin-block-end: 10px;
+}
+.message-box[visible] {
+  display: initial;
+  animation: fade-in 0.25s;
+}
+.message-box[closing] {
+  animation: fade-out-and-shrink 0.25s;
+  overflow: hidden;
+}
+
+#empty-message {
+  color: var(--text);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+#githubDiv {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  background-color: var(--background-colour);
+  width: fit-content;
+  padding: 10px;
+  border-radius: 10px;
+}
+#githubDiv:hover {
+  background-color: var(--accent);
+  cursor: pointer;
+}
+#githubDiv:active {
+  background-color: var(--canvas);
+}
+
+#welcome-img {
+  width: 100px;
+  height: 100px;
+  margin-inline: auto;
+}
+
+#welcome-heading {
+  text-align: center;
+}
+
+#not-found {
+  margin: 0;
+  position: absolute;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+#not-found img {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes fade-in-backdrop {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0.5;
+  }
+}
+@keyframes fade-out {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes fade-out-backdrop {
+  0% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes fade-out-and-shrink {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    height: 0;
+    padding-block: 0;
+    margin-block-end: 0;
+  }
+}
+@media screen and (max-width: 540px) {
+  header {
+    flex-direction: column;
+  }
+}
+
+/*# sourceMappingURL=style.css.map */
