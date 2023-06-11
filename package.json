@@ -1,0 +1,22 @@
+{
+	"name": "merge",
+	"version": "0.0.0",
+	"description": "A Quality Assurance tool for OpenStreetMap contributors",
+	"author": {
+		"name": "Lachlan Rehder",
+		"email": "lachlan.rehder@outlook.com",
+		"url": "https://lachlan2357.github.io/"
+	},
+	"license": "GPL-3.0-only",
+	"private": true,
+	"scripts": {
+		"build": "rm -rf dist && mkdir dist && cp src/*.html dist && cp -r assets/* dist && tsc && sass src/style.scss:dist/style.css",
+		"serve": "serve dist",
+		"dev": "yarn build && yarn serve"
+	},
+	"devDependencies": {
+		"sass": "^1.63.3",
+		"serve": "^14.2.0",
+		"typescript": "^5.1.3"
+	}
+}

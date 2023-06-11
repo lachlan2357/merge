@@ -1,9 +1,7 @@
-# cspell
-cspell.json
-
 # file backups, legacy, etc.
 *.backup
 *.old
+old
 
 output.html
 branchChecking.*
@@ -15,3 +13,7 @@ todo.md
 # python
 cache
 *.py
+
+# node
+node_modules
+dist

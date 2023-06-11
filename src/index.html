@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Merge</title>
+	<!-- css -->
+	<link rel="stylesheet" href="style.css">
+	<!-- font awesome -->
+	<link href="/fontawesome/css/fontawesome.css" rel="stylesheet">
+	<link href="/fontawesome/css/brands.css" rel="stylesheet">
+	<link href="/fontawesome/css/solid.css" rel="stylesheet">
+	<link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+</head>
+
+<body>
+	<!-- header -->
+	<header>
+		<img id="pfp" src="/icon.png" alt="">
+		<div id="banner">
+			<h1>Merge | A Quality Assurance Tool</h1>
+			<p>This tool can gather information from <a href="https://www.openstreetmap.org/">OpenStreetMap</a> using <a
+					href="https://overpass-turbo.eu/">Overpass</a> about set of connected ways to visualise them with
+				detail (such as lanes and turn markings) to assist mappers in discovering errors.</p>
+		</div>
+	</header>
+
+	<!-- map -->
+	<main>
+		<div id="canvas-container">
+			<!-- map canvas -->
+			<canvas id="canvas" fullscreen="false"></canvas>
+
+			<!-- canvas overlay -->
+			<div id="canvas-overlay">
+				<!-- search bar and accompanying buttons -->
+				<div id="search-sequence">
+					<input type="text" id="relation-name" placeholder="Search...">
+					<button id="search" tooltip="Search"><i class="fa-solid fa-magnifying-glass"></i></button>
+					<button id="advanced" tooltip="Advanced"><i
+							class="fa-solid fa-arrow-up-right-from-square"></i></button>
+					<button id="settings" tooltip="Settings"><i class="fa-solid fa-gear"></i></button>
+				</div>
+
+				<!-- left side buttons -->
+				<button id="zoom-in" tooltip="Zoom In"><i class="fa-solid fa-plus"></i></button>
+				<button id="zoom-out" tooltip="Zoom Out"><i class="fa-solid fa-minus"></i></button>
+				<button id="zoom-reset" tooltip="Reset View"><i class="fa-solid fa-rotate-right"></i></button>
+				<button id="fullscreen" tooltip="Fullscreen"><i class="fa-solid fa-expand"></i></button>
+				<button id="share" tooltip="Share"><i class="fa-solid fa-share"></i></button>
+				<button id="help" tooltip="Help"><i class="fa-solid fa-question"></i></button>
+				<button id="about" tooltip="About"><i class="fa-solid fa-info"></i></button>
+
+				<!-- way info card -->
+
+				<div id="way-info" hidden>
+					<h3 id="wayid"></h3>
+					<div id="edit-in">
+						<button id="edit-id" class="open-with" tooltip="Edit in iD"><i
+								class="fa-solid fa-map"></i></button>
+						<button id="edit-josm" class="open-with" tooltip="Edit in JOSM"><i
+								class="fa-solid fa-desktop"></i></button>
+					</div>
+					<table id="tags"></table>
+				</div>
+
+				<!-- OSM and Font Awesome Copyright -->
+				<p id="copyright">Data &#169; <a href="https://www.openstreetmap.org/copyright"
+						target="_blank">OpenStreetMap Contributors</a>. Icons by <a href="http://fontawesome.com"
+						target="_blank">Font Awesome</a>.</p>
+
+				<!-- message box -->
+				<div id="messages"></div>
+
+				<!-- initial statement -->
+				<h2 id="empty-message">Use the search box to select highways.</h2>
+			</div>
+		</div>
+	</main>
+
+	<!-- boilerplate popup container -->
+	<dialog id="popup">
+	</dialog>
+	<!-- custom popup backdrop as modal::backdrop isn't widely supported -->
+	<div id="popup-backdrop"></div>
+
+	<!-- js -->
+	<script src="script.js"></script>
+</body>
+
+</html>
