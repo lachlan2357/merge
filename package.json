@@ -10,9 +10,10 @@
 	"license": "GPL-3.0-only",
 	"private": true,
 	"scripts": {
-		"build": "rm -rf dist && mkdir dist && cp src/*.html dist && cp -r assets/* dist && tsc && sass src/style.scss:dist/style.css",
-		"serve": "serve dist",
-		"dev": "yarn build && yarn serve"
+		"build": "node node-scripts/build",
+		"deploy": "node node-scripts/deploy",
+		"serve": "serve",
+		"dev": "yarn build && yarn deploy"
 	},
 	"devDependencies": {
 		"sass": "^1.63.3",
