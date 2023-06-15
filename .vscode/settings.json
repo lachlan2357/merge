@@ -7,6 +7,7 @@
 		"latlon",
 		"Lats",
 		"Lons",
+		"maxspeed",
 		"tsbuildinfo",
 		"wayid"
 	]
