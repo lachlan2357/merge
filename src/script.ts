@@ -20,7 +20,7 @@
 //     "version": number
 // }
 
-import type { OverpassWay, OverpassNode, ImportedData } from "./index";
+import type { OverpassWay, OverpassNode, ImportedData } from "./index.js";
 
 // classes
 class Coordinate {
@@ -61,7 +61,7 @@ const settings = {
 		setLocalStorage: true,
 		inSettings: true,
 	},
-	Endpoint: {
+	"Endpoint": {
 		description:
 			"Use a different Overpass endpoint. Default endpoint is https://overpass-api.de/api/interpreter.",
 		inputType: "string",
@@ -745,20 +745,20 @@ function process(
 ) {
 	const waysInfo: {
 		[key: number]: {
-			nodes: {
+			"nodes": {
 				id: number;
 				lat: number;
 				lon: number;
 			};
-			orderedNodes: number[];
-			oneway: boolean;
-			lanes: number | null;
+			"orderedNodes": number[];
+			"oneway": boolean;
+			"lanes": number | null;
 			"lanes:forward": number | null;
 			"lanes:backward": number | null;
 			"turn:lanes": string | null;
 			"turn:lanes:forward": string | null;
 			"turn:lanes:backward": string | null;
-			warnings: string[];
+			"warnings": string[];
 		};
 	} = {};
 
@@ -766,18 +766,18 @@ function process(
 	Object.keys(allWays).forEach(wayId => {
 		const way: OverpassWay = allWays[wayId];
 		waysInfo[wayId] = {
-			nodes: {},
-			orderedNodes: [],
-			oneway: false,
-			junction: null,
-			lanes: 0,
+			"nodes": {},
+			"orderedNodes": [],
+			"oneway": false,
+			"junction": null,
+			"lanes": 0,
 			"lanes:forward": 0,
 			"lanes:backward": 0,
 			"turn:lanes": null,
 			"turn:lanes:forward": null,
 			"turn:lanes:backward": null,
-			surface: null,
-			warnings: [],
+			"surface": null,
+			"warnings": [],
 		};
 
 		allWays[wayId].nodes.forEach(nodeId => {
@@ -1005,35 +1005,35 @@ function process(
 
 	Object.keys(waysInfo).forEach(wayId => {
 		const way: {
-			nodes: {
+			"nodes": {
 				[key: number]: {
 					id: number;
 					lat: number;
 					lon: number;
 				};
 			};
-			orderedNodes: number[];
-			oneway: boolean;
-			lanes: number | null;
+			"orderedNodes": number[];
+			"oneway": boolean;
+			"lanes": number | null;
 			"lanes:forward": number | null;
 			"lanes:backward": number | null;
 			"turn:lanes": string | null;
 			"turn:lanes:forward": string | null;
 			"turn:lanes:backward": string | null;
-			warnings: number[];
+			"warnings": number[];
 		} = waysInfo[wayId];
 
 		convertedData[wayId] = {
-			nodes: {},
-			orderedNodes: way.orderedNodes,
-			oneway: way.oneway,
-			lanes: way.lanes,
+			"nodes": {},
+			"orderedNodes": way.orderedNodes,
+			"oneway": way.oneway,
+			"lanes": way.lanes,
 			"lanes:forward": way["lanes:forward"],
 			"lanes:backward": way["lanes:backward"],
 			"turn:lanes:forward": way["turn:lanes:forward"] || "none",
 			"turn:lanes:backward": way["turn:lanes:backward"] || "none",
-			surface: way["surface"] || "unknown",
-			warnings: way.warnings,
+			"surface": way["surface"] || "unknown",
+			"warnings": way.warnings,
 		};
 
 		Object.keys(way.nodes).forEach(nodeId => {

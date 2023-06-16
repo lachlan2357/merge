@@ -1,5 +1,5 @@
-const { execSync } = require("child_process");
-const { mkdirSync, rmSync, cpSync } = require("fs");
+import { execSync } from "child_process";
+import { mkdirSync, rmSync, cpSync } from "fs";
 
 rmSync("dist", { recursive: true, force: true });
 mkdirSync("dist", { recursive: true });

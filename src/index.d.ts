@@ -3,11 +3,11 @@ export interface OverpassWay {
 	id: number;
 	nodes: number[];
 	tags: {
-		highway: string;
-		lanes: number;
-		maxspeed: number;
-		oneway: string;
-		junction: string;
+		"highway": string;
+		"lanes": number;
+		"maxspeed": number;
+		"oneway": string;
+		"junction": string;
 		"lanes:forward": number;
 		"lanes:backward": number;
 		"turn:lanes": string;
@@ -35,21 +35,21 @@ export interface OverpassNode {
 
 export interface ImportedData {
 	[key: string]: {
-		nodes: {
+		"nodes": {
 			[key: string]: {
 				id: number;
 				lat: number;
 				lon: number;
 			};
 		};
-		orderedNodes: number[];
-		oneway: boolean;
-		lanes: number | null;
+		"orderedNodes": number[];
+		"oneway": boolean;
+		"lanes": number | null;
 		"lanes:forward": number | null;
 		"lanes:backward": number | null;
 		"turn:lanes:forward": string;
 		"turn:lanes:backward": string;
-		surface: string | null;
-		warnings: number[];
+		"surface": string | null;
+		"warnings": number[];
 	};
 }

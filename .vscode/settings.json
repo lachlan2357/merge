@@ -1,6 +1,7 @@
 {
 	"cSpell.words": [
 		"behavior",
+		"camelcase",
 		"chipseal",
 		"codepaths",
 		"darkmode",
@@ -8,6 +9,7 @@
 		"Lats",
 		"Lons",
 		"maxspeed",
+		"nodenext",
 		"tsbuildinfo",
 		"wayid"
 	]

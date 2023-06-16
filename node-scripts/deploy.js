@@ -1,4 +1,4 @@
-const { mkdirSync, rmSync, cpSync } = require("fs");
+import { mkdirSync, rmSync, cpSync } from "fs";
 
 rmSync("merge", { recursive: true, force: true });
 mkdirSync("merge", { recursive: true });
