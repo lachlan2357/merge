@@ -1,99 +1,32 @@
-// // interfaces
-// interface overpassRelation {
-//     "changeset": number,
-//     "id": number,
-//     "members": {
-//         "ref": number,
-//         "role": string,
-//         "type": string,
-//     }[],
-//     "tags": {
-//         "name": string,
-//         "network": string,
-//         "route": string,
-//         "type": string
-//     },
-//     "timestamp": string,
-//     "type": string,
-//     "uid": number,
-//     "user": string,
-//     "version": number
-// }
-
 import type { OverpassWay, OverpassNode, ImportedData } from "./index.js";
+import {
+	coordToScreenSpace,
+	degreesToPixels,
+	metresToDegrees,
+} from "./supplement/conversions.js";
+import { drawPolygon, drawArrow, drawLine } from "./supplement/drawing.js";
+import { Coordinate } from "./supplement/index.js";
+import { overpassQuery } from "./supplement/overpass.js";
+import {
+	settings,
+	getSetting,
+	setSetting,
+	settingUpdate,
+} from "./supplement/settings.js";
+import {
+	getTotalMultiplier,
+	getOffset,
+	setMultiplier,
+	maxLat,
+	maxLon,
+	minLat,
+	minLon,
+	zoom,
+	zoomIncrement,
+	setZoom,
+} from "./supplement/view.js";
 
-// classes
-class Coordinate {
-	x: number;
-	y: number;
-
-	constructor(x = 0, y = 0) {
-		[this.x, this.y] = [x, y];
-	}
-
-	setCoordinates(x?: number, y?: number) {
-		this.x = x ?? this.x;
-		this.y = y ?? this.y;
-	}
-
-	reset() {
-		[this.x, this.y] = [0, 0];
-	}
-}
-
-class ProcessedNode {
-	id: number;
-	lat: number;
-	lon: number;
-
-	constructor(id: number, lat: number, lon: number) {
-		[this.id, this.lat, this.lon] = [id, lat, lon];
-	}
-}
-
-// global variables
-const settings = {
-	"Left Hand Traffic": {
-		description:
-			"Switch to driving on the left for countries such as the UK, Australia, Japan, etc.",
-		inputType: "boolean",
-		value: false,
-		setLocalStorage: true,
-		inSettings: true,
-	},
-	"Endpoint": {
-		description:
-			"Use a different Overpass endpoint. Default endpoint is https://overpass-api.de/api/interpreter.",
-		inputType: "string",
-		value: "https://overpass-api.de/api/interpreter",
-		setLocalStorage: true,
-		inSettings: true,
-	},
-	"Ignore Cache": {
-		description:
-			"Don't used cached data. Must be toggled on for each request.",
-		inputType: "boolean",
-		value: false,
-		setLocalStorage: false,
-		inSettings: true,
-	},
-	"Dark Mode": {
-		description: "Not light mode.",
-		inputType: "boolean",
-		value: window.matchMedia("(prefers-color-scheme:dark)").matches,
-		setLocalStorage: true,
-		inSettings: true,
-	},
-	"First Launch": {
-		description: "First time using the application",
-		inputType: "boolean",
-		value: true,
-		setLocalStorage: true,
-		inSettings: false,
-	},
-};
-
-const roadColours: { [key: string]: string } = {
+const roadColours = {
 	asphalt: "#222233",
 	chipseal: "#555c66",
 	paved: "#bab6ac",
@@ -104,51 +37,6 @@ const roadColours: { [key: string]: string } = {
 };
 
 // functions
-function setMultiplier() {
-	// find multiplier
-	const allLats: number[] = [];
-	const allLons: number[] = [];
-
-	for (const wayId in data) {
-		const way = data[wayId];
-		for (const nodeId in way.nodes) {
-			const node = way.nodes[nodeId];
-			allLats.push(node.lat);
-			allLons.push(node.lon);
-		}
-	}
-
-	maxLat = Math.max(...allLats);
-	minLat = Math.min(...allLats);
-	maxLon = Math.max(...allLons);
-	minLon = Math.min(...allLons);
-
-	multiplier = Math.sqrt(
-		Math.min(
-			...[
-				canvas.height / (maxLat - minLat),
-				canvas.width / (maxLon - minLon),
-			]
-		)
-	);
-}
-
-function getTotalMultiplier() {
-	return (multiplier + zoom) ** 2;
-}
-
-function getOffset(totalMultiplier: number) {
-	return new Coordinate(
-		canvas.width / 2 -
-			(minLon + (maxLon - minLon) / 2) * totalMultiplier +
-			mouseOffset.x +
-			zoomOffset.x,
-		canvas.height / 2 +
-			(minLat + (maxLat - minLat) / 2) * totalMultiplier +
-			mouseOffset.y +
-			zoomOffset.y
-	);
-}
 
 function zoomInOut(inOut: "in" | "out", source: "mouse" | "button") {
 	if (!data) {
@@ -170,12 +58,13 @@ function zoomInOut(inOut: "in" | "out", source: "mouse" | "button") {
 		-(mousePosition.y - offset.y) / totalMultiplier
 	);
 
-	zoom +=
-		inOut == "in"
+	setZoom(
+		zoom + inOut == "in"
 			? zoomIncrement
 			: Math.sqrt(totalMultiplier) - zoomIncrement > 0
 			? -zoomIncrement
-			: 0;
+			: 0
+	);
 
 	totalMultiplier = getTotalMultiplier();
 	offset = getOffset(totalMultiplier);
@@ -203,385 +92,9 @@ function centre() {
 
 	mouseOffset.reset();
 	zoomOffset.reset();
-	zoom = 0;
+	setZoom(0);
 	setMultiplier();
 	drawCanvas();
-}
-
-function metresToDegrees(metres: number) {
-	const percentDegrees = metres / degreesRange;
-	return (metres = percentDegrees * 180);
-}
-
-function degreesToPixels(degrees: number) {
-	return degrees * getTotalMultiplier();
-}
-
-function getAllCacheKeys() {
-	return new Promise<string[]>(resolve => {
-		const transaction: IDBTransaction = db.transaction(
-			"overpass-cache",
-			"readonly"
-		);
-		const objectStore: IDBObjectStore =
-			transaction.objectStore("overpass-cache");
-		const transactionRequest = objectStore.getAllKeys();
-
-		transactionRequest.onerror = e => {
-			console.error(`Error: ${(e.target as IDBRequest).error}`);
-		};
-
-		transactionRequest.onsuccess = e => {
-			resolve((e.target as IDBRequest).result);
-		};
-	});
-}
-
-function getCachedFor(key: string) {
-	return new Promise<string>(resolve => {
-		const transaction: IDBTransaction = db.transaction(
-			"overpass-cache",
-			"readonly"
-		);
-		const objectStore: IDBObjectStore =
-			transaction.objectStore("overpass-cache");
-		const transactionRequest = objectStore.get(key);
-
-		transactionRequest.onerror = e => {
-			console.error(`Error: ${(e.target as IDBRequest).error}`);
-		};
-
-		transactionRequest.onsuccess = e => {
-			resolve((e.target as IDBRequest).result);
-		};
-	});
-}
-
-function insertInto(request: string, value: string) {
-	return new Promise<boolean>(resolve => {
-		const transaction: IDBTransaction = db.transaction(
-			"overpass-cache",
-			"readwrite"
-		);
-		const objectStore: IDBObjectStore =
-			transaction.objectStore("overpass-cache");
-		const transactionRequest = objectStore.add({
-			request: request,
-			value: value,
-		});
-
-		transactionRequest.onerror = e => {
-			console.error(`Error: ${(e.target as IDBRequest).error}`);
-			resolve(false);
-		};
-
-		transactionRequest.onsuccess = () => {
-			resolve(true);
-		};
-	});
-}
-
-function deleteEntry(key: string) {
-	return new Promise<boolean>(resolve => {
-		const transaction: IDBTransaction = db.transaction(
-			"overpass-cache",
-			"readwrite"
-		);
-		const objectStore: IDBObjectStore =
-			transaction.objectStore("overpass-cache");
-		const transactionRequest = objectStore.delete(key);
-
-		transactionRequest.onerror = e => {
-			console.error(`Error: ${(e.target as IDBRequest).error}`);
-			resolve(false);
-		};
-
-		transactionRequest.onsuccess = () => {
-			resolve(true);
-		};
-	});
-}
-
-function drawLine(
-	coordStart: Coordinate,
-	coordEnd: Coordinate,
-	strokeThickness: number | null = null,
-	strokeColour: string | null = null,
-	fillColour: string | null = null,
-	lineCap: "butt" | "round" | "square" = "butt"
-) {
-	// set zoom and offset
-	const totalMultiplier: number = getTotalMultiplier();
-	const offset: Coordinate = getOffset(totalMultiplier);
-
-	// draw
-	context.strokeStyle = strokeColour || "black";
-	context.lineWidth = strokeThickness || 1;
-	context.fillStyle = fillColour || "black";
-	context.lineCap = lineCap;
-
-	context.beginPath();
-	context.moveTo(
-		offset.x + coordStart.x * totalMultiplier,
-		offset.y - coordStart.y * totalMultiplier
-	);
-	context.lineTo(
-		offset.x + coordEnd.x * totalMultiplier,
-		offset.y - coordEnd.y * totalMultiplier
-	);
-
-	if (fillColour != null) context.fill();
-	if (strokeColour != null) context.stroke();
-}
-
-function drawPolygon(
-	coordinates: Coordinate[],
-	strokeThickness: number | null = null,
-	strokeColour: string | null = null,
-	fillColour: string | null = null
-) {
-	// set zoom and offset
-	const totalMultiplier: number = getTotalMultiplier();
-	const offset: Coordinate = getOffset(totalMultiplier);
-
-	context.strokeStyle = strokeColour || "black";
-	context.lineWidth = strokeThickness || 1;
-	context.fillStyle = fillColour || "black";
-	context.lineCap = "round";
-
-	const path = new Path2D();
-
-	path.moveTo(
-		offset.x + coordinates[0].x * totalMultiplier,
-		offset.y - coordinates[0].y * totalMultiplier
-	);
-	for (let i = 1; i < coordinates.length; i++) {
-		path.lineTo(
-			offset.x + coordinates[i].x * totalMultiplier,
-			offset.y - coordinates[i].y * totalMultiplier
-		);
-	}
-
-	path.closePath();
-
-	if (strokeColour != null) {
-		context.stroke(path);
-	}
-	if (fillColour != null) {
-		context.fill(path);
-	}
-
-	return path;
-}
-
-function coordToScreenSpace(coord: Coordinate) {
-	// set zoom and offset
-	const totalMultiplier: number = getTotalMultiplier();
-	const offset: Coordinate = getOffset(totalMultiplier);
-
-	// return screen space coordinate
-	return new Coordinate(
-		offset.x + coord.x * totalMultiplier,
-		offset.y - coord.y * totalMultiplier
-	);
-}
-
-// function screenSpaceToCoord(screenSpace: coordinate) {
-//     // set zoom and offset
-//     const totalMultiplier: number = getTotalMultiplier();
-//     const offset: coordinate = getOffset(totalMultiplier);
-
-//     // return latlon coordinate
-//     return new coordinate((screenSpace.x - offset.x) / totalMultiplier, -(screenSpace.y - offset.y) / totalMultiplier);
-// }
-
-function drawArrow(
-	type: "left" | "right" | "through",
-	width: number,
-	length: number,
-	centre: Coordinate,
-	angle: number
-) {
-	const arrowBaseLength = width * 0.35;
-	const arrowArmLength = arrowBaseLength / 2 / Math.tan(Math.PI / 12);
-
-	if (type == "through") {
-		const lineStart = new Coordinate(
-			centre.x - ((Math.cos(angle) * length) / 2) * 0.9,
-			centre.y - ((Math.sin(angle) * length) / 2) * 0.9
-		);
-		const lineEnd = new Coordinate(
-			centre.x + ((Math.cos(angle) * length) / 2) * 0.9,
-			centre.y + ((Math.sin(angle) * length) / 2) * 0.9
-		);
-
-		const arrowArmAngle = angle + (Math.PI * 1) / 6;
-		const arrowBaseAngle = arrowArmAngle - (Math.PI * 2) / 3;
-
-		const arrowStart = new Coordinate(
-			lineEnd.x - (Math.cos(arrowArmAngle) * arrowArmLength) / 2,
-			lineEnd.y - (Math.sin(arrowArmAngle) * arrowArmLength) / 2
-		);
-		const arrowEnd = new Coordinate(
-			arrowStart.x - Math.cos(arrowBaseAngle) * arrowBaseLength,
-			arrowStart.y - Math.sin(arrowBaseAngle) * arrowBaseLength
-		);
-
-		drawLine(
-			lineStart,
-			lineEnd,
-			degreesToPixels(metresToDegrees(0.2)),
-			"white",
-			null,
-			"round"
-		);
-		drawPolygon([lineEnd, arrowStart, arrowEnd], 0, "white", "white");
-	} else if (type == "left") {
-		const lineStart = new Coordinate(
-			centre.x - ((Math.cos(angle) * length) / 2) * 0.9,
-			centre.y - ((Math.sin(angle) * length) / 2) * 0.9
-		);
-		const lineEnd = new Coordinate(
-			centre.x + ((Math.cos(angle) * length) / 2) * 0,
-			centre.y + ((Math.sin(angle) * length) / 2) * 0
-		);
-		const arrowLineEnd = new Coordinate(
-			lineEnd.x + Math.cos(angle + Math.PI / 2) * width * 0.075,
-			lineEnd.y + Math.sin(angle + Math.PI / 2) * width * 0.075
-		);
-
-		const arrowArmAngle = angle - (Math.PI * 1) / 3;
-		const arrowBaseAngle = arrowArmAngle + (Math.PI * 2) / 3;
-
-		const arrowStart = new Coordinate(
-			arrowLineEnd.x + (Math.cos(angle) * arrowBaseLength) / 2,
-			arrowLineEnd.y + (Math.sin(angle) * arrowBaseLength) / 2
-		);
-		const arrowMid = new Coordinate(
-			arrowStart.x - (Math.cos(arrowArmAngle) * arrowArmLength) / 2,
-			arrowStart.y - (Math.sin(arrowArmAngle) * arrowArmLength) / 2
-		);
-		const arrowEnd = new Coordinate(
-			arrowMid.x - (Math.cos(arrowBaseAngle) * arrowArmLength) / 2,
-			arrowMid.y - (Math.sin(arrowBaseAngle) * arrowArmLength) / 2
-		);
-
-		drawLine(
-			lineStart,
-			lineEnd,
-			degreesToPixels(metresToDegrees(0.2)),
-			"white",
-			null,
-			"round"
-		);
-		drawLine(
-			lineEnd,
-			arrowLineEnd,
-			degreesToPixels(metresToDegrees(0.2)),
-			"white",
-			null,
-			"round"
-		);
-		drawPolygon([arrowStart, arrowMid, arrowEnd], 0, "white", "white");
-	} else if (type == "right") {
-		const lineStart = new Coordinate(
-			centre.x - ((Math.cos(angle) * length) / 2) * 0.9,
-			centre.y - ((Math.sin(angle) * length) / 2) * 0.9
-		);
-		const lineEnd = new Coordinate(
-			centre.x + ((Math.cos(angle) * length) / 2) * 0,
-			centre.y + ((Math.sin(angle) * length) / 2) * 0
-		);
-		const arrowLineEnd = new Coordinate(
-			lineEnd.x + Math.cos(angle - Math.PI / 2) * width * 0.075,
-			lineEnd.y + Math.sin(angle - Math.PI / 2) * width * 0.075
-		);
-
-		const arrowArmAngle = angle + (Math.PI * 1) / 3;
-		const arrowBaseAngle = arrowArmAngle + (Math.PI * 1) / 3;
-
-		const arrowStart = new Coordinate(
-			arrowLineEnd.x + (Math.cos(angle) * arrowBaseLength) / 2,
-			arrowLineEnd.y + (Math.sin(angle) * arrowBaseLength) / 2
-		);
-		const arrowMid = new Coordinate(
-			arrowStart.x - (Math.cos(arrowArmAngle) * arrowArmLength) / 2,
-			arrowStart.y - (Math.sin(arrowArmAngle) * arrowArmLength) / 2
-		);
-		const arrowEnd = new Coordinate(
-			arrowMid.x + (Math.cos(arrowBaseAngle) * arrowArmLength) / 2,
-			arrowMid.y + (Math.sin(arrowBaseAngle) * arrowArmLength) / 2
-		);
-
-		drawLine(
-			lineStart,
-			lineEnd,
-			degreesToPixels(metresToDegrees(0.2)),
-			"white",
-			null,
-			"round"
-		);
-		drawLine(
-			lineEnd,
-			arrowLineEnd,
-			degreesToPixels(metresToDegrees(0.2)),
-			"white",
-			null,
-			"round"
-		);
-		drawPolygon([arrowStart, arrowMid, arrowEnd], 0, "white", "white");
-	}
-}
-
-async function overpassQuery(query: string): Promise<string> {
-	let data: string;
-	const allCacheKeys: string[] = await getAllCacheKeys();
-
-	if (allCacheKeys.includes(query) && !settings["Ignore Cache"].value) {
-		const request = await getCachedFor(query);
-		data = request["value"];
-	} else {
-		const request = await overpassGetData(query);
-		data = request;
-	}
-
-	return new Promise<string>(resolve => {
-		resolve(data as string);
-	});
-}
-
-async function overpassGetData(query: string): Promise<string> {
-	return new Promise<string>(resolve => {
-		displayMessage("Downloading from Overpass...");
-
-		const request: XMLHttpRequest = new XMLHttpRequest();
-		request.open("POST", getSetting("Endpoint"));
-
-		request.send(query);
-
-		request.onload = async () => {
-			if (request.readyState == 4) {
-				if (request.status == 200) {
-					const allKeys = await getAllCacheKeys();
-					if (allKeys.includes(query)) {
-						await deleteEntry(query);
-					}
-
-					if (JSON.parse(request.response).elements.length != 0)
-						await insertInto(query, request.response);
-					resolve(request.response);
-				} else {
-					console.error(
-						`Error ${request.status}: ${request.statusText}`
-					);
-					displayMessage(
-						`Overpass Error ${request.status}: ${request.statusText}`
-					);
-					resolve(`error`);
-				}
-			}
-		};
-	});
 }
 
 function setHTMLSizes() {
@@ -1078,8 +591,8 @@ async function drawCanvas() {
 			const thisNodeId = way.orderedNodes[key];
 			const nextNodeId = way.orderedNodes[nextKey];
 
-			const thisNode: ProcessedNode = way.nodes[thisNodeId];
-			const nextNode: ProcessedNode = way.nodes[nextNodeId];
+			const thisNode = way.nodes[thisNodeId];
+			const nextNode = way.nodes[nextNodeId];
 
 			// points along the way
 			const x1 = thisNode.lon;
@@ -1362,45 +875,9 @@ async function drawCanvas() {
 	}
 }
 
-function setSetting(settingName: string, value: string | boolean) {
-	const setting = settings[settingName];
-
-	if (setting.setLocalStorage) {
-		window.localStorage.setItem(settingName, value.toString());
-	} else {
-		settings[settingName].value = value;
-	}
-
-	settingUpdate();
-}
-
-function getSetting(settingName: string): string {
-	const setting = settings[settingName];
-
-	if (setting.setLocalStorage) {
-		return window.localStorage.getItem(settingName) || "";
-	} else {
-		return setting.value.toString();
-	}
-}
-
 function bool(value: string | boolean) {
 	return value == "true" || value == true;
 }
-
-function settingUpdate() {
-	// update page to reflect changes
-	document.documentElement.setAttribute(
-		"darkmode",
-		getSetting("Dark Mode").toString()
-	);
-}
-
-// function popupHeading(title: string): HTMLElement {
-//     const heading = document.createElement("h2");
-//     heading.textContent = title;
-//     return heading;
-// }
 
 type elementType =
 	| "h1"
@@ -1659,7 +1136,7 @@ async function togglePopup(
 	popup.showModal();
 }
 
-async function displayMessage(message: string) {
+export async function displayMessage(message: string) {
 	const numMessageBoxes = messages.children.length;
 	const id = `message-box-${numMessageBoxes}`;
 	//div id="message-box"><p>Message</p></div>
@@ -1740,8 +1217,8 @@ function openJOSM(query: string) {
 }
 
 // overpass data
-let data: ImportedData;
-let currentRelationId: number;
+export let data: ImportedData;
+export let currentRelationId: number;
 
 // interactivity
 let drawnElements: {
@@ -1754,7 +1231,7 @@ let globalAllWays: Record<number, OverpassWay>;
 let selectedWay: number;
 
 // reference html elements
-const canvas: HTMLCanvasElement = document.getElementById(
+export const canvas: HTMLCanvasElement = document.getElementById(
 	"canvas"
 ) as HTMLCanvasElement;
 const canvasOverlay: HTMLDivElement = document.getElementById(
@@ -1817,7 +1294,7 @@ const editInJOSM: HTMLButtonElement = document.getElementById(
 ) as HTMLButtonElement;
 
 // setup canvas
-const context: CanvasRenderingContext2D = canvas.getContext(
+export const context: CanvasRenderingContext2D = canvas.getContext(
 	"2d"
 ) as CanvasRenderingContext2D;
 
@@ -1835,18 +1312,11 @@ const context: CanvasRenderingContext2D = canvas.getContext(
 	}
 );
 
-// multiplier variables
-let maxLat: number;
-let minLat: number;
-let maxLon: number;
-let minLon: number;
-let multiplier: number;
-
 // add event listeners
-const mousePos: Coordinate = new Coordinate();
-const mouseDownPos: Coordinate = new Coordinate();
-const mouseOffset: Coordinate = new Coordinate();
-const zoomOffset: Coordinate = new Coordinate();
+export const mousePos: Coordinate = new Coordinate();
+export const mouseDownPos: Coordinate = new Coordinate();
+export const mouseOffset: Coordinate = new Coordinate();
+export const zoomOffset: Coordinate = new Coordinate();
 let mouseDown = false;
 let mouseMoved = false;
 
@@ -1972,48 +1442,6 @@ editInJOSM.addEventListener("click", () => {
 		`http://127.0.0.1:8111/load_and_zoom?left=${minLon}&right=${maxLon}&top=${maxLat}&bottom=${minLat}&select=way${selectedWay}`
 	);
 });
-
-//localStorage setup
-Object.keys(settings).forEach(settingName => {
-	const setting = settings[settingName];
-	if (setting.setLocalStorage && !window.localStorage.getItem(settingName)) {
-		window.localStorage.setItem(settingName, setting.value.toString());
-	}
-});
-
-// indexed db setup
-let db: IDBDatabase;
-// let overpassCache: IDBObjectStore;
-const openIDB: IDBOpenDBRequest = window.indexedDB.open("Overpass Data");
-
-openIDB.onerror = e => {
-	console.error(`Error: ${(e.target as IDBOpenDBRequest).error}`);
-};
-
-openIDB.onupgradeneeded = e => {
-	db = (e.target as IDBOpenDBRequest).result;
-	// overpassCache = db.createObjectStore("overpass-cache", { keyPath: "request" });
-};
-
-openIDB.onsuccess = e => {
-	db = (e.target as IDBOpenDBRequest).result;
-
-	// deal with permalinks
-	if (window.location.hash) {
-		const relationId = window.location.hash.substring(1);
-		inputField.value = relationId;
-		searchButton.click();
-	}
-};
-
-// zoom
-let zoom = 0;
-const zoomIncrement = 40;
-
-// metresToDegrees calculation (all units to metres)
-const earthRadius = 6371000;
-const earthCircumference = 2 * Math.PI * earthRadius;
-const degreesRange = earthCircumference / 2;
 
 // set default lane width & length
 const laneWidth = 3.5;
