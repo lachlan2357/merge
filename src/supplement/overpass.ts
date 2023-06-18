@@ -5,13 +5,13 @@ import {
 	deleteEntry,
 	insertInto,
 } from "./database.js";
-import { settings, getSetting } from "./settings.js";
+import { settings } from "../script.js";
 
 export async function overpassQuery(query: string): Promise<string> {
 	let data: string;
 	const allCacheKeys: string[] = await getAllCacheKeys();
 
-	if (allCacheKeys.includes(query) && !settings["Ignore Cache"].value) {
+	if (allCacheKeys.includes(query) && !settings.get("ignoreCache")) {
 		const request = await getCachedFor(query);
 		data = request["value"];
 	} else {
@@ -29,7 +29,7 @@ export async function overpassGetData(query: string): Promise<string> {
 		displayMessage("Downloading from Overpass...");
 
 		const request: XMLHttpRequest = new XMLHttpRequest();
-		request.open("POST", getSetting("Endpoint"));
+		request.open("POST", settings.get("endpoint"));
 
 		request.send(query);
 

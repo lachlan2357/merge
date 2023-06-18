@@ -3,7 +3,7 @@ import { degreesToPixels, metresToDegrees } from "./conversions.js";
 import { Coordinate } from "./index.js";
 import { getTotalMultiplier, getOffset } from "./view.js";
 
-export function drawLine(
+export function line(
 	coordStart: Coordinate,
 	coordEnd: Coordinate,
 	strokeThickness: number | null = null,
@@ -35,7 +35,7 @@ export function drawLine(
 	if (strokeColour != null) context.stroke();
 }
 
-export function drawPolygon(
+export function polygon(
 	coordinates: Coordinate[],
 	strokeThickness: number | null = null,
 	strokeColour: string | null = null,
@@ -75,7 +75,7 @@ export function drawPolygon(
 	return path;
 }
 
-export function drawArrow(
+export function arrow(
 	type: "left" | "right" | "through",
 	width: number,
 	length: number,
@@ -107,7 +107,7 @@ export function drawArrow(
 			arrowStart.y - Math.sin(arrowBaseAngle) * arrowBaseLength
 		);
 
-		drawLine(
+		line(
 			lineStart,
 			lineEnd,
 			degreesToPixels(metresToDegrees(0.2)),
@@ -115,7 +115,7 @@ export function drawArrow(
 			null,
 			"round"
 		);
-		drawPolygon([lineEnd, arrowStart, arrowEnd], 0, "white", "white");
+		polygon([lineEnd, arrowStart, arrowEnd], 0, "white", "white");
 	} else if (type == "left") {
 		const lineStart = new Coordinate(
 			centre.x - ((Math.cos(angle) * length) / 2) * 0.9,
@@ -146,7 +146,7 @@ export function drawArrow(
 			arrowMid.y - (Math.sin(arrowBaseAngle) * arrowArmLength) / 2
 		);
 
-		drawLine(
+		line(
 			lineStart,
 			lineEnd,
 			degreesToPixels(metresToDegrees(0.2)),
@@ -154,7 +154,7 @@ export function drawArrow(
 			null,
 			"round"
 		);
-		drawLine(
+		line(
 			lineEnd,
 			arrowLineEnd,
 			degreesToPixels(metresToDegrees(0.2)),
@@ -162,7 +162,7 @@ export function drawArrow(
 			null,
 			"round"
 		);
-		drawPolygon([arrowStart, arrowMid, arrowEnd], 0, "white", "white");
+		polygon([arrowStart, arrowMid, arrowEnd], 0, "white", "white");
 	} else if (type == "right") {
 		const lineStart = new Coordinate(
 			centre.x - ((Math.cos(angle) * length) / 2) * 0.9,
@@ -193,7 +193,7 @@ export function drawArrow(
 			arrowMid.y + (Math.sin(arrowBaseAngle) * arrowArmLength) / 2
 		);
 
-		drawLine(
+		line(
 			lineStart,
 			lineEnd,
 			degreesToPixels(metresToDegrees(0.2)),
@@ -201,7 +201,7 @@ export function drawArrow(
 			null,
 			"round"
 		);
-		drawLine(
+		line(
 			lineEnd,
 			arrowLineEnd,
 			degreesToPixels(metresToDegrees(0.2)),
@@ -209,6 +209,6 @@ export function drawArrow(
 			null,
 			"round"
 		);
-		drawPolygon([arrowStart, arrowMid, arrowEnd], 0, "white", "white");
+		polygon([arrowStart, arrowMid, arrowEnd], 0, "white", "white");
 	}
 }

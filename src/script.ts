@@ -4,15 +4,10 @@ import {
 	degreesToPixels,
 	metresToDegrees,
 } from "./supplement/conversions.js";
-import { drawPolygon, drawArrow, drawLine } from "./supplement/drawing.js";
+import * as draw from "./supplement/drawing.js";
 import { Coordinate } from "./supplement/index.js";
 import { overpassQuery } from "./supplement/overpass.js";
-import {
-	settings,
-	getSetting,
-	setSetting,
-	settingUpdate,
-} from "./supplement/settings.js";
+import { SettingName, Settings } from "./supplement/settings.js";
 import {
 	getTotalMultiplier,
 	getOffset,
@@ -25,6 +20,8 @@ import {
 	zoomIncrement,
 	setZoom,
 } from "./supplement/view.js";
+
+export const settings = new Settings();
 
 const roadColours = {
 	asphalt: "#222233",
@@ -186,7 +183,6 @@ async function display() {
 
 	const allWays: Record<number, OverpassWay> = {};
 	const allNodes: Record<number, OverpassNode> = {};
-	// const nodeIds: number[] = [];
 
 	let multipleRelations = false;
 
@@ -577,7 +573,7 @@ async function drawCanvas() {
 	}
 
 	// reset ignoreCache
-	settings["Ignore Cache"].value = false;
+	settings.set("ignoreCache", false);
 
 	// for way in data
 	for (const wayId in data) {
@@ -708,7 +704,7 @@ async function drawCanvas() {
 				way["turn:lanes:backward"] || "none"
 			).split("|");
 
-			const leftTraffic = bool(getSetting("Left Hand Traffic"));
+			const leftTraffic = settings.get("leftHandTraffic");
 			const directionality = leftTraffic ? 1 : -1;
 
 			for (let i = 0; i < lanes; i++) {
@@ -744,7 +740,7 @@ async function drawCanvas() {
 					nextTopCornerPos.y -
 						Math.sin(adjacentAngle) * laneLength * (i + 1)
 				);
-				drawPolygon(
+				draw.polygon(
 					[
 						thisStartCoord,
 						thisEndCoord,
@@ -821,15 +817,15 @@ async function drawCanvas() {
 					) * (i < lanesForward ? directionality : -directionality);
 
 				if (markings.includes("through")) {
-					drawArrow("through", width, length, centre, angle);
+					draw.arrow("through", width, length, centre, angle);
 				}
 
 				if (markings.includes("left")) {
-					drawArrow("left", width, length, centre, angle);
+					draw.arrow("left", width, length, centre, angle);
 				}
 
 				if (markings.includes("right")) {
-					drawArrow("right", width, length, centre, angle);
+					draw.arrow("right", width, length, centre, angle);
 				}
 			}
 
@@ -847,7 +843,7 @@ async function drawCanvas() {
 					Math.sin(adjacentAngle) * laneLength * lanesForward
 			);
 			if (!way.oneway)
-				drawLine(
+				draw.line(
 					centreStartCoord,
 					centreEndCoord,
 					degreesToPixels(metresToDegrees(0.5)),
@@ -856,7 +852,7 @@ async function drawCanvas() {
 
 			// draw select outline if selected
 			const outlined = selectedWay == parseInt(wayId);
-			const path = drawPolygon(
+			const path = draw.polygon(
 				[
 					thisBtmCornerPos,
 					thisTopCornerPos,
@@ -873,10 +869,6 @@ async function drawCanvas() {
 			};
 		}
 	}
-}
-
-function bool(value: string | boolean) {
-	return value == "true" || value == true;
 }
 
 type elementType =
@@ -1023,11 +1015,12 @@ async function togglePopup(
 
 			popup.append(settingsList);
 
-			Object.keys(settings).forEach(settingName => {
-				if (!settings[settingName].inSettings) return;
+			settings.keys().forEach(key => {
+				const setting = settings.getFull(key);
+				if (!setting.inSettings) return;
 
-				const settingDescription = settings[settingName].description;
-				const checkbox = settings[settingName].inputType == "boolean";
+				const settingDescription = setting.description;
+				const isBoolean = typeof setting.value === "boolean";
 
 				const outerDiv = element("div", {
 					classList: ["setting-container"],
@@ -1035,18 +1028,16 @@ async function togglePopup(
 				const innerDiv = element("div", {
 					classList: ["setting-text"],
 				});
-				const heading = element("h3", { textContent: settingName });
+				const heading = element("h3", { textContent: setting.name });
 				const text = element("p", { textContent: settingDescription });
 				const inputBox = element("input", {
-					type: checkbox ? "checkbox" : "text",
-					attributes: { "data-setting": settingName },
+					type: isBoolean ? "checkbox" : "text",
+					attributes: { "data-setting": key },
 				}) as HTMLInputElement;
 
-				if (checkbox)
-					inputBox.checked = settings[settingName].setLocalStorage
-						? bool(getSetting(settingName))
-						: bool(settings[settingName].value);
-				else inputBox.value = inputBox.value = getSetting(settingName);
+				if (typeof setting.value === "boolean")
+					inputBox.checked = setting.value;
+				else inputBox.value = setting.value;
 
 				innerDiv.append(heading, text);
 				outerDiv.append(innerDiv, inputBox);
@@ -1055,8 +1046,8 @@ async function togglePopup(
 				inputBox.addEventListener("change", (e: Event) => {
 					const target: HTMLInputElement =
 						e.target as HTMLInputElement;
-					setSetting(
-						target.getAttribute("data-setting") as string,
+					settings.set(
+						target.getAttribute("data-setting") as SettingName,
 						target.getAttribute("type") == "checkbox"
 							? target.checked
 							: target.value
@@ -1101,7 +1092,7 @@ async function togglePopup(
 		case "welcome": {
 			const img = element("img", {
 				id: "welcome-img",
-				src: "assets/icon.png",
+				src: "/merge/icon.png",
 			});
 			const heading = element("h2", {
 				id: "welcome-heading",
@@ -1449,10 +1440,10 @@ const laneLength: number = metresToDegrees(laneWidth);
 
 // size canvas, show opening message and set settings values
 setHTMLSizes();
-settingUpdate();
+settings.saveAll();
 
 // show first launch popup if first launch
-if (bool(getSetting("First Launch"))) {
-	setSetting("First Launch", "false");
+if (settings.get("firstLaunch")) {
+	settings.set("firstLaunch", false);
 	togglePopup("welcome");
 }

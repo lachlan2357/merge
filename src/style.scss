@@ -48,7 +48,7 @@ input:hover {
 		--open-with-active: lightblue;
 	}
 
-	&[darkmode] body {
+	&[darkmode="true"] {
 		--background-colour: #111;
 		--foreground-colour: #222;
 		--accent: #333;
@@ -58,7 +58,7 @@ input:hover {
 		--link: lightblue;
 	}
 
-	&[darkmode="false"] body {
+	&:not([darkmode="true"]) {
 		--background-colour: #ddd;
 		--foreground-colour: #eee;
 		--accent: #fff;
@@ -427,6 +427,11 @@ main {
 	h3 {
 		font-size: 1em;
 	}
+
+	input {
+		flex-shrink: 1;
+		overflow: hidden;
+	}
 }
 
 input {
@@ -471,7 +476,7 @@ input {
 	}
 
 	&[type="text"] {
-		flex-shrink: 0;
+		// flex-shrink: 0;
 		height: 2.5em;
 		background-color: var(--background-colour);
 		border-radius: 5px;
