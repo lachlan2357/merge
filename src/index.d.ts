@@ -1,8 +1,18 @@
+export interface OverpassResponse {
+	version: number;
+	generator: string;
+	osm3s: {
+		timestamp_osm_base: string;
+		copyright: string;
+	};
+	elements: Array<OverpassElement>;
+}
+
 export interface OverpassRelation {
 	id: number;
 	members: { ref: number; role: string; type: string }[];
 	tags: Record<string, string>;
-	type: string;
+	type: "relation";
 }
 
 export interface OverpassWay {
@@ -22,7 +32,7 @@ export interface OverpassWay {
 		"turn:lanes:backward": string;
 	};
 	timestamp: string;
-	type: string;
+	type: "way";
 	uid: number;
 	user: string;
 	version: number;
@@ -34,11 +44,13 @@ export interface OverpassNode {
 	lat: number;
 	lon: number;
 	timestamp: string;
-	type: string;
+	type: "node";
 	uid: number;
 	user: string;
 	version: number;
 }
+
+export type OverpassElement = OverpassRelation | OverpassWay | OverpassNode;
 
 export interface ImportedData {
 	[key: string]: {
@@ -71,3 +83,8 @@ export interface Setting<T> {
 }
 
 export type SettingType = string | boolean;
+
+export interface CachedQuery {
+	request: string;
+	value: string;
+}

@@ -12,8 +12,8 @@ export function line(
 	lineCap: "butt" | "round" | "square" = "butt"
 ) {
 	// set zoom and offset
-	const totalMultiplier: number = getTotalMultiplier();
-	const offset: Coordinate = getOffset(totalMultiplier);
+	const totalMultiplier = getTotalMultiplier();
+	const offset = getOffset(totalMultiplier);
 
 	// draw
 	context.strokeStyle = strokeColour || "black";
@@ -42,8 +42,8 @@ export function polygon(
 	fillColour: string | null = null
 ) {
 	// set zoom and offset
-	const totalMultiplier: number = getTotalMultiplier();
-	const offset: Coordinate = getOffset(totalMultiplier);
+	const totalMultiplier = getTotalMultiplier();
+	const offset = getOffset(totalMultiplier);
 
 	context.strokeStyle = strokeColour || "black";
 	context.lineWidth = strokeThickness || 1;

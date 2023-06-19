@@ -59,11 +59,12 @@ function zoomInOut(inOut: "in" | "out", source: "mouse" | "button") {
 	);
 
 	setZoom(
-		zoom + inOut == "in"
-			? zoomIncrement
-			: Math.sqrt(totalMultiplier) - zoomIncrement > 0
-			? -zoomIncrement
-			: 0
+		zoom +
+			(inOut == "in"
+				? zoomIncrement
+				: Math.sqrt(totalMultiplier) - zoomIncrement > 0
+				? -zoomIncrement
+				: 0)
 	);
 
 	totalMultiplier = getTotalMultiplier();
@@ -166,41 +167,29 @@ async function display() {
 		`<osm-script output="json"><union><query type="relation">${searchMode}</query><recurse type="relation-way"/><recurse type="way-node"/><recurse type="node-way"/></union><print/></osm-script>`
 	);
 
-	if (query == "error") {
-		setSearchState("normal");
-		return;
-	}
+	const elements = query.elements;
 
-	const elements = JSON.parse(query).elements;
-
-	let relation: OverpassRelation | undefined;
+	const relations: Record<number, OverpassRelation> = {};
 	const allWays: Record<number, OverpassWay> = {};
 	const allNodes: Record<number, OverpassNode> = {};
 
-	let multipleRelations = false;
+	console.log(elements);
 
 	elements.forEach(element => {
-		if (!multipleRelations) {
-			switch (element.type) {
-				case "relation":
-					if (relation) {
-						multipleRelations = true;
-					}
-
-					relation = element;
-					currentRelationId = element.id;
-					break;
-				case "way":
-					if (Object.keys(element.tags).includes("highway"))
-						allWays[element.id] = element;
-					break;
-				case "node":
-					allNodes[element.id] = element;
-					break;
-			}
+		switch (element.type) {
+			case "relation":
+				relations[element.id] = element;
+				break;
+			case "way":
+				if (Object.keys(element.tags).includes("highway"))
+					allWays[element.id] = element;
+				break;
+			case "node":
+				allNodes[element.id] = element;
+				break;
 		}
 	});
-	if (multipleRelations) {
+	if (Object.keys(relations).length > 1) {
 		displayMessage(
 			"Multiple relations share that name. Please use relation id."
 		);
@@ -208,12 +197,15 @@ async function display() {
 		return;
 	}
 
-	if (!currentRelationId || !relation) {
+	const relation = Object.values(relations)[0];
+
+	if (!relation) {
 		displayMessage("No result");
 		setSearchState("normal");
 		return;
 	}
 
+	currentRelationId = relation.id;
 	const wayIdsInRelation: number[] = [];
 	relation.members.forEach(member => {
 		wayIdsInRelation.push(member.ref);

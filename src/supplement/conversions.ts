@@ -15,8 +15,8 @@ export function degreesToPixels(degrees: number) {
 
 export function coordToScreenSpace(coord: Coordinate) {
 	// set zoom and offset
-	const totalMultiplier: number = getTotalMultiplier();
-	const offset: Coordinate = getOffset(totalMultiplier);
+	const totalMultiplier = getTotalMultiplier();
+	const offset = getOffset(totalMultiplier);
 
 	// return screen space coordinate
 	return new Coordinate(
