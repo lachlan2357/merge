@@ -1,3 +1,10 @@
+export interface OverpassRelation {
+	id: number;
+	members: { ref: number; role: string; type: string }[];
+	tags: Record<string, string>;
+	type: string;
+}
+
 export interface OverpassWay {
 	changeset: number;
 	id: number;

@@ -1,4 +1,9 @@
-import type { OverpassWay, OverpassNode, ImportedData } from "./index.js";
+import type {
+	OverpassWay,
+	OverpassNode,
+	ImportedData,
+	OverpassRelation,
+} from "./index.js";
 import {
 	coordToScreenSpace,
 	degreesToPixels,
@@ -36,21 +41,19 @@ const roadColours = {
 // functions
 
 function zoomInOut(inOut: "in" | "out", source: "mouse" | "button") {
-	if (!data) {
-		return;
-	}
+	if (!data) return;
 
 	let totalMultiplier = getTotalMultiplier();
 	let offset: Coordinate = getOffset(totalMultiplier);
 
-	const mousePosition: Coordinate =
+	const mousePosition =
 		source == "mouse"
 			? new Coordinate(
 					mousePos.x - canvas.offsetLeft,
 					mousePos.y - canvas.offsetTop
 			  )
 			: new Coordinate(canvas.width / 2, canvas.height / 2);
-	const mouseCoord: Coordinate = new Coordinate(
+	const mouseCoord = new Coordinate(
 		(mousePosition.x - offset.x) / totalMultiplier,
 		-(mousePosition.y - offset.y) / totalMultiplier
 	);
@@ -66,12 +69,12 @@ function zoomInOut(inOut: "in" | "out", source: "mouse" | "button") {
 	totalMultiplier = getTotalMultiplier();
 	offset = getOffset(totalMultiplier);
 
-	const newCoord: Coordinate = new Coordinate(
+	const newCoord = new Coordinate(
 		offset["x"] + mouseCoord.x * totalMultiplier,
 		offset["y"] - mouseCoord.y * totalMultiplier
 	);
 
-	const diff: Coordinate = new Coordinate(
+	const diff = new Coordinate(
 		mousePosition.x - newCoord.x,
 		mousePosition.y - newCoord.y
 	);
@@ -83,9 +86,7 @@ function zoomInOut(inOut: "in" | "out", source: "mouse" | "button") {
 }
 
 function centre() {
-	if (!data) {
-		return;
-	}
+	if (!data) return;
 
 	mouseOffset.reset();
 	zoomOffset.reset();
@@ -172,15 +173,7 @@ async function display() {
 
 	const elements = JSON.parse(query).elements;
 
-	let relation:
-		| {
-				id: number;
-				members: { ref: number; role: string; type: string }[];
-				tags: Record<string, string>;
-				type: string;
-		  }
-		| undefined;
-
+	let relation: OverpassRelation | undefined;
 	const allWays: Record<number, OverpassWay> = {};
 	const allNodes: Record<number, OverpassNode> = {};
 
@@ -203,7 +196,6 @@ async function display() {
 					break;
 				case "node":
 					allNodes[element.id] = element;
-					// if (!Object.keys(nodeIds).includes(element.id)) nodeIds.push(element.id);
 					break;
 			}
 		}
@@ -249,8 +241,8 @@ async function display() {
 }
 
 function process(
-	allWays: { [key: number]: OverpassWay },
-	allNodes: { [key: number]: OverpassNode }
+	allWays: Record<number, OverpassWay>,
+	allNodes: Record<number, OverpassNode>
 ) {
 	const waysInfo: {
 		[key: number]: {
@@ -566,11 +558,8 @@ async function drawCanvas() {
 	drawnElements = [];
 
 	// if no data, return
-	if (!data) {
-		return;
-	} else {
-		document.getElementById("empty-message")?.remove();
-	}
+	if (!data) return;
+	else document.getElementById("empty-message")?.remove();
 
 	// reset ignoreCache
 	settings.set("ignoreCache", false);
@@ -596,11 +585,11 @@ async function drawCanvas() {
 			const x2 = nextNode.lon;
 			const y2 = nextNode.lat;
 
-			const thisPos: Coordinate = new Coordinate(x1, y1);
-			const nextPos: Coordinate = new Coordinate(x2, y2);
+			const thisPos = new Coordinate(x1, y1);
+			const nextPos = new Coordinate(x2, y2);
 
 			// angles are the atan of the gradient, however gradients doesn't tell direction. the condition checks if the configuration of points leads to a 'flipped' gradient
-			const gradient: number = (y2 - y1) / (x2 - x1);
+			const gradient = (y2 - y1) / (x2 - x1);
 			const angle =
 				(y1 > y2 && x1 > x2) || (y1 < y2 && x1 > x2)
 					? Math.atan(gradient) + Math.PI
@@ -608,24 +597,24 @@ async function drawCanvas() {
 			const adjacentAngle = angle + Math.PI / 2;
 
 			// define the four corners of the box around the way
-			const thisTopCornerPos: Coordinate = new Coordinate(
+			const thisTopCornerPos = new Coordinate(
 				x1 + Math.cos(adjacentAngle) * laneLength * (lanes / 2),
 				y1 + Math.sin(adjacentAngle) * laneLength * (lanes / 2)
 			);
-			const thisBtmCornerPos: Coordinate = new Coordinate(
+			const thisBtmCornerPos = new Coordinate(
 				x1 - Math.cos(adjacentAngle) * laneLength * (lanes / 2),
 				y1 - Math.sin(adjacentAngle) * laneLength * (lanes / 2)
 			);
-			const nextTopCornerPos: Coordinate = new Coordinate(
+			const nextTopCornerPos = new Coordinate(
 				x2 + Math.cos(adjacentAngle) * laneLength * (lanes / 2),
 				y2 + Math.sin(adjacentAngle) * laneLength * (lanes / 2)
 			);
-			const nextBtmCornerPos: Coordinate = new Coordinate(
+			const nextBtmCornerPos = new Coordinate(
 				x2 - Math.cos(adjacentAngle) * laneLength * (lanes / 2),
 				y2 - Math.sin(adjacentAngle) * laneLength * (lanes / 2)
 			);
 
-			const allPos: number[][] = [
+			const allPos = [
 				[
 					thisPos.x,
 					nextPos.x,
@@ -697,10 +686,10 @@ async function drawCanvas() {
 				way["lanes:forward"] || (way.oneway ? lanes : lanes / 2);
 			const lanesBackward =
 				way["lanes:backward"] || (way.oneway ? 0 : lanes / 2);
-			const turnLanesForward: string[] = (
+			const turnLanesForward = (
 				way["turn:lanes:forward"] || "none"
 			).split("|");
-			const turnLanesBackward: string[] = (
+			const turnLanesBackward = (
 				way["turn:lanes:backward"] || "none"
 			).split("|");
 
@@ -778,24 +767,24 @@ async function drawCanvas() {
 					? lanesString.split(";")
 					: [lanesString];
 
-				const allX: number[] = [
+				const allX = [
 					thisStartCoord.x,
 					thisEndCoord.x,
 					nextStartCoord.x,
 					nextEndCoord.x,
 				];
-				const allY: number[] = [
+				const allY = [
 					thisStartCoord.y,
 					thisEndCoord.y,
 					nextStartCoord.y,
 					nextEndCoord.y,
 				];
 
-				const maxCoord: Coordinate = new Coordinate(
+				const maxCoord = new Coordinate(
 					Math.max(...allX),
 					Math.max(...allY)
 				);
-				const minCoord: Coordinate = new Coordinate(
+				const minCoord = new Coordinate(
 					Math.min(...allX),
 					Math.min(...allY)
 				);
@@ -1130,7 +1119,6 @@ async function togglePopup(
 export async function displayMessage(message: string) {
 	const numMessageBoxes = messages.children.length;
 	const id = `message-box-${numMessageBoxes}`;
-	//div id="message-box"><p>Message</p></div>
 	const newDiv = document.createElement("div");
 	newDiv.id = id;
 	newDiv.classList.add("message-box");
@@ -1152,7 +1140,7 @@ export async function displayMessage(message: string) {
 	);
 }
 
-function hoverPath(click = true): boolean {
+function hoverPath(click = true) {
 	const canvasOffset = new Coordinate(canvas.offsetLeft, canvas.offsetTop);
 	let returner = false;
 	Object.keys(drawnElements).forEach(id => {
@@ -1222,77 +1210,40 @@ let globalAllWays: Record<number, OverpassWay>;
 let selectedWay: number;
 
 // reference html elements
-export const canvas: HTMLCanvasElement = document.getElementById(
-	"canvas"
-) as HTMLCanvasElement;
-const canvasOverlay: HTMLDivElement = document.getElementById(
+export const canvas = document.getElementById("canvas") as HTMLCanvasElement;
+const canvasOverlay = document.getElementById(
 	"canvas-overlay"
 ) as HTMLDivElement;
-const inputField: HTMLInputElement = document.getElementById(
-	"relation-name"
-) as HTMLInputElement;
-const searchButton: HTMLButtonElement = document.getElementById(
-	"search"
-) as HTMLButtonElement;
-const advancedButton: HTMLButtonElement = document.getElementById(
-	"advanced"
-) as HTMLButtonElement;
-const settingsButton: HTMLButtonElement = document.getElementById(
-	"settings"
-) as HTMLButtonElement;
-const zoomInButton: HTMLButtonElement = document.getElementById(
-	"zoom-in"
-) as HTMLButtonElement;
-const zoomOutButton: HTMLButtonElement = document.getElementById(
-	"zoom-out"
-) as HTMLButtonElement;
-const zoomResetButton: HTMLButtonElement = document.getElementById(
+const inputField = document.getElementById("relation-name") as HTMLInputElement;
+const searchButton = document.getElementById("search") as HTMLButtonElement;
+const advancedButton = document.getElementById("advanced") as HTMLButtonElement;
+const settingsButton = document.getElementById("settings") as HTMLButtonElement;
+const zoomInButton = document.getElementById("zoom-in") as HTMLButtonElement;
+const zoomOutButton = document.getElementById("zoom-out") as HTMLButtonElement;
+const zoomResetButton = document.getElementById(
 	"zoom-reset"
 ) as HTMLButtonElement;
-const fullscreenButton: HTMLButtonElement = document.getElementById(
+const fullscreenButton = document.getElementById(
 	"fullscreen"
 ) as HTMLButtonElement;
-const shareButton: HTMLButtonElement = document.getElementById(
-	"share"
-) as HTMLButtonElement;
-const helpButton: HTMLButtonElement = document.getElementById(
-	"help"
-) as HTMLButtonElement;
-const aboutButton: HTMLButtonElement = document.getElementById(
-	"about"
-) as HTMLButtonElement;
-const popup: HTMLDialogElement = document.getElementById(
-	"popup"
-) as HTMLDialogElement;
-// const popupBackdrop: HTMLDivElement = document.getElementById("popup-backdrop") as HTMLDivElement;
-const messages: HTMLDivElement = document.getElementById(
-	"messages"
-) as HTMLDivElement;
-const wayInfo: HTMLHeadingElement = document.getElementById(
-	"way-info"
-) as HTMLHeadingElement;
-const wayInfoId: HTMLHeadingElement = document.getElementById(
-	"wayid"
-) as HTMLHeadingElement;
-const wayInfoTags: HTMLTableElement = document.getElementById(
-	"tags"
-) as HTMLTableElement;
-const editIniD: HTMLButtonElement = document.getElementById(
-	"edit-id"
-) as HTMLButtonElement;
-const editInJOSM: HTMLButtonElement = document.getElementById(
-	"edit-josm"
-) as HTMLButtonElement;
+const shareButton = document.getElementById("share") as HTMLButtonElement;
+const helpButton = document.getElementById("help") as HTMLButtonElement;
+const aboutButton = document.getElementById("about") as HTMLButtonElement;
+const popup = document.getElementById("popup") as HTMLDialogElement;
+const messages = document.getElementById("messages") as HTMLDivElement;
+const wayInfo = document.getElementById("way-info") as HTMLHeadingElement;
+const wayInfoId = document.getElementById("wayid") as HTMLHeadingElement;
+const wayInfoTags = document.getElementById("tags") as HTMLTableElement;
+const editIniD = document.getElementById("edit-id") as HTMLButtonElement;
+const editInJOSM = document.getElementById("edit-josm") as HTMLButtonElement;
 
 // setup canvas
-export const context: CanvasRenderingContext2D = canvas.getContext(
-	"2d"
-) as CanvasRenderingContext2D;
+export const context = canvas.getContext("2d") as CanvasRenderingContext2D;
 
 // popup button events
 [shareButton, settingsButton, advancedButton, helpButton, aboutButton].forEach(
 	button => {
-		button.addEventListener("click", (e: MouseEvent) => {
+		button.addEventListener("click", e => {
 			const buttonId = (e.target as HTMLButtonElement).id;
 			if (buttonId == "share" && !currentRelationId) {
 				displayMessage("Map is empty. Nothing to share.");
@@ -1304,10 +1255,10 @@ export const context: CanvasRenderingContext2D = canvas.getContext(
 );
 
 // add event listeners
-export const mousePos: Coordinate = new Coordinate();
-export const mouseDownPos: Coordinate = new Coordinate();
-export const mouseOffset: Coordinate = new Coordinate();
-export const zoomOffset: Coordinate = new Coordinate();
+export const mousePos = new Coordinate();
+export const mouseDownPos = new Coordinate();
+export const mouseOffset = new Coordinate();
+export const zoomOffset = new Coordinate();
 let mouseDown = false;
 let mouseMoved = false;
 
@@ -1319,7 +1270,7 @@ searchButton.addEventListener("click", () => {
 	display();
 });
 
-inputField.addEventListener("keydown", (e: KeyboardEvent) => {
+inputField.addEventListener("keydown", e => {
 	if (e.key == "Enter") {
 		searchButton.click();
 		e.preventDefault();
@@ -1327,12 +1278,10 @@ inputField.addEventListener("keydown", (e: KeyboardEvent) => {
 });
 
 // canvas mouse controls
-canvas.addEventListener("wheel", (e: WheelEvent) => {
+canvas.addEventListener("wheel", e => {
 	e.preventDefault();
 
-	if (!data) {
-		return;
-	}
+	if (!data) return;
 
 	if (e.deltaY / Math.abs(e.deltaY) == 1) {
 		zoomInOut("out", "mouse");
@@ -1341,10 +1290,8 @@ canvas.addEventListener("wheel", (e: WheelEvent) => {
 	}
 });
 
-canvas.addEventListener("mousedown", (e: MouseEvent) => {
-	if (!data) {
-		return;
-	}
+canvas.addEventListener("mousedown", e => {
+	if (!data) return;
 
 	mouseDown = true;
 	mouseDownPos.setCoordinates(
@@ -1354,12 +1301,10 @@ canvas.addEventListener("mousedown", (e: MouseEvent) => {
 	mouseMoved = false;
 });
 
-canvas.addEventListener("mouseup", (e: MouseEvent) => {
+canvas.addEventListener("mouseup", e => {
 	e.preventDefault();
 
-	if (!data) {
-		return;
-	}
+	if (!data) return;
 
 	if (!mouseMoved) {
 		if (!hoverPath()) {
@@ -1374,12 +1319,10 @@ canvas.addEventListener("mouseup", (e: MouseEvent) => {
 	mouseMoved = false;
 });
 
-canvas.addEventListener("mousemove", (e: MouseEvent) => {
+canvas.addEventListener("mousemove", e => {
 	e.preventDefault();
 
-	if (!data) {
-		return;
-	}
+	if (!data) return;
 
 	mousePos.setCoordinates(e.clientX, e.clientY);
 	mouseMoved = true;
@@ -1436,7 +1379,7 @@ editInJOSM.addEventListener("click", () => {
 
 // set default lane width & length
 const laneWidth = 3.5;
-const laneLength: number = metresToDegrees(laneWidth);
+const laneLength = metresToDegrees(laneWidth);
 
 // size canvas, show opening message and set settings values
 setHTMLSizes();
