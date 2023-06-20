@@ -1,3 +1,5 @@
+import { Err, Ok } from "./supplement/errors.ts";
+
 export interface OverpassResponse {
 	version: number;
 	generator: string;
@@ -88,3 +90,5 @@ export interface CachedQuery {
 	request: string;
 	value: string;
 }
+
+export type Result<T, E> = Ok<T> | Err<E>;

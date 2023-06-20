@@ -11,6 +11,7 @@ import {
 } from "./supplement/conversions.js";
 import * as draw from "./supplement/drawing.js";
 import { Coordinate } from "./supplement/index.js";
+import { displayMessage } from "./supplement/messages.js";
 import { overpassQuery } from "./supplement/overpass.js";
 import { SettingName, Settings } from "./supplement/settings.js";
 import {
@@ -146,15 +147,13 @@ async function display() {
 	const roadName = inputField.value;
 
 	if (roadName.length == 0) {
-		displayMessage("Please enter a search term.");
+		displayMessage("noSearchTerm");
 		setSearchState("normal");
 		return;
 	}
 
 	if (roadName.includes('"')) {
-		displayMessage(
-			'Currently, double quotes (") are not supported for relation name lookup.'
-		);
+		displayMessage("malformedSearchTerm");
 		setSearchState("normal");
 		return;
 	}
@@ -190,9 +189,7 @@ async function display() {
 		}
 	});
 	if (Object.keys(relations).length > 1) {
-		displayMessage(
-			"Multiple relations share that name. Please use relation id."
-		);
+		displayMessage("multipleRelations");
 		setSearchState("normal");
 		return;
 	}
@@ -200,7 +197,7 @@ async function display() {
 	const relation = Object.values(relations)[0];
 
 	if (!relation) {
-		displayMessage("No result");
+		displayMessage("noResult");
 		setSearchState("normal");
 		return;
 	}
@@ -1108,30 +1105,6 @@ async function togglePopup(
 	popup.showModal();
 }
 
-export async function displayMessage(message: string) {
-	const numMessageBoxes = messages.children.length;
-	const id = `message-box-${numMessageBoxes}`;
-	const newDiv = document.createElement("div");
-	newDiv.id = id;
-	newDiv.classList.add("message-box");
-	const newPara = element("p", { textContent: message });
-	newDiv.appendChild(newPara);
-	messages.appendChild(newDiv);
-
-	newDiv.setAttribute("visible", "");
-	await new Promise(r => setTimeout(r, 5000));
-	newDiv.setAttribute("closing", "");
-	newDiv.addEventListener(
-		"animationend",
-		() => {
-			newDiv.removeAttribute("closing");
-			newDiv.removeAttribute("visible");
-			messages.removeChild(newDiv);
-		},
-		{ once: true }
-	);
-}
-
 function hoverPath(click = true) {
 	const canvasOffset = new Coordinate(canvas.offsetLeft, canvas.offsetTop);
 	let returner = false;
@@ -1222,7 +1195,7 @@ const shareButton = document.getElementById("share") as HTMLButtonElement;
 const helpButton = document.getElementById("help") as HTMLButtonElement;
 const aboutButton = document.getElementById("about") as HTMLButtonElement;
 const popup = document.getElementById("popup") as HTMLDialogElement;
-const messages = document.getElementById("messages") as HTMLDivElement;
+export const messages = document.getElementById("messages") as HTMLDivElement;
 const wayInfo = document.getElementById("way-info") as HTMLHeadingElement;
 const wayInfoId = document.getElementById("wayid") as HTMLHeadingElement;
 const wayInfoTags = document.getElementById("tags") as HTMLTableElement;
@@ -1238,7 +1211,7 @@ export const context = canvas.getContext("2d") as CanvasRenderingContext2D;
 		button.addEventListener("click", e => {
 			const buttonId = (e.target as HTMLButtonElement).id;
 			if (buttonId == "share" && !currentRelationId) {
-				displayMessage("Map is empty. Nothing to share.");
+				displayMessage("emptyShare");
 			} else {
 				togglePopup(buttonId);
 			}
