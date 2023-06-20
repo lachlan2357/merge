@@ -1201,6 +1201,7 @@ const wayInfoId = document.getElementById("wayid") as HTMLHeadingElement;
 const wayInfoTags = document.getElementById("tags") as HTMLTableElement;
 const editIniD = document.getElementById("edit-id") as HTMLButtonElement;
 const editInJOSM = document.getElementById("edit-josm") as HTMLButtonElement;
+const searchForm = document.getElementById("search-form") as HTMLFormElement;
 
 // setup canvas
 export const context = canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -1231,15 +1232,9 @@ window.addEventListener("resize", () => {
 	setHTMLSizes();
 });
 
-searchButton.addEventListener("click", () => {
+searchForm.addEventListener("submit", e => {
+	e.preventDefault();
 	display();
-});
-
-inputField.addEventListener("keydown", e => {
-	if (e.key == "Enter") {
-		searchButton.click();
-		e.preventDefault();
-	}
 });
 
 // canvas mouse controls

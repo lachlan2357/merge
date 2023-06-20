@@ -42,14 +42,17 @@
 				<div id="canvas-overlay">
 					<!-- search bar and accompanying buttons -->
 					<div id="search-sequence">
-						<input
-							type="text"
-							id="relation-name"
-							placeholder="Search..."
-						/>
-						<button id="search" tooltip="Search">
-							<i class="fa-solid fa-magnifying-glass"></i>
-						</button>
+						<form id="search-form">
+							<input
+								type="text"
+								id="relation-name"
+								placeholder="Search..."
+							/>
+
+							<button type="submit" id="search" tooltip="Search">
+								<i class="fa-solid fa-magnifying-glass"></i>
+							</button>
+						</form>
 						<button id="advanced" tooltip="Advanced">
 							<i
 								class="fa-solid fa-arrow-up-right-from-square"

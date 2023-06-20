@@ -183,6 +183,7 @@ main {
 
 #canvas-overlay > button,
 #search-sequence > button,
+#search-sequence > form > button,
 .button {
 	width: 30px;
 	height: 30px;
@@ -195,12 +196,14 @@ main {
 
 #canvas-overlay > button i,
 #search-sequence > button i,
+#search-sequence > form > button i,
 .button i {
 	pointer-events: none;
 }
 
 #canvas-overlay > button:hover,
 #search-sequence > button:hover,
+#search-sequence > form > button:hover,
 .button:hover {
 	background-color: var(--accent);
 	cursor: pointer;
@@ -208,6 +211,7 @@ main {
 
 #canvas-overlay > button:active,
 #search-sequence > button:active,
+#search-sequence > form > button:active,
 .button:active {
 	background-color: var(--canvas);
 	cursor: pointer;
