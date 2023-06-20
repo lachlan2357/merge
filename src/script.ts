@@ -10,21 +10,24 @@ import {
 	metresToDegrees,
 } from "./supplement/conversions.js";
 import * as draw from "./supplement/drawing.js";
-import { Coordinate } from "./supplement/index.js";
+import { Coordinate, zoomIncrement } from "./supplement/index.js";
 import { displayMessage } from "./supplement/messages.js";
 import { overpassQuery } from "./supplement/overpass.js";
 import { SettingName, Settings } from "./supplement/settings.js";
+import { Effect } from "./supplement/state.js";
 import {
-	getTotalMultiplier,
-	getOffset,
-	setMultiplier,
-	maxLat,
-	maxLon,
-	minLat,
-	minLon,
 	zoom,
-	zoomIncrement,
-	setZoom,
+	multiplier,
+	offset,
+	totalMultiplier,
+	data,
+	mousePos,
+	zoomOffset,
+	mouseOffset,
+	mouseDown,
+	mouseDownPos,
+	mouseMoved,
+	canvasDimensions,
 } from "./supplement/view.js";
 
 export const settings = new Settings();
@@ -42,59 +45,45 @@ const roadColours = {
 // functions
 
 function zoomInOut(inOut: "in" | "out", source: "mouse" | "button") {
-	if (!data) return;
-
-	let totalMultiplier = getTotalMultiplier();
-	let offset: Coordinate = getOffset(totalMultiplier);
+	let totalMultiplierValue = totalMultiplier.get();
+	const totalMultiplierRaw = Math.sqrt(totalMultiplierValue);
+	let offsetValue = offset.get();
 
 	const mousePosition =
 		source == "mouse"
 			? new Coordinate(
-					mousePos.x - canvas.offsetLeft,
-					mousePos.y - canvas.offsetTop
+					mousePos.get().x - canvas.offsetLeft,
+					mousePos.get().y - canvas.offsetTop
 			  )
 			: new Coordinate(canvas.width / 2, canvas.height / 2);
+
 	const mouseCoord = new Coordinate(
-		(mousePosition.x - offset.x) / totalMultiplier,
-		-(mousePosition.y - offset.y) / totalMultiplier
+		(mousePosition.x - offsetValue.x) / totalMultiplierValue,
+		-(mousePosition.y - offsetValue.y) / totalMultiplierValue
 	);
 
-	setZoom(
-		zoom +
-			(inOut == "in"
-				? zoomIncrement
-				: Math.sqrt(totalMultiplier) - zoomIncrement > 0
-				? -zoomIncrement
-				: 0)
-	);
+	if (inOut === "in") zoom.setDynamic(old => old + zoomIncrement);
+	else if (totalMultiplierRaw - zoomIncrement > 0)
+		zoom.setDynamic(old => old - zoomIncrement);
 
-	totalMultiplier = getTotalMultiplier();
-	offset = getOffset(totalMultiplier);
+	totalMultiplierValue = totalMultiplier.get();
+	offsetValue = offset.get();
 
-	const newCoord = new Coordinate(
-		offset["x"] + mouseCoord.x * totalMultiplier,
-		offset["y"] - mouseCoord.y * totalMultiplier
-	);
-
+	const newCoord = coordToScreenSpace(mouseCoord);
 	const diff = new Coordinate(
 		mousePosition.x - newCoord.x,
 		mousePosition.y - newCoord.y
 	);
 
-	zoomOffset.x += diff.x;
-	zoomOffset.y += diff.y;
-
-	drawCanvas();
+	zoomOffset.setDynamic(
+		old => new Coordinate(old.x + diff.x, old.y + diff.y)
+	);
 }
 
 function centre() {
-	if (!data) return;
-
-	mouseOffset.reset();
-	zoomOffset.reset();
-	setZoom(0);
-	setMultiplier();
-	drawCanvas();
+	mouseOffset.set(new Coordinate());
+	zoomOffset.set(new Coordinate());
+	zoom.set(0);
 }
 
 function setHTMLSizes() {
@@ -118,8 +107,6 @@ function setHTMLSizes() {
 		const offsetWidth = `${button.children[0].scrollWidth / 2}px`;
 		button.style.setProperty("--width", offsetWidth);
 	});
-
-	drawCanvas();
 }
 
 function setSearchState(state: "normal" | "searching") {
@@ -172,8 +159,6 @@ async function display() {
 	const allWays: Record<number, OverpassWay> = {};
 	const allNodes: Record<number, OverpassNode> = {};
 
-	console.log(elements);
-
 	elements.forEach(element => {
 		switch (element.type) {
 			case "relation":
@@ -217,8 +202,6 @@ async function display() {
 	});
 
 	process(allWays, allNodes);
-
-	drawCanvas();
 
 	centre();
 
@@ -536,9 +519,7 @@ function process(
 		});
 	});
 
-	data = convertedData;
-
-	setMultiplier();
+	data.set(convertedData);
 }
 
 async function drawCanvas() {
@@ -547,15 +528,16 @@ async function drawCanvas() {
 	drawnElements = [];
 
 	// if no data, return
-	if (!data) return;
+	const dataCache = data.get();
+	if (!dataCache) return;
 	else document.getElementById("empty-message")?.remove();
 
 	// reset ignoreCache
 	settings.set("ignoreCache", false);
 
 	// for way in data
-	for (const wayId in data) {
-		const way = data[wayId];
+	for (const wayId in dataCache) {
+		const way = dataCache[wayId];
 		const lanes = way.lanes || 2;
 		for (const key in way.orderedNodes) {
 			const nextKey = (parseInt(key) + 1).toString();
@@ -973,6 +955,9 @@ async function togglePopup(
 						copyButton.children[0].classList.add("fa-check");
 					});
 			});
+
+			const { minLat, maxLat, minLon, maxLon } = multiplier.get();
+
 			openiDButton.addEventListener("click", () => {
 				window.open(
 					`https://www.openstreetmap.org/relation/${currentRelationId}`,
@@ -1106,6 +1091,7 @@ async function togglePopup(
 }
 
 function hoverPath(click = true) {
+	if (!data.get()) return;
 	const canvasOffset = new Coordinate(canvas.offsetLeft, canvas.offsetTop);
 	let returner = false;
 	Object.keys(drawnElements).forEach(id => {
@@ -1115,8 +1101,8 @@ function hoverPath(click = true) {
 		if (
 			context.isPointInPath(
 				path,
-				mousePos.x - canvasOffset.x,
-				mousePos.y - canvasOffset.y
+				mousePos.get().x - canvasOffset.x,
+				mousePos.get().y - canvasOffset.y
 			)
 		) {
 			returner = true;
@@ -1161,7 +1147,7 @@ function openJOSM(query: string) {
 }
 
 // overpass data
-export let data: ImportedData;
+// export let data: ImportedData;
 export let currentRelationId: number;
 
 // interactivity
@@ -1220,14 +1206,6 @@ export const context = canvas.getContext("2d") as CanvasRenderingContext2D;
 	}
 );
 
-// add event listeners
-export const mousePos = new Coordinate();
-export const mouseDownPos = new Coordinate();
-export const mouseOffset = new Coordinate();
-export const zoomOffset = new Coordinate();
-let mouseDown = false;
-let mouseMoved = false;
-
 window.addEventListener("resize", () => {
 	setHTMLSizes();
 });
@@ -1241,7 +1219,7 @@ searchForm.addEventListener("submit", e => {
 canvas.addEventListener("wheel", e => {
 	e.preventDefault();
 
-	if (!data) return;
+	if (!data.get()) return;
 
 	if (e.deltaY / Math.abs(e.deltaY) == 1) {
 		zoomInOut("out", "mouse");
@@ -1251,48 +1229,50 @@ canvas.addEventListener("wheel", e => {
 });
 
 canvas.addEventListener("mousedown", e => {
-	if (!data) return;
+	if (!data.get()) return;
 
-	mouseDown = true;
-	mouseDownPos.setCoordinates(
-		e.clientX - mouseOffset.x,
-		e.clientY - mouseOffset.y
+	mouseDown.set(true);
+	mouseDownPos.set(
+		new Coordinate(
+			e.clientX - mouseOffset.get().x,
+			e.clientY - mouseOffset.get().y
+		)
 	);
-	mouseMoved = false;
+	mouseMoved.set(false);
 });
 
 canvas.addEventListener("mouseup", e => {
 	e.preventDefault();
 
-	if (!data) return;
+	if (!data.get()) return;
 
-	if (!mouseMoved) {
+	if (!mouseMoved.get()) {
 		if (!hoverPath()) {
 			wayInfo.setAttribute("hidden", "");
 			selectedWay = -1;
 		}
-		drawCanvas();
 	}
 
-	mouseDown = false;
+	mouseDown.set(false);
 
-	mouseMoved = false;
+	mouseMoved.set(false);
 });
 
 canvas.addEventListener("mousemove", e => {
 	e.preventDefault();
 
-	if (!data) return;
+	if (!data.get()) return;
 
-	mousePos.setCoordinates(e.clientX, e.clientY);
-	mouseMoved = true;
+	mousePos.set(new Coordinate(e.clientX, e.clientY));
+	mouseMoved.set(true);
 
-	if (mouseDown) {
-		mouseOffset.setCoordinates(
-			e.clientX - mouseDownPos.x,
-			e.clientY - mouseDownPos.y
+	if (mouseDown.get()) {
+		mouseOffset.set(
+			new Coordinate(
+				e.clientX - mouseDownPos.get().x,
+				e.clientY - mouseDownPos.get().y
+			)
 		);
-		drawCanvas();
 	}
 
 	if (hoverPath(false)) {
@@ -1301,6 +1281,10 @@ canvas.addEventListener("mousemove", e => {
 		canvas.style.cursor = "move";
 	}
 });
+
+new ResizeObserver(() =>
+	canvasDimensions.set(new Coordinate(canvas.width, canvas.height))
+).observe(canvas);
 
 zoomInButton.addEventListener("click", () => {
 	zoomInOut("in", "button");
@@ -1311,8 +1295,8 @@ zoomOutButton.addEventListener("click", () => {
 });
 
 zoomResetButton.addEventListener("click", () => {
-	centre();
 	setHTMLSizes();
+	centre();
 });
 
 fullscreenButton.addEventListener("click", () => {
@@ -1322,6 +1306,8 @@ fullscreenButton.addEventListener("click", () => {
 	);
 	setHTMLSizes();
 });
+
+const { minLat, maxLat, minLon, maxLon } = multiplier.get();
 
 editIniD.addEventListener("click", () => {
 	window.open(
@@ -1350,3 +1336,18 @@ if (settings.get("firstLaunch")) {
 	settings.set("firstLaunch", false);
 	togglePopup("welcome");
 }
+
+new Effect(() => {
+	console.log("draw canvas");
+	drawCanvas();
+}, [
+	data,
+	canvasDimensions,
+	mousePos,
+	mouseDownPos,
+	mouseOffset,
+	zoomOffset,
+	mouseDown,
+	mouseMoved,
+	zoom,
+]);

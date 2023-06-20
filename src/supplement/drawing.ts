@@ -1,7 +1,7 @@
 import { context } from "../script.js";
 import { degreesToPixels, metresToDegrees } from "./conversions.js";
 import { Coordinate } from "./index.js";
-import { getTotalMultiplier, getOffset } from "./view.js";
+import { offset, totalMultiplier } from "./view.js";
 
 export function line(
 	coordStart: Coordinate,
@@ -12,8 +12,8 @@ export function line(
 	lineCap: "butt" | "round" | "square" = "butt"
 ) {
 	// set zoom and offset
-	const totalMultiplier = getTotalMultiplier();
-	const offset = getOffset(totalMultiplier);
+	const totalMultiplierCache = totalMultiplier.get();
+	const offsetCache = offset.get();
 
 	// draw
 	context.strokeStyle = strokeColour || "black";
@@ -23,12 +23,12 @@ export function line(
 
 	context.beginPath();
 	context.moveTo(
-		offset.x + coordStart.x * totalMultiplier,
-		offset.y - coordStart.y * totalMultiplier
+		offsetCache.x + coordStart.x * totalMultiplierCache,
+		offsetCache.y - coordStart.y * totalMultiplierCache
 	);
 	context.lineTo(
-		offset.x + coordEnd.x * totalMultiplier,
-		offset.y - coordEnd.y * totalMultiplier
+		offsetCache.x + coordEnd.x * totalMultiplierCache,
+		offsetCache.y - coordEnd.y * totalMultiplierCache
 	);
 
 	if (fillColour != null) context.fill();
@@ -42,8 +42,8 @@ export function polygon(
 	fillColour: string | null = null
 ) {
 	// set zoom and offset
-	const totalMultiplier = getTotalMultiplier();
-	const offset = getOffset(totalMultiplier);
+	const totalMultiplierCache = totalMultiplier.get();
+	const offsetCache = offset.get();
 
 	context.strokeStyle = strokeColour || "black";
 	context.lineWidth = strokeThickness || 1;
@@ -53,13 +53,13 @@ export function polygon(
 	const path = new Path2D();
 
 	path.moveTo(
-		offset.x + coordinates[0].x * totalMultiplier,
-		offset.y - coordinates[0].y * totalMultiplier
+		offsetCache.x + coordinates[0].x * totalMultiplierCache,
+		offsetCache.y - coordinates[0].y * totalMultiplierCache
 	);
 	for (let i = 1; i < coordinates.length; i++) {
 		path.lineTo(
-			offset.x + coordinates[i].x * totalMultiplier,
-			offset.y - coordinates[i].y * totalMultiplier
+			offsetCache.x + coordinates[i].x * totalMultiplierCache,
+			offsetCache.y - coordinates[i].y * totalMultiplierCache
 		);
 	}
 

@@ -1,63 +1,62 @@
-import { canvas, data, mouseOffset, zoomOffset } from "../script.js";
+import { ImportedData } from "../index.js";
+import { canvas } from "../script.js";
 import { Coordinate } from "./index.js";
+import { Computed, State } from "./state.js";
 
-// multiplier variables
-export let maxLat: number;
-export let minLat: number;
-export let maxLon: number;
-export let minLon: number;
-let multiplier: number;
+// atomics
+export const data = new State<ImportedData | undefined>(undefined);
+export const canvasDimensions = new State(new Coordinate());
+export const mousePos = new State(new Coordinate());
+export const mouseDownPos = new State(new Coordinate());
+export const mouseOffset = new State(new Coordinate());
+export const zoomOffset = new State(new Coordinate());
+export const mouseDown = new State(false);
+export const mouseMoved = new State(false);
+export const zoom = new State(0);
 
-// zoom
-export let zoom = 0;
-export const zoomIncrement = 40;
+// computed
+export const multiplier = new Computed(() => {
+	const dataCache = data.get();
+	if (!dataCache)
+		return { minLat: 0, maxLat: 0, minLon: 0, maxLon: 0, multiplier: 0 };
 
-export function setZoom(number: number) {
-	zoom = number;
-}
-
-export function setMultiplier() {
-	// find multiplier
 	const allLats: number[] = [];
 	const allLons: number[] = [];
-
-	for (const wayId in data) {
-		const way = data[wayId];
-		for (const nodeId in way.nodes) {
-			const node = way.nodes[nodeId];
+	Object.values(dataCache).forEach(way => {
+		Object.values(way.nodes).forEach(node => {
 			allLats.push(node.lat);
 			allLons.push(node.lon);
-		}
-	}
+		});
+	});
+	const maxLat = Math.max(...allLats);
+	const minLat = Math.min(...allLats);
+	const maxLon = Math.max(...allLons);
+	const minLon = Math.min(...allLons);
 
-	maxLat = Math.max(...allLats);
-	minLat = Math.min(...allLats);
-	maxLon = Math.max(...allLons);
-	minLon = Math.min(...allLons);
+	const diffLat = maxLat - minLat;
+	const diffLon = maxLon - minLon;
+	const minDiff = Math.min(canvas.height / diffLat, canvas.width / diffLon);
 
-	multiplier = Math.sqrt(
-		Math.min(
-			...[
-				canvas.height / (maxLat - minLat),
-				canvas.width / (maxLon - minLon),
-			]
-		)
-	);
-}
+	const multiplier = Math.sqrt(minDiff);
 
-export function getTotalMultiplier() {
-	return (multiplier + zoom) ** 2;
-}
+	return { minLat, maxLat, minLon, maxLon, multiplier };
+}, [data]);
 
-export function getOffset(totalMultiplier: number) {
+export const totalMultiplier = new Computed(() => {
+	return (multiplier.get().multiplier + zoom.get()) ** 2;
+}, [multiplier, zoom]);
+
+export const offset = new Computed(() => {
+	const totalMultiplierCache = totalMultiplier.get();
+	const { minLon, maxLon, minLat, maxLat } = multiplier.get();
 	return new Coordinate(
-		canvas.width / 2 -
-			(minLon + (maxLon - minLon) / 2) * totalMultiplier +
-			mouseOffset.x +
-			zoomOffset.x,
-		canvas.height / 2 +
-			(minLat + (maxLat - minLat) / 2) * totalMultiplier +
-			mouseOffset.y +
-			zoomOffset.y
+		canvasDimensions.get().x / 2 -
+			(minLon + (maxLon - minLon) / 2) * totalMultiplierCache +
+			mouseOffset.get().x +
+			zoomOffset.get().x,
+		canvasDimensions.get().y / 2 +
+			(minLat + (maxLat - minLat) / 2) * totalMultiplierCache +
+			mouseOffset.get().y +
+			zoomOffset.get().y
 	);
-}
+}, [totalMultiplier, multiplier, canvasDimensions, mouseOffset, zoomOffset]);

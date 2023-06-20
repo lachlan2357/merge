@@ -60,7 +60,6 @@ export class Settings {
 	}
 
 	set<K extends SettingName>(key: K, value: SettingMap[K]) {
-		console.log("setting");
 		this.settings[key].value = value;
 		this.saveAll();
 	}

@@ -1,3 +1,6 @@
+// global values
+export const zoomIncrement = 40;
+
 export class Coordinate {
 	x: number;
 	y: number;
