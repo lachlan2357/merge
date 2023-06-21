@@ -7,14 +7,15 @@ import type {
 import {
 	coordToScreenSpace,
 	degreesToPixels,
+	laneLength,
 	metresToDegrees,
 } from "./supplement/conversions.js";
 import * as draw from "./supplement/drawing.js";
+import { roadColours } from "./supplement/drawing.js";
 import { Coordinate, zoomIncrement } from "./supplement/index.js";
 import { displayMessage } from "./supplement/messages.js";
 import { overpassQuery } from "./supplement/overpass.js";
 import { SettingName, Settings } from "./supplement/settings.js";
-import { Effect } from "./supplement/state.js";
 import {
 	zoom,
 	multiplier,
@@ -28,22 +29,13 @@ import {
 	mouseDownPos,
 	mouseMoved,
 	canvasDimensions,
+	currentRelationId,
+	drawnElements,
 } from "./supplement/view.js";
 
 export const settings = new Settings();
 
-const roadColours = {
-	asphalt: "#222233",
-	chipseal: "#555c66",
-	paved: "#bab6ac",
-	concrete: "#cfc0b9",
-	cobblestone: "#ffd6bc",
-	paving_stones: "#ab9da4",
-	unknown: "#000000",
-};
-
 // functions
-
 function zoomInOut(inOut: "in" | "out", source: "mouse" | "button") {
 	let totalMultiplierValue = totalMultiplier.get();
 	const totalMultiplierRaw = Math.sqrt(totalMultiplierValue);
@@ -187,7 +179,7 @@ async function display() {
 		return;
 	}
 
-	currentRelationId = relation.id;
+	currentRelationId.set(relation.id);
 	const wayIdsInRelation: number[] = [];
 	relation.members.forEach(member => {
 		wayIdsInRelation.push(member.ref);
@@ -206,8 +198,6 @@ async function display() {
 	centre();
 
 	globalAllWays = allWays;
-
-	window.location.hash = `#${currentRelationId}`;
 
 	setSearchState("normal");
 }
@@ -522,10 +512,10 @@ function process(
 	data.set(convertedData);
 }
 
-async function drawCanvas() {
+export async function drawCanvas() {
 	// clear canvas from previous drawings
 	context.clearRect(0, 0, canvas.width, canvas.height);
-	drawnElements = [];
+	drawnElements.set({});
 
 	// if no data, return
 	const dataCache = data.get();
@@ -823,10 +813,18 @@ async function drawCanvas() {
 				outlined ? "lightblue" : "#222233"
 			);
 
-			drawnElements[Object.keys(drawnElements).length] = {
-				wayId: wayId,
-				path: path,
-			};
+			drawnElements.setDynamic(old => {
+				const key = Object.keys(old).length;
+				return {
+					...old,
+					[key]: { wayId, path },
+				};
+			});
+
+			// drawnElements[Object.keys(drawnElements).length] = {
+			// 	wayId: wayId,
+			// 	path: path,
+			// };
 		}
 	}
 }
@@ -914,7 +912,9 @@ async function togglePopup(
 			const copyContainer = element("div", { id: "copy-container" });
 			const shareSpan = element("span", {
 				classList: ["share"],
-				textContent: `${window.location.origin}${window.location.pathname}#${currentRelationId}`,
+				textContent: `${window.location.origin}${
+					window.location.pathname
+				}#${currentRelationId.get()}`,
 			});
 			const copyButton = element("button", {
 				id: "copy-button",
@@ -948,7 +948,9 @@ async function togglePopup(
 			copyButton.addEventListener("click", () => {
 				navigator.clipboard
 					.writeText(
-						`${window.location.origin}${window.location.pathname}#${currentRelationId}`
+						`${window.location.origin}${
+							window.location.pathname
+						}#${currentRelationId.get()}`
 					)
 					.then(() => {
 						copyButton.children[0].classList.remove("fa-copy");
@@ -956,20 +958,8 @@ async function togglePopup(
 					});
 			});
 
-			const { minLat, maxLat, minLon, maxLon } = multiplier.get();
-
-			openiDButton.addEventListener("click", () => {
-				window.open(
-					`https://www.openstreetmap.org/relation/${currentRelationId}`,
-					"_blank",
-					"noreferrer noopener"
-				);
-			});
-			openJosmIcon.addEventListener("click", () => {
-				openJOSM(
-					`http://127.0.0.1:8111/load_and_zoom?left=${minLon}&right=${maxLon}&top=${maxLat}&bottom=${minLat}&select=relation${currentRelationId}`
-				);
-			});
+			openiDButton.addEventListener("click", () => openiD);
+			openJosmIcon.addEventListener("click", openJOSM);
 
 			break;
 		}
@@ -1092,10 +1082,13 @@ async function togglePopup(
 
 function hoverPath(click = true) {
 	if (!data.get()) return;
+
+	const drawnCache = drawnElements.get();
+
 	const canvasOffset = new Coordinate(canvas.offsetLeft, canvas.offsetTop);
 	let returner = false;
-	Object.keys(drawnElements).forEach(id => {
-		const element: { wayId: string; path: Path2D } = drawnElements[id];
+	Object.keys(drawnCache).forEach(id => {
+		const element: { wayId: string; path: Path2D } = drawnCache[id];
 		const way: OverpassWay = globalAllWays[element.wayId];
 		const path = element.path;
 		if (
@@ -1140,23 +1133,27 @@ function hoverPath(click = true) {
 	return returner;
 }
 
-function openJOSM(query: string) {
-	const req = new XMLHttpRequest();
-	req.open("GET", query);
-	req.send();
+function openiD() {
+	window.open(
+		`https://www.openstreetmap.org/relation/${currentRelationId.get()}`,
+		"_blank",
+		"noreferrer noopener"
+	);
 }
 
-// overpass data
-// export let data: ImportedData;
-export let currentRelationId: number;
+function openJOSM() {
+	const { minLat, maxLat, minLon, maxLon } = multiplier.get();
+	const url = `127.0.0.1:8111/load_and_zoom?left=${minLon}&right=${maxLon}&top=${maxLat}&bottom=${minLat}&select=relation${currentRelationId.get()}`;
+	fetch(url);
+}
 
 // interactivity
-let drawnElements: {
-	[key: number]: {
-		wayId: string;
-		path: Path2D;
-	};
-};
+// let drawnElements: {
+// 	[key: number]: {
+// 		wayId: string;
+// 		path: Path2D;
+// 	};
+// };
 let globalAllWays: Record<number, OverpassWay>;
 let selectedWay: number;
 
@@ -1197,7 +1194,7 @@ export const context = canvas.getContext("2d") as CanvasRenderingContext2D;
 	button => {
 		button.addEventListener("click", e => {
 			const buttonId = (e.target as HTMLButtonElement).id;
-			if (buttonId == "share" && !currentRelationId) {
+			if (buttonId == "share" && !currentRelationId.get()) {
 				displayMessage("emptyShare");
 			} else {
 				togglePopup(buttonId);
@@ -1307,8 +1304,6 @@ fullscreenButton.addEventListener("click", () => {
 	setHTMLSizes();
 });
 
-const { minLat, maxLat, minLon, maxLon } = multiplier.get();
-
 editIniD.addEventListener("click", () => {
 	window.open(
 		`https://www.openstreetmap.org/edit?way=${selectedWay}`,
@@ -1317,37 +1312,12 @@ editIniD.addEventListener("click", () => {
 	);
 });
 
-editInJOSM.addEventListener("click", () => {
-	openJOSM(
-		`http://127.0.0.1:8111/load_and_zoom?left=${minLon}&right=${maxLon}&top=${maxLat}&bottom=${minLat}&select=way${selectedWay}`
-	);
-});
+editInJOSM.addEventListener("click", openJOSM);
 
-// set default lane width & length
-const laneWidth = 3.5;
-const laneLength = metresToDegrees(laneWidth);
-
-// size canvas, show opening message and set settings values
 setHTMLSizes();
-settings.saveAll();
 
 // show first launch popup if first launch
 if (settings.get("firstLaunch")) {
 	settings.set("firstLaunch", false);
 	togglePopup("welcome");
 }
-
-new Effect(() => {
-	console.log("draw canvas");
-	drawCanvas();
-}, [
-	data,
-	canvasDimensions,
-	mousePos,
-	mouseDownPos,
-	mouseOffset,
-	zoomOffset,
-	mouseDown,
-	mouseMoved,
-	zoom,
-]);

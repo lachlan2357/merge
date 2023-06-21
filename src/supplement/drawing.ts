@@ -3,6 +3,16 @@ import { degreesToPixels, metresToDegrees } from "./conversions.js";
 import { Coordinate } from "./index.js";
 import { offset, totalMultiplier } from "./view.js";
 
+export const roadColours = {
+	asphalt: "#222233",
+	chipseal: "#555c66",
+	paved: "#bab6ac",
+	concrete: "#cfc0b9",
+	cobblestone: "#ffd6bc",
+	paving_stones: "#ab9da4",
+	unknown: "#000000",
+};
+
 export function line(
 	coordStart: Coordinate,
 	coordEnd: Coordinate,

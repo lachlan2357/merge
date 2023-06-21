@@ -1,24 +1,37 @@
 import { ImportedData } from "../index.js";
-import { canvas } from "../script.js";
+import { drawCanvas } from "../script.js";
 import { Coordinate } from "./index.js";
-import { Computed, State } from "./state.js";
+import { Computed, Atomic, Effect } from "./state.js";
 
 // atomics
-export const data = new State<ImportedData | undefined>(undefined);
-export const canvasDimensions = new State(new Coordinate());
-export const mousePos = new State(new Coordinate());
-export const mouseDownPos = new State(new Coordinate());
-export const mouseOffset = new State(new Coordinate());
-export const zoomOffset = new State(new Coordinate());
-export const mouseDown = new State(false);
-export const mouseMoved = new State(false);
-export const zoom = new State(0);
+export const data = new Atomic<ImportedData | undefined>(undefined);
+export const currentRelationId = new Atomic<number | undefined>(undefined);
+export const drawnElements = new Atomic<{
+	[key: number]: {
+		wayId: string;
+		path: Path2D;
+	};
+}>({});
+export const canvasDimensions = new Atomic(new Coordinate());
+export const mousePos = new Atomic(new Coordinate());
+export const mouseDownPos = new Atomic(new Coordinate());
+export const mouseOffset = new Atomic(new Coordinate());
+export const zoomOffset = new Atomic(new Coordinate());
+export const mouseDown = new Atomic(false);
+export const mouseMoved = new Atomic(false);
+export const zoom = new Atomic(0);
 
 // computed
 export const multiplier = new Computed(() => {
+	let maxLat = 0,
+		minLat = 0,
+		maxLon = 0,
+		minLon = 0,
+		multiplier = 0;
+
 	const dataCache = data.get();
-	if (!dataCache)
-		return { minLat: 0, maxLat: 0, minLon: 0, maxLon: 0, multiplier: 0 };
+	const canvasCache = canvasDimensions.get();
+	if (!dataCache) return { minLat, maxLat, minLon, maxLon, multiplier };
 
 	const allLats: number[] = [];
 	const allLons: number[] = [];
@@ -28,19 +41,20 @@ export const multiplier = new Computed(() => {
 			allLons.push(node.lon);
 		});
 	});
-	const maxLat = Math.max(...allLats);
-	const minLat = Math.min(...allLats);
-	const maxLon = Math.max(...allLons);
-	const minLon = Math.min(...allLons);
+
+	maxLat = Math.max(...allLats);
+	minLat = Math.min(...allLats);
+	maxLon = Math.max(...allLons);
+	minLon = Math.min(...allLons);
 
 	const diffLat = maxLat - minLat;
 	const diffLon = maxLon - minLon;
-	const minDiff = Math.min(canvas.height / diffLat, canvas.width / diffLon);
+	const minDiff = Math.min(canvasCache.x / diffLat, canvasCache.y / diffLon);
 
-	const multiplier = Math.sqrt(minDiff);
+	multiplier = Math.sqrt(minDiff);
 
 	return { minLat, maxLat, minLon, maxLon, multiplier };
-}, [data]);
+}, [data, canvasDimensions]);
 
 export const totalMultiplier = new Computed(() => {
 	return (multiplier.get().multiplier + zoom.get()) ** 2;
@@ -49,14 +63,34 @@ export const totalMultiplier = new Computed(() => {
 export const offset = new Computed(() => {
 	const totalMultiplierCache = totalMultiplier.get();
 	const { minLon, maxLon, minLat, maxLat } = multiplier.get();
+	const canvasCache = canvasDimensions.get();
+
 	return new Coordinate(
-		canvasDimensions.get().x / 2 -
+		canvasCache.x / 2 -
 			(minLon + (maxLon - minLon) / 2) * totalMultiplierCache +
 			mouseOffset.get().x +
 			zoomOffset.get().x,
-		canvasDimensions.get().y / 2 +
+		canvasCache.y / 2 +
 			(minLat + (maxLat - minLat) / 2) * totalMultiplierCache +
 			mouseOffset.get().y +
 			zoomOffset.get().y
 	);
 }, [totalMultiplier, multiplier, canvasDimensions, mouseOffset, zoomOffset]);
+
+// effects
+new Effect(drawCanvas, [
+	data,
+	canvasDimensions,
+	mousePos,
+	mouseDownPos,
+	mouseOffset,
+	zoomOffset,
+	mouseDown,
+	mouseMoved,
+	zoom,
+]);
+
+new Effect(
+	() => (window.location.hash = `#${currentRelationId.get()}`),
+	[currentRelationId]
+);

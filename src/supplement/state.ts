@@ -1,7 +1,7 @@
 export class Store<T> {
-	data: T;
-	dependents: Array<Computed<unknown>>;
-	effects: Array<Effect>;
+	protected data: T;
+	protected dependents: Array<Computed<unknown>>;
+	protected effects: Array<Effect>;
 
 	constructor(initial: T) {
 		this.data = initial;
@@ -17,17 +17,17 @@ export class Store<T> {
 		this.dependents.push(dependent);
 	}
 
-	notifyDependents() {
-		this.dependents.forEach(dependent => dependent.compute());
-		this.effects.forEach(effect => effect.compute());
-	}
-
 	addEffect(effect: Effect) {
 		this.effects.push(effect);
 	}
+
+	protected notifyDependents() {
+		this.dependents.forEach(dependent => dependent.compute());
+		this.effects.forEach(effect => effect.compute());
+	}
 }
 
-export class State<T> extends Store<T> {
+export class Atomic<T> extends Store<T> {
 	constructor(initial: T) {
 		super(initial);
 	}
@@ -43,7 +43,7 @@ export class State<T> extends Store<T> {
 }
 
 export class Computed<T> extends Store<T> {
-	computeFn: () => T;
+	protected computeFn: () => T;
 
 	constructor(computeFn: () => T, dependencies: Array<Store<unknown>>) {
 		super(computeFn());
@@ -58,7 +58,7 @@ export class Computed<T> extends Store<T> {
 }
 
 export class Effect {
-	fn: () => void;
+	protected fn: () => void;
 
 	constructor(fn: () => void, dependencies: Array<Store<unknown>>) {
 		this.fn = fn;
