@@ -535,8 +535,8 @@ input {
 	transform: translate(-50%, -50%);
 }
 
-// about popup
-#githubDiv {
+// link chip
+a.link-chip {
 	display: flex;
 	flex-direction: row;
 	gap: 10px;
@@ -544,6 +544,8 @@ input {
 	width: fit-content;
 	padding: 10px;
 	border-radius: 10px;
+	text-decoration: none;
+	color: var(--text);
 
 	&:hover {
 		background-color: var(--accent);

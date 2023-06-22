@@ -5,6 +5,11 @@ import type {
 	OverpassRelation,
 } from "./index.js";
 import {
+	FontAwesomeIcon,
+	ElementBuilder,
+	LinkChip,
+} from "./supplement/elements.js";
+import {
 	coordToScreenSpace,
 	degreesToPixels,
 	laneLength,
@@ -101,39 +106,31 @@ function setHTMLSizes() {
 	});
 }
 
-function setSearchState(state: "normal" | "searching") {
+function setSearching(searching = true) {
 	while (searchButton.lastChild) searchButton.lastChild.remove();
 
-	switch (state) {
-		case "normal":
-			searchButton.append(fontAwesomeIcon("solid", "magnifying-glass"));
-			searchButton.setAttribute("tooltip", "Search");
-			settingsButton.disabled = false;
-			break;
-		case "searching":
-			searchButton.setAttribute("tooltip", "Loading...");
-			searchButton.append(
-				fontAwesomeIcon("solid", "circle-notch", "spin")
-			);
-			settingsButton.disabled = true;
-			break;
-	}
+	const icon = new FontAwesomeIcon("solid");
+	if (searching) icon.setIcon("circle-notch").animate("spin");
+	else icon.setIcon("magnifying-glass");
+
+	searchButton.append(icon.build());
+	settingsButton.disabled = searching;
 }
 
 async function display() {
-	setSearchState("searching");
+	setSearching();
 
 	const roadName = inputField.value;
 
 	if (roadName.length == 0) {
 		displayMessage("noSearchTerm");
-		setSearchState("normal");
+		setSearching(false);
 		return;
 	}
 
 	if (roadName.includes('"')) {
 		displayMessage("malformedSearchTerm");
-		setSearchState("normal");
+		setSearching(false);
 		return;
 	}
 
@@ -167,7 +164,7 @@ async function display() {
 	});
 	if (Object.keys(relations).length > 1) {
 		displayMessage("multipleRelations");
-		setSearchState("normal");
+		setSearching(false);
 		return;
 	}
 
@@ -175,7 +172,7 @@ async function display() {
 
 	if (!relation) {
 		displayMessage("noResult");
-		setSearchState("normal");
+		setSearching(false);
 		return;
 	}
 
@@ -199,7 +196,7 @@ async function display() {
 
 	globalAllWays = allWays;
 
-	setSearchState("normal");
+	setSearching(false);
 }
 
 function process(
@@ -820,68 +817,8 @@ export async function drawCanvas() {
 					[key]: { wayId, path },
 				};
 			});
-
-			// drawnElements[Object.keys(drawnElements).length] = {
-			// 	wayId: wayId,
-			// 	path: path,
-			// };
 		}
 	}
-}
-
-type elementType =
-	| "h1"
-	| "h2"
-	| "h3"
-	| "h4"
-	| "h5"
-	| "h6"
-	| "p"
-	| "div"
-	| "span"
-	| "button"
-	| "input"
-	| "img";
-
-function element(
-	type: elementType,
-	options?: {
-		textContent?: string;
-		id?: string;
-		classList?: string[];
-		tooltip?: string;
-		type?: string;
-		src?: string;
-		attributes?: { [key: string]: string };
-	}
-) {
-	const element = document.createElement(type);
-
-	if (!options) return element;
-
-	if (options.textContent) element.textContent = options.textContent;
-	if (options.id) element.id = options.id;
-	if (options.classList) element.classList.add(...options.classList);
-	if (options.tooltip) element.setAttribute("data-tooltip", options.tooltip);
-	if (options.type) element.setAttribute("type", options.type);
-	if (options.src) element.setAttribute("src", options.src);
-	if (options.attributes)
-		Object.keys(options.attributes).forEach(key => {
-			element.setAttribute(key, options.attributes?.[key] ?? "");
-		});
-
-	return element;
-}
-
-function fontAwesomeIcon(
-	style: "solid" | string,
-	icon: string,
-	animation?: "spin" | string
-) {
-	const element = document.createElement("i");
-	element.classList.add(...[`fa-${style}`, `fa-${icon}`]);
-	if (animation) element.classList.add(`fa-${animation}`);
-	return element;
 }
 
 async function togglePopup(
@@ -905,68 +842,71 @@ async function togglePopup(
 	}
 
 	if (reason != "welcome")
-		popup.append(element("h2", { textContent: reason }));
+		popup.append(new ElementBuilder("h2").text(reason ?? "").build());
 
 	switch (reason) {
 		case "share": {
-			const copyContainer = element("div", { id: "copy-container" });
-			const shareSpan = element("span", {
-				classList: ["share"],
-				textContent: `${window.location.origin}${
-					window.location.pathname
-				}#${currentRelationId.get()}`,
-			});
-			const copyButton = element("button", {
-				id: "copy-button",
-				classList: ["copy"],
-			});
-			const copyIcon = fontAwesomeIcon("solid", "copy");
-			const openWithContainer = element("div", {
-				classList: ["open-with-container"],
-			});
-			const openiDButton = element("button", {
-				id: "osm",
-				classList: ["open-with"],
-				tooltip: "Open in iD",
-			});
-			const openiDIcon = fontAwesomeIcon("solid", "map");
-			const openJosmButton = element("button", {
-				id: "josm",
-				classList: ["open-with"],
-				tooltip: "Open in JOSM",
-			});
-			const openJosmIcon = fontAwesomeIcon("solid", "desktop");
+			const shareText = `${window.location.origin}${
+				window.location.pathname
+			}#${currentRelationId.get()}`;
 
-			openJosmButton.append(openJosmIcon);
-			openiDButton.append(openiDIcon);
-			openWithContainer.append(openiDButton, openJosmButton);
-			copyButton.append(copyIcon);
-			copyContainer.append(shareSpan, copyButton);
+			const copyIcon = new FontAwesomeIcon("solid", "copy").build();
+			const copyButton = new ElementBuilder("button")
+				.id("copy-button")
+				.class("copy")
+				.children(copyIcon)
+				.build();
 
-			popup.append(copyContainer, openWithContainer);
+			const share = new ElementBuilder("span")
+				.class("share")
+				.text(shareText)
+				.build();
+
+			const container = new ElementBuilder("div")
+				.id("copy-container")
+				.children(share, copyButton)
+				.build();
+
+			const iDIcon = new FontAwesomeIcon("solid", "map").build();
+			const iDButton = new ElementBuilder("button")
+				.id("osm")
+				.class("open-with")
+				.tooltip("Open in iD")
+				.event("click", openiD)
+				.children(iDIcon)
+				.build();
+
+			const josmIcon = new FontAwesomeIcon("solid", "desktop").build();
+			const josmButton = new ElementBuilder("button")
+				.id("josm")
+				.class("open-with")
+				.tooltip("Open in JOSM")
+				.event("click", openJOSM)
+				.children(josmIcon)
+				.build();
+
+			const openWithContainer = new ElementBuilder("div")
+				.class("open-with-container")
+				.children(iDButton, josmButton)
+				.build();
+
+			popup.append(container, openWithContainer);
 
 			copyButton.addEventListener("click", () => {
-				navigator.clipboard
-					.writeText(
-						`${window.location.origin}${
-							window.location.pathname
-						}#${currentRelationId.get()}`
-					)
-					.then(() => {
-						copyButton.children[0].classList.remove("fa-copy");
-						copyButton.children[0].classList.add("fa-check");
-					});
+				navigator.clipboard.writeText(shareText).then(() => {
+					copyIcon.classList.remove("fa-copy");
+					copyIcon.classList.add("fa-check");
+				});
 			});
 
-			openiDButton.addEventListener("click", () => openiD);
-			openJosmIcon.addEventListener("click", openJOSM);
+			iDButton.addEventListener("click", () => openiD);
+			josmIcon.addEventListener("click", openJOSM);
 
 			break;
 		}
 		case "settings": {
-			const settingsList = element("div", { id: "settings-list" });
-
-			popup.append(settingsList);
+			// const settingsList = element("div", { id: "settings-list" });
+			const list = new ElementBuilder("div").id("settings-list").build();
 
 			settings.keys().forEach(key => {
 				const setting = settings.getFull(key);
@@ -975,106 +915,107 @@ async function togglePopup(
 				const settingDescription = setting.description;
 				const isBoolean = typeof setting.value === "boolean";
 
-				const outerDiv = element("div", {
-					classList: ["setting-container"],
-				});
-				const innerDiv = element("div", {
-					classList: ["setting-text"],
-				});
-				const heading = element("h3", { textContent: setting.name });
-				const text = element("p", { textContent: settingDescription });
-				const inputBox = element("input", {
-					type: isBoolean ? "checkbox" : "text",
-					attributes: { "data-setting": key },
-				}) as HTMLInputElement;
+				const heading = new ElementBuilder("h3")
+					.text(setting.name)
+					.build();
+				const text = new ElementBuilder("p")
+					.text(settingDescription)
+					.build();
+
+				const inputBox = new ElementBuilder("input")
+					.inputType(isBoolean ? "checkbox" : "text")
+					.attribute("data-setting", key)
+					.event("change", e => {
+						const target = e.target as HTMLInputElement;
+						settings.set(
+							target.getAttribute("data-setting") as SettingName,
+							target.getAttribute("type") == "checkbox"
+								? target.checked
+								: target.value
+						);
+					});
 
 				if (typeof setting.value === "boolean")
-					inputBox.checked = setting.value;
-				else inputBox.value = setting.value;
+					inputBox.inputChecked(setting.value);
+				else inputBox.inputValue(setting.value);
 
-				innerDiv.append(heading, text);
-				outerDiv.append(innerDiv, inputBox);
-				settingsList.append(outerDiv);
+				const innerDiv = new ElementBuilder("div")
+					.class("setting-text")
+					.children(heading, text)
+					.build();
+				const outerDiv = new ElementBuilder("div")
+					.class("setting-container")
+					.children(innerDiv, inputBox.build())
+					.build();
 
-				inputBox.addEventListener("change", (e: Event) => {
-					const target: HTMLInputElement =
-						e.target as HTMLInputElement;
-					settings.set(
-						target.getAttribute("data-setting") as SettingName,
-						target.getAttribute("type") == "checkbox"
-							? target.checked
-							: target.value
-					);
-				});
+				list.append(outerDiv);
 			});
+
+			popup.append(list);
+
 			break;
 		}
 		case "help": {
-			const tempHelp = element("p", {
-				textContent: "Coming soon. Stay Tuned.",
-			});
-			popup.append(tempHelp);
+			const help = new ElementBuilder("p")
+				.text("Coming soon. Stay Tuned.")
+				.build();
+			popup.append(help);
 			break;
 		}
 		case "about": {
-			const description = element("p", {
-				textContent:
-					"Welcome to Merge! This project is still in it's early stages so bugs are missing features are to be expected. If you find any issues that aren't already known, please submit a report to the Github page.",
-			});
-			const githubDiv = element("div", { id: "githubDiv" });
-			const githubIcon = fontAwesomeIcon("brands", "github");
-			const githubLabel = element("p", { textContent: "Github" });
-			githubDiv.append(...[githubIcon, githubLabel]);
-			popup.append(...[description, githubDiv]);
-			githubDiv.addEventListener("click", () =>
-				window.open(
-					"https://www.github.com/lachlan2357/merge",
-					"_blank",
-					"noreferrer noopener"
+			const description = new ElementBuilder("p")
+				.text(
+					"Welcome to Merge! This project is still in it's early stages so bugs are missing features are to be expected. If you find any issues that aren't already known, please submit a report to the Github page."
 				)
-			);
+				.build();
+			const chip = new LinkChip()
+				.url("https://www.github.com/lachlan2357/merge")
+				.text("GitHub")
+				.icon(new FontAwesomeIcon("brands", "github"))
+				.build();
+
+			popup.append(description, chip);
 			break;
 		}
 		case "advanced": {
-			const tempAdvanced = element("p", {
-				textContent: "Coming soon. Stay Tuned.",
-			});
-			popup.append(tempAdvanced);
+			const advanced = new ElementBuilder("p")
+				.text("Coming soon. Stay Tuned.")
+				.build();
+			popup.append(advanced);
 			break;
 		}
 		case "welcome": {
-			const img = element("img", {
-				id: "welcome-img",
-				src: "/merge/icon.png",
-			});
-			const heading = element("h2", {
-				id: "welcome-heading",
-				textContent: "Merge",
-			});
-			const desc = element("p", {
-				textContent:
-					"Welcome to Merge! To get started, use the search box to lookup a relation by either RelationID or name. Note: once each request has successfully returned information, the data is cached and when requested again, it pulls from the cache. To re-request data, toggle the options in settings.",
-			});
+			const img = new ElementBuilder("img")
+				.id("welcome-img")
+				.src("/merge/icon.png")
+				.build();
 
-			popup.append(...[img, heading, desc]);
+			const heading = new ElementBuilder("h2")
+				.id("welcome-heading")
+				.text("Merge")
+				.build();
+
+			const description = new ElementBuilder("p")
+				.text(
+					"Welcome to Merge! To get started, use the search box to lookup a relation by either RelationID or name. Note: once each request has successfully returned information, the data is cached and when requested again, it pulls from the cache. To re-request data, toggle the options in settings."
+				)
+				.build();
+
+			popup.append(img, heading, description);
 			break;
 		}
 	}
 
 	// add close button
-	const popupCloseButton = document.createElement("button");
-	popupCloseButton.id = "popup-close";
-	popupCloseButton.classList.add("button");
-	const xMark = document.createElement("i");
-	xMark.classList.add(...["fa-solid", "fa-xmark"]);
-	popupCloseButton.appendChild(xMark);
-	popup.appendChild(popupCloseButton);
-	const popupClose = document.getElementById(
-		"popup-close"
-	) as HTMLButtonElement;
-	popupClose.addEventListener("click", () => {
-		togglePopup();
-	});
+	const closeIcon = new FontAwesomeIcon("solid", "xmark").build();
+	const closeButton = new ElementBuilder("button")
+		.id("popup-close")
+		.class("button")
+		.children(closeIcon)
+		.event("click", () => togglePopup())
+		.build();
+
+	popup.append(closeButton);
 
 	setHTMLSizes();
 	popup.showModal();
@@ -1106,24 +1047,27 @@ function hoverPath(click = true) {
 				wayInfoTags.removeChild(wayInfoTags.lastChild);
 			}
 
-			// heading row
-			const trh = document.createElement("tr");
-			const thNameHeading = document.createElement("th");
-			const thValueHeading = document.createElement("th");
-			thNameHeading.textContent = "Tag";
-			thValueHeading.textContent = "Value";
-			trh.append(...[thNameHeading, thValueHeading]);
-			wayInfoTags.append(trh);
+			// create heading row
+			const tagHeading = new ElementBuilder("th").text("Tag").build();
+			const valueHeading = new ElementBuilder("th").text("Value").build();
+
+			const row = new ElementBuilder("tr")
+				.children(tagHeading, valueHeading)
+				.build();
+
+			wayInfoTags.append(row);
 
 			// content rows
-			Object.keys(way.tags).forEach(tag => {
-				const tr = document.createElement("tr");
-				const tdName = document.createElement("td");
-				const tdValue = document.createElement("td");
-				tdName.textContent = tag;
-				tdValue.textContent = way.tags[tag];
-				tr.append(...[tdName, tdValue]);
-				wayInfoTags.append(tr);
+			Object.entries(way.tags).forEach(([value, tag]) => {
+				const tagCell = new ElementBuilder("td")
+					.text(tag.toString())
+					.build();
+				const valueCell = new ElementBuilder("td").text(value).build();
+				const tagRow = new ElementBuilder("tr")
+					.children(tagCell, valueCell)
+					.build();
+
+				wayInfoTags.append(tagRow);
 			});
 
 			wayInfo.removeAttribute("hidden");
@@ -1148,12 +1092,6 @@ function openJOSM() {
 }
 
 // interactivity
-// let drawnElements: {
-// 	[key: number]: {
-// 		wayId: string;
-// 		path: Path2D;
-// 	};
-// };
 let globalAllWays: Record<number, OverpassWay>;
 let selectedWay: number;
 
