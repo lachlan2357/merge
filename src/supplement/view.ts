@@ -1,4 +1,4 @@
-import { ImportedData } from "../index.js";
+import { ImportedData, OverpassWay } from "../index.js";
 import { drawCanvas } from "../script.js";
 import { Coordinate } from "./index.js";
 import { Computed, Atomic, Effect } from "./state.js";
@@ -12,7 +12,10 @@ export const drawnElements = new Atomic<{
 		path: Path2D;
 	};
 }>({});
+export const selectedWay = new Atomic(-1);
+export const allWays = new Atomic<Record<number, OverpassWay>>({});
 export const canvasDimensions = new Atomic(new Coordinate());
+export const canvasOffset = new Atomic(new Coordinate());
 export const mousePos = new Atomic(new Coordinate());
 export const mouseDownPos = new Atomic(new Coordinate());
 export const mouseOffset = new Atomic(new Coordinate());

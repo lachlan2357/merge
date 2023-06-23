@@ -5,11 +5,6 @@ import type {
 	OverpassRelation,
 } from "./index.js";
 import {
-	FontAwesomeIcon,
-	ElementBuilder,
-	LinkChip,
-} from "./supplement/elements.js";
-import {
 	coordToScreenSpace,
 	degreesToPixels,
 	laneLength,
@@ -21,7 +16,7 @@ import { roadColours } from "./supplement/drawing.js";
 import { Coordinate, zoomIncrement } from "./supplement/index.js";
 import { displayMessage } from "./supplement/messages.js";
 import { overpassQuery } from "./supplement/overpass.js";
-import { SettingName, Settings } from "./supplement/settings.js";
+import { Settings } from "./supplement/settings.js";
 import {
 	zoom,
 	multiplier,
@@ -30,27 +25,30 @@ import {
 	mousePos,
 	zoomOffset,
 	mouseOffset,
-	mouseDown,
-	mouseDownPos,
-	mouseMoved,
 	canvasDimensions,
 	currentRelationId,
 	drawnElements,
+	selectedWay,
+	canvasOffset,
+	allWays,
 } from "./supplement/view.js";
+import {
+	context,
+	displayPopup,
+	setSearching,
+	togglePopup,
+} from "./supplement/dom.js";
 
 export const settings = new Settings();
 
 // functions
-function zoomInOut(inOut: "in" | "out", source: "mouse" | "button") {
+export function zoomInOut(inOut: "in" | "out", source: "mouse" | "button") {
 	const totalMultiplierRaw = Math.sqrt(totalMultiplier.get());
 
 	const mousePosition =
 		source == "mouse"
-			? new Coordinate(
-					mousePos.get().x - canvas.offsetLeft,
-					mousePos.get().y - canvas.offsetTop
-			  )
-			: new Coordinate(canvas.width / 2, canvas.height / 2);
+			? mousePos.get().subtract(canvasOffset.get())
+			: canvasDimensions.get().divide(2);
 
 	const mouseCoord = screenSpaceToCoord(mousePosition);
 
@@ -64,50 +62,16 @@ function zoomInOut(inOut: "in" | "out", source: "mouse" | "button") {
 	zoomOffset.setDynamic(old => old.add(diff));
 }
 
-function centre() {
+export function centre() {
 	mouseOffset.set(new Coordinate());
 	zoomOffset.set(new Coordinate());
 	zoom.set(0);
 }
 
-function setHTMLSizes() {
-	canvas.setAttribute("width", `${canvas.clientWidth}px`);
-	canvas.setAttribute("height", `${canvas.clientHeight}px`);
-
-	canvasOverlay.style.width = `${canvas.width}px`;
-	canvasOverlay.style.top = `${canvas.offsetTop}px`;
-	canvasOverlay.style.left = `${canvas.offsetLeft}px`;
-
-	const newHeight = window.innerHeight - canvas.offsetTop - 20;
-	document.documentElement.style.setProperty(
-		"--canvas-height",
-		`${newHeight}px`
-	);
-	canvas.height = newHeight;
-
-	// setup button offsets for all tooltips
-	document.querySelectorAll("[tooltip]").forEach(element => {
-		const button = element as HTMLButtonElement;
-		const offsetWidth = `${button.children[0].scrollWidth / 2}px`;
-		button.style.setProperty("--width", offsetWidth);
-	});
-}
-
-function setSearching(searching = true) {
-	while (searchButton.lastChild) searchButton.lastChild.remove();
-
-	const icon = new FontAwesomeIcon("solid");
-	if (searching) icon.setIcon("circle-notch").animate("spin");
-	else icon.setIcon("magnifying-glass");
-
-	searchButton.append(icon.build());
-	settingsButton.disabled = searching;
-}
-
-async function display() {
+export async function display(name: string) {
 	setSearching();
 
-	const roadName = inputField.value;
+	const roadName = name;
 
 	if (roadName.length == 0) {
 		displayMessage("noSearchTerm");
@@ -132,8 +96,8 @@ async function display() {
 	const elements = query.elements;
 
 	const relations: Record<number, OverpassRelation> = {};
-	const allWays: Record<number, OverpassWay> = {};
-	const allNodes: Record<number, OverpassNode> = {};
+	const ways: Record<number, OverpassWay> = {};
+	const nodes: Record<number, OverpassNode> = {};
 
 	elements.forEach(element => {
 		switch (element.type) {
@@ -142,10 +106,10 @@ async function display() {
 				break;
 			case "way":
 				if (Object.keys(element.tags).includes("highway"))
-					allWays[element.id] = element;
+					ways[element.id] = element;
 				break;
 			case "node":
-				allNodes[element.id] = element;
+				nodes[element.id] = element;
 				break;
 		}
 	});
@@ -170,18 +134,18 @@ async function display() {
 	});
 
 	const externalWays: string[] = [];
-	Object.keys(allWays).forEach(wayId => {
+	Object.keys(ways).forEach(wayId => {
 		if (!wayIdsInRelation.includes(parseInt(wayId))) {
-			externalWays.push(allWays[wayId]);
-			delete allWays[wayId];
+			externalWays.push(ways[wayId]);
+			delete ways[wayId];
 		}
 	});
 
-	process(allWays, allNodes);
+	process(ways, nodes);
 
 	centre();
 
-	globalAllWays = allWays;
+	allWays.set(ways);
 
 	setSearching(false);
 }
@@ -498,7 +462,8 @@ function process(
 
 export async function drawCanvas() {
 	// clear canvas from previous drawings
-	context.clearRect(0, 0, canvas.width, canvas.height);
+	const dimensions = canvasDimensions.get();
+	context.clearRect(0, 0, dimensions.x, dimensions.y);
 	drawnElements.set({});
 
 	// if no data, return
@@ -606,11 +571,11 @@ export async function drawCanvas() {
 				).y;
 
 				if (xPos < 0) allOffScreen[0][i] = "above";
-				else if (xPos > canvas.width) allOffScreen[0][i] = "below";
+				else if (xPos > dimensions.x) allOffScreen[0][i] = "below";
 				else allOffScreen[0][i] = "in";
 
 				if (yPos < 0) allOffScreen[1][i] = "above";
-				else if (yPos > canvas.height) allOffScreen[1][i] = "below";
+				else if (yPos > dimensions.y) allOffScreen[1][i] = "below";
 				else allOffScreen[1][i] = "in";
 			}
 
@@ -761,7 +726,7 @@ export async function drawCanvas() {
 				);
 
 			// draw select outline if selected
-			const outlined = selectedWay == parseInt(wayId);
+			const outlined = selectedWay.get() == parseInt(wayId);
 			const path = draw.polygon(
 				[
 					thisBtmCornerPos,
@@ -784,262 +749,30 @@ export async function drawCanvas() {
 	}
 }
 
-async function togglePopup(
-	reason?: "share" | "settings" | "help" | "about" | "welcome" | string
-) {
-	if (popup.open) {
-		popup.setAttribute("closing", "");
-		popup.addEventListener(
-			"animationend",
-			() => {
-				popup.removeAttribute("closing");
-				popup.close();
-			},
-			{ once: true }
-		);
-		return;
-	}
-
-	while (popup.lastChild) popup.lastChild.remove();
-
-	if (reason != "welcome")
-		popup.append(new ElementBuilder("h2").text(reason ?? "").build());
-
-	switch (reason) {
-		case "share": {
-			const shareText = `${window.location.origin}${
-				window.location.pathname
-			}#${currentRelationId.get()}`;
-
-			const copyIcon = new FontAwesomeIcon("solid", "copy").build();
-			const copyButton = new ElementBuilder("button")
-				.id("copy-button")
-				.class("copy")
-				.children(copyIcon)
-				.build();
-
-			const share = new ElementBuilder("span")
-				.class("share")
-				.text(shareText)
-				.build();
-
-			const container = new ElementBuilder("div")
-				.id("copy-container")
-				.children(share, copyButton)
-				.build();
-
-			const iDIcon = new FontAwesomeIcon("solid", "map").build();
-			const iDButton = new ElementBuilder("button")
-				.id("osm")
-				.class("open-with")
-				.tooltip("Open in iD")
-				.event("click", openiD)
-				.children(iDIcon)
-				.build();
-
-			const josmIcon = new FontAwesomeIcon("solid", "desktop").build();
-			const josmButton = new ElementBuilder("button")
-				.id("josm")
-				.class("open-with")
-				.tooltip("Open in JOSM")
-				.event("click", openJOSM)
-				.children(josmIcon)
-				.build();
-
-			const openWithContainer = new ElementBuilder("div")
-				.class("open-with-container")
-				.children(iDButton, josmButton)
-				.build();
-
-			popup.append(container, openWithContainer);
-
-			copyButton.addEventListener("click", () => {
-				navigator.clipboard.writeText(shareText).then(() => {
-					copyIcon.classList.remove("fa-copy");
-					copyIcon.classList.add("fa-check");
-				});
-			});
-
-			iDButton.addEventListener("click", () => openiD);
-			josmIcon.addEventListener("click", openJOSM);
-
-			break;
-		}
-		case "settings": {
-			const list = new ElementBuilder("div").id("settings-list").build();
-
-			settings.keys().forEach(key => {
-				const setting = settings.getFull(key);
-				if (!setting.inSettings) return;
-
-				const settingDescription = setting.description;
-				const isBoolean = typeof setting.value === "boolean";
-
-				const heading = new ElementBuilder("h3")
-					.text(setting.name)
-					.build();
-				const text = new ElementBuilder("p")
-					.text(settingDescription)
-					.build();
-
-				const inputBox = new ElementBuilder("input")
-					.inputType(isBoolean ? "checkbox" : "text")
-					.attribute("data-setting", key)
-					.event("change", e => {
-						const target = e.target as HTMLInputElement;
-						settings.set(
-							target.getAttribute("data-setting") as SettingName,
-							target.getAttribute("type") == "checkbox"
-								? target.checked
-								: target.value
-						);
-					});
-
-				if (typeof setting.value === "boolean")
-					inputBox.inputChecked(setting.value);
-				else inputBox.inputValue(setting.value);
-
-				const innerDiv = new ElementBuilder("div")
-					.class("setting-text")
-					.children(heading, text)
-					.build();
-				const outerDiv = new ElementBuilder("div")
-					.class("setting-container")
-					.children(innerDiv, inputBox.build())
-					.build();
-
-				list.append(outerDiv);
-			});
-
-			popup.append(list);
-
-			break;
-		}
-		case "help": {
-			const help = new ElementBuilder("p")
-				.text("Coming soon. Stay Tuned.")
-				.build();
-			popup.append(help);
-			break;
-		}
-		case "about": {
-			const description = new ElementBuilder("p")
-				.text(
-					"Welcome to Merge! This project is still in it's early stages so bugs are missing features are to be expected. If you find any issues that aren't already known, please submit a report to the Github page."
-				)
-				.build();
-			const chip = new LinkChip()
-				.url("https://www.github.com/lachlan2357/merge")
-				.text("GitHub")
-				.icon(new FontAwesomeIcon("brands", "github"))
-				.build();
-
-			popup.append(description, chip);
-			break;
-		}
-		case "advanced": {
-			const advanced = new ElementBuilder("p")
-				.text("Coming soon. Stay Tuned.")
-				.build();
-			popup.append(advanced);
-			break;
-		}
-		case "welcome": {
-			const img = new ElementBuilder("img")
-				.id("welcome-img")
-				.src("/merge/icon.png")
-				.build();
-
-			const heading = new ElementBuilder("h2")
-				.id("welcome-heading")
-				.text("Merge")
-				.build();
-
-			const description = new ElementBuilder("p")
-				.text(
-					"Welcome to Merge! To get started, use the search box to lookup a relation by either RelationID or name. Note: once each request has successfully returned information, the data is cached and when requested again, it pulls from the cache. To re-request data, toggle the options in settings."
-				)
-				.build();
-
-			popup.append(img, heading, description);
-			break;
-		}
-	}
-
-	// add close button
-	const closeIcon = new FontAwesomeIcon("solid", "xmark").build();
-	const closeButton = new ElementBuilder("button")
-		.id("popup-close")
-		.class("button")
-		.children(closeIcon)
-		.event("click", () => togglePopup())
-		.build();
-
-	popup.append(closeButton);
-
-	setHTMLSizes();
-	popup.showModal();
-}
-
-function hoverPath(click = true) {
+export function hoverPath(click = true) {
 	if (!data.get()) return;
 
 	const drawnCache = drawnElements.get();
-
-	const canvasOffset = new Coordinate(canvas.offsetLeft, canvas.offsetTop);
-	let returner = false;
+	const canvasOffsetCache = canvasOffset.get();
 	Object.keys(drawnCache).forEach(id => {
 		const element: { wayId: string; path: Path2D } = drawnCache[id];
-		const way: OverpassWay = globalAllWays[element.wayId];
+		const way = allWays.get()[element.wayId];
 		const path = element.path;
 		if (
 			context.isPointInPath(
 				path,
-				mousePos.get().x - canvasOffset.x,
-				mousePos.get().y - canvasOffset.y
+				mousePos.get().x - canvasOffsetCache.x,
+				mousePos.get().y - canvasOffsetCache.y
 			)
 		) {
-			returner = true;
-			if (!click) return;
-			wayInfoId.innerHTML = `Way <a href="https://www.openstreetmap.org/way/${element.wayId}" target="_blank">${element.wayId}</a>`;
-
-			// purge all children before adding new ones
-			while (wayInfoTags.lastChild)
-				wayInfoTags.removeChild(wayInfoTags.lastChild);
-
-			// create heading row
-			const tagHeading = new ElementBuilder("th").text("Tag").build();
-			const valueHeading = new ElementBuilder("th").text("Value").build();
-
-			const row = new ElementBuilder("tr")
-				.children(tagHeading, valueHeading)
-				.build();
-
-			wayInfoTags.append(row);
-
-			// content rows
-			Object.entries(way.tags).forEach(([tag, value]) => {
-				const tagCell = new ElementBuilder("td")
-					.text(tag.toString())
-					.build();
-				const valueCell = new ElementBuilder("td")
-					.text(value.toString())
-					.build();
-				const tagRow = new ElementBuilder("tr")
-					.children(tagCell, valueCell)
-					.build();
-
-				wayInfoTags.append(tagRow);
-			});
-
-			wayInfo.removeAttribute("hidden");
-			selectedWay = way.id;
+			if (click) displayPopup(element, way);
+			return true;
 		}
 	});
-	return returner;
+	return false;
 }
 
-function openiD() {
+export function openID() {
 	window.open(
 		`https://www.openstreetmap.org/relation/${currentRelationId.get()}`,
 		"_blank",
@@ -1047,155 +780,19 @@ function openiD() {
 	);
 }
 
-function openJOSM() {
+export function editID() {
+	window.open(
+		`https://www.openstreetmap.org/edit?way=${selectedWay.get()}`,
+		"_blank",
+		"noreferrer noopener"
+	);
+}
+
+export function openJOSM() {
 	const { minLat, maxLat, minLon, maxLon } = multiplier.get();
 	const url = `127.0.0.1:8111/load_and_zoom?left=${minLon}&right=${maxLon}&top=${maxLat}&bottom=${minLat}&select=relation${currentRelationId.get()}`;
 	fetch(url);
 }
-
-// interactivity
-let globalAllWays: Record<number, OverpassWay>;
-let selectedWay: number;
-
-// reference html elements
-export const canvas = document.getElementById("canvas") as HTMLCanvasElement;
-const canvasOverlay = document.getElementById(
-	"canvas-overlay"
-) as HTMLDivElement;
-const inputField = document.getElementById("relation-name") as HTMLInputElement;
-const searchButton = document.getElementById("search") as HTMLButtonElement;
-const advancedButton = document.getElementById("advanced") as HTMLButtonElement;
-const settingsButton = document.getElementById("settings") as HTMLButtonElement;
-const zoomInButton = document.getElementById("zoom-in") as HTMLButtonElement;
-const zoomOutButton = document.getElementById("zoom-out") as HTMLButtonElement;
-const zoomResetButton = document.getElementById(
-	"zoom-reset"
-) as HTMLButtonElement;
-const fullscreenButton = document.getElementById(
-	"fullscreen"
-) as HTMLButtonElement;
-const shareButton = document.getElementById("share") as HTMLButtonElement;
-const helpButton = document.getElementById("help") as HTMLButtonElement;
-const aboutButton = document.getElementById("about") as HTMLButtonElement;
-const popup = document.getElementById("popup") as HTMLDialogElement;
-export const messages = document.getElementById("messages") as HTMLDivElement;
-const wayInfo = document.getElementById("way-info") as HTMLHeadingElement;
-const wayInfoId = document.getElementById("wayid") as HTMLHeadingElement;
-const wayInfoTags = document.getElementById("tags") as HTMLTableElement;
-const editIniD = document.getElementById("edit-id") as HTMLButtonElement;
-const editInJOSM = document.getElementById("edit-josm") as HTMLButtonElement;
-const searchForm = document.getElementById("search-form") as HTMLFormElement;
-
-// setup canvas
-export const context = canvas.getContext("2d") as CanvasRenderingContext2D;
-
-// popup button events
-[shareButton, settingsButton, advancedButton, helpButton, aboutButton].forEach(
-	button => {
-		button.addEventListener("click", e => {
-			const buttonId = (e.target as HTMLButtonElement).id;
-			if (buttonId == "share" && !currentRelationId.get()) {
-				displayMessage("emptyShare");
-			} else {
-				togglePopup(buttonId);
-			}
-		});
-	}
-);
-
-window.addEventListener("resize", () => {
-	setHTMLSizes();
-});
-
-searchForm.addEventListener("submit", e => {
-	e.preventDefault();
-	display();
-});
-
-// canvas mouse controls
-canvas.addEventListener("wheel", e => {
-	e.preventDefault();
-
-	if (!data.get()) return;
-
-	if (e.deltaY / Math.abs(e.deltaY) == 1) zoomInOut("out", "mouse");
-	else zoomInOut("in", "mouse");
-});
-
-canvas.addEventListener("mousedown", e => {
-	if (!data.get()) return;
-
-	mouseDown.set(true);
-	mouseDownPos.set(
-		new Coordinate(e.clientX, e.clientY).subtract(mouseOffset.get())
-	);
-	mouseMoved.set(false);
-});
-
-canvas.addEventListener("mouseup", e => {
-	e.preventDefault();
-
-	if (!data.get()) return;
-
-	if (!mouseMoved.get()) {
-		if (!hoverPath()) {
-			wayInfo.setAttribute("hidden", "");
-			selectedWay = -1;
-		}
-	}
-
-	mouseDown.set(false);
-	mouseMoved.set(false);
-});
-
-canvas.addEventListener("mousemove", e => {
-	e.preventDefault();
-
-	if (!data.get()) return;
-
-	mousePos.set(new Coordinate(e.clientX, e.clientY));
-	mouseMoved.set(true);
-
-	if (mouseDown.get()) {
-		mouseOffset.set(
-			// new Coordinate(
-			// 	e.clientX - mouseDownPos.get().x,
-			// 	e.clientY - mouseDownPos.get().y
-			// )
-			new Coordinate(e.clientX, e.clientY).subtract(mouseDownPos.get())
-		);
-	}
-
-	if (hoverPath(false)) canvas.style.cursor = "pointer";
-	else canvas.style.cursor = "move";
-});
-
-new ResizeObserver(() =>
-	canvasDimensions.set(new Coordinate(canvas.width, canvas.height))
-).observe(canvas);
-
-zoomInButton.addEventListener("click", () => zoomInOut("in", "button"));
-
-zoomOutButton.addEventListener("click", () => zoomInOut("out", "button"));
-
-zoomResetButton.addEventListener("click", () => centre());
-
-fullscreenButton.addEventListener("click", () => {
-	canvas.toggleAttribute("fullscreen");
-	setHTMLSizes();
-});
-
-editIniD.addEventListener("click", () => {
-	window.open(
-		`https://www.openstreetmap.org/edit?way=${selectedWay}`,
-		"_blank",
-		"noreferrer noopener"
-	);
-});
-
-editInJOSM.addEventListener("click", openJOSM);
-
-setHTMLSizes();
 
 // show first launch popup if first launch
 if (settings.get("firstLaunch")) {

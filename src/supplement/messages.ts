@@ -1,4 +1,4 @@
-import { messages } from "../script.js";
+import { getElement } from "./dom.js";
 
 export const AppMsgMap = {
 	emptyShare: "Map is empty. Nothing to share.",
@@ -15,6 +15,7 @@ export function getMsg(key: AppMsg) {
 	return AppMsgMap[key];
 }
 
+const messages = getElement<HTMLDivElement>("messages");
 export async function displayMessage(key: AppMsg) {
 	document.createElement("div", { is: "canvas-message" });
 
