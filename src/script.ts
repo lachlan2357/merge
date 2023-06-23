@@ -1018,11 +1018,13 @@ function hoverPath(click = true) {
 			wayInfoTags.append(row);
 
 			// content rows
-			Object.entries(way.tags).forEach(([value, tag]) => {
+			Object.entries(way.tags).forEach(([tag, value]) => {
 				const tagCell = new ElementBuilder("td")
 					.text(tag.toString())
 					.build();
-				const valueCell = new ElementBuilder("td").text(value).build();
+				const valueCell = new ElementBuilder("td")
+					.text(value.toString())
+					.build();
 				const tagRow = new ElementBuilder("tr")
 					.children(tagCell, valueCell)
 					.build();
