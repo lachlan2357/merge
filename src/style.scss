@@ -131,7 +131,7 @@ main {
 	background-color: var(--canvas);
 	border-radius: 5px;
 
-	&[fullscreen="true"] {
+	&[fullscreen] {
 		position: absolute;
 		top: 0;
 		left: 0;

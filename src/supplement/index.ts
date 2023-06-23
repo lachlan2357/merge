@@ -14,7 +14,29 @@ export class Coordinate {
 		this.y = y ?? this.y;
 	}
 
-	reset() {
+	resetCoordinates() {
 		[this.x, this.y] = [0, 0];
+	}
+
+	add(coord: Coordinate | number) {
+		if (typeof coord === "number")
+			return new Coordinate(this.x + coord, this.y + coord);
+		else return new Coordinate(this.x + coord.x, this.y + coord.y);
+	}
+
+	subtract(coord: Coordinate | number) {
+		if (typeof coord === "number")
+			return new Coordinate(this.x - coord, this.y - coord);
+		else return new Coordinate(this.x - coord.x, this.y - coord.y);
+	}
+	multiply(coord: Coordinate | number) {
+		if (typeof coord === "number")
+			return new Coordinate(this.x * coord, this.y * coord);
+		else return new Coordinate(this.x * coord.x, this.y * coord.y);
+	}
+	divide(coord: Coordinate | number) {
+		if (typeof coord === "number")
+			return new Coordinate(this.x / coord, this.y / coord);
+		else return new Coordinate(this.x / coord.x, this.y / coord.y);
 	}
 }

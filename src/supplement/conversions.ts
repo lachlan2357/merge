@@ -17,13 +17,19 @@ export function degreesToPixels(degrees: number) {
 }
 
 export function coordToScreenSpace(coord: Coordinate) {
-	// set zoom and offset
 	const totalMultiplierCache = totalMultiplier.get();
 	const offsetCache = offset.get();
-
-	// return screen space coordinate
 	return new Coordinate(
 		offsetCache.x + coord.x * totalMultiplierCache,
 		offsetCache.y - coord.y * totalMultiplierCache
+	);
+}
+
+export function screenSpaceToCoord(coord: Coordinate) {
+	const totalMultiplierCache = totalMultiplier.get();
+	const offsetCache = offset.get();
+	return new Coordinate(
+		(coord.x - offsetCache.x) / totalMultiplierCache,
+		-(coord.y - offsetCache.y) / totalMultiplierCache
 	);
 }

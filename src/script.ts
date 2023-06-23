@@ -14,6 +14,7 @@ import {
 	degreesToPixels,
 	laneLength,
 	metresToDegrees,
+	screenSpaceToCoord,
 } from "./supplement/conversions.js";
 import * as draw from "./supplement/drawing.js";
 import { roadColours } from "./supplement/drawing.js";
@@ -24,7 +25,6 @@ import { SettingName, Settings } from "./supplement/settings.js";
 import {
 	zoom,
 	multiplier,
-	offset,
 	totalMultiplier,
 	data,
 	mousePos,
@@ -42,9 +42,7 @@ export const settings = new Settings();
 
 // functions
 function zoomInOut(inOut: "in" | "out", source: "mouse" | "button") {
-	let totalMultiplierValue = totalMultiplier.get();
-	const totalMultiplierRaw = Math.sqrt(totalMultiplierValue);
-	let offsetValue = offset.get();
+	const totalMultiplierRaw = Math.sqrt(totalMultiplier.get());
 
 	const mousePosition =
 		source == "mouse"
@@ -54,27 +52,16 @@ function zoomInOut(inOut: "in" | "out", source: "mouse" | "button") {
 			  )
 			: new Coordinate(canvas.width / 2, canvas.height / 2);
 
-	const mouseCoord = new Coordinate(
-		(mousePosition.x - offsetValue.x) / totalMultiplierValue,
-		-(mousePosition.y - offsetValue.y) / totalMultiplierValue
-	);
+	const mouseCoord = screenSpaceToCoord(mousePosition);
 
 	if (inOut === "in") zoom.setDynamic(old => old + zoomIncrement);
 	else if (totalMultiplierRaw - zoomIncrement > 0)
 		zoom.setDynamic(old => old - zoomIncrement);
 
-	totalMultiplierValue = totalMultiplier.get();
-	offsetValue = offset.get();
-
 	const newCoord = coordToScreenSpace(mouseCoord);
-	const diff = new Coordinate(
-		mousePosition.x - newCoord.x,
-		mousePosition.y - newCoord.y
-	);
+	const diff = mousePosition.subtract(newCoord);
 
-	zoomOffset.setDynamic(
-		old => new Coordinate(old.x + diff.x, old.y + diff.y)
-	);
+	zoomOffset.setDynamic(old => old.add(diff));
 }
 
 function centre() {
@@ -553,24 +540,24 @@ export async function drawCanvas() {
 					? Math.atan(gradient) + Math.PI
 					: Math.atan(gradient);
 			const adjacentAngle = angle + Math.PI / 2;
+			const trigCoord = new Coordinate(
+				Math.cos(adjacentAngle),
+				Math.sin(adjacentAngle)
+			);
 
 			// define the four corners of the box around the way
-			const thisTopCornerPos = new Coordinate(
-				x1 + Math.cos(adjacentAngle) * laneLength * (lanes / 2),
-				y1 + Math.sin(adjacentAngle) * laneLength * (lanes / 2)
+			const coefficient = (laneLength * lanes) / 2;
+			const sinCoefficient = Math.sin(adjacentAngle) * coefficient;
+			const cosCoefficient = Math.cos(adjacentAngle) * coefficient;
+			const coordCoefficient = new Coordinate(
+				cosCoefficient,
+				sinCoefficient
 			);
-			const thisBtmCornerPos = new Coordinate(
-				x1 - Math.cos(adjacentAngle) * laneLength * (lanes / 2),
-				y1 - Math.sin(adjacentAngle) * laneLength * (lanes / 2)
-			);
-			const nextTopCornerPos = new Coordinate(
-				x2 + Math.cos(adjacentAngle) * laneLength * (lanes / 2),
-				y2 + Math.sin(adjacentAngle) * laneLength * (lanes / 2)
-			);
-			const nextBtmCornerPos = new Coordinate(
-				x2 - Math.cos(adjacentAngle) * laneLength * (lanes / 2),
-				y2 - Math.sin(adjacentAngle) * laneLength * (lanes / 2)
-			);
+
+			const thisTopCornerPos = thisPos.add(coordCoefficient);
+			const thisBtmCornerPos = thisPos.subtract(coordCoefficient);
+			const nextTopCornerPos = nextPos.add(coordCoefficient);
+			const nextBtmCornerPos = nextPos.subtract(coordCoefficient);
 
 			const allPos = [
 				[
@@ -663,37 +650,21 @@ export async function drawCanvas() {
 							? way.surface || "unknown"
 							: "unknown"
 					];
-				const thisStartCoord = new Coordinate(
-					thisTopCornerPos.x -
-						Math.cos(adjacentAngle) * laneLength * i,
-					thisTopCornerPos.y -
-						Math.sin(adjacentAngle) * laneLength * i
-				);
-				const thisEndCoord = new Coordinate(
-					nextTopCornerPos.x -
-						Math.cos(adjacentAngle) * laneLength * i,
-					nextTopCornerPos.y -
-						Math.sin(adjacentAngle) * laneLength * i
-				);
-				const nextStartCoord = new Coordinate(
-					thisTopCornerPos.x -
-						Math.cos(adjacentAngle) * laneLength * (i + 1),
-					thisTopCornerPos.y -
-						Math.sin(adjacentAngle) * laneLength * (i + 1)
-				);
-				const nextEndCoord = new Coordinate(
-					nextTopCornerPos.x -
-						Math.cos(adjacentAngle) * laneLength * (i + 1),
-					nextTopCornerPos.y -
-						Math.sin(adjacentAngle) * laneLength * (i + 1)
-				);
+
+				const thisCoefficient = trigCoord
+					.multiply(laneLength)
+					.multiply(i);
+				const nextCoefficient = trigCoord
+					.multiply(laneLength)
+					.multiply(i + 1);
+
+				const thisSrtCoord = thisTopCornerPos.subtract(thisCoefficient);
+				const thisEndCoord = nextTopCornerPos.subtract(thisCoefficient);
+				const nextSrtCoord = thisTopCornerPos.subtract(nextCoefficient);
+				const nextEndCoord = nextTopCornerPos.subtract(nextCoefficient);
+
 				draw.polygon(
-					[
-						thisStartCoord,
-						thisEndCoord,
-						nextEndCoord,
-						nextStartCoord,
-					],
+					[thisSrtCoord, thisEndCoord, nextEndCoord, nextSrtCoord],
 					degreesToPixels(metresToDegrees(0.15)),
 					"#dddddd",
 					roadColour
@@ -726,15 +697,15 @@ export async function drawCanvas() {
 					: [lanesString];
 
 				const allX = [
-					thisStartCoord.x,
+					thisSrtCoord.x,
 					thisEndCoord.x,
-					nextStartCoord.x,
+					nextSrtCoord.x,
 					nextEndCoord.x,
 				];
 				const allY = [
-					thisStartCoord.y,
+					thisSrtCoord.y,
 					thisEndCoord.y,
-					nextStartCoord.y,
+					nextSrtCoord.y,
 					nextEndCoord.y,
 				];
 
@@ -748,19 +719,16 @@ export async function drawCanvas() {
 				);
 
 				// along with finding the length and width, adjust them to be negative if it is a backwards lane
-				const centre = new Coordinate(
-					(maxCoord.x + minCoord.x) / 2,
-					(maxCoord.y + minCoord.y) / 2
-				);
+				const centre = maxCoord.add(minCoord).divide(2);
 				const length =
 					Math.sqrt(
-						(thisStartCoord.x - thisEndCoord.x) ** 2 +
-							(thisStartCoord.y - thisEndCoord.y) ** 2
+						(thisSrtCoord.x - thisEndCoord.x) ** 2 +
+							(thisSrtCoord.y - thisEndCoord.y) ** 2
 					) * (i < lanesForward ? directionality : -directionality);
 				const width =
 					Math.sqrt(
-						(thisStartCoord.x - nextStartCoord.x) ** 2 +
-							(thisStartCoord.y - nextStartCoord.y) ** 2
+						(thisSrtCoord.x - nextSrtCoord.x) ** 2 +
+							(thisSrtCoord.y - nextSrtCoord.y) ** 2
 					) * (i < lanesForward ? directionality : -directionality);
 
 				if (markings.includes("through")) {
@@ -777,18 +745,13 @@ export async function drawCanvas() {
 			}
 
 			// centre line
-			const centreStartCoord = new Coordinate(
-				thisTopCornerPos.x -
-					Math.cos(adjacentAngle) * laneLength * lanesForward,
-				thisTopCornerPos.y -
-					Math.sin(adjacentAngle) * laneLength * lanesForward
-			);
-			const centreEndCoord = new Coordinate(
-				nextTopCornerPos.x -
-					Math.cos(adjacentAngle) * laneLength * lanesForward,
-				nextTopCornerPos.y -
-					Math.sin(adjacentAngle) * laneLength * lanesForward
-			);
+			const trigCoefficient = trigCoord
+				.multiply(laneLength)
+				.multiply(lanesForward);
+
+			const centreStartCoord = thisTopCornerPos.subtract(trigCoefficient);
+			const centreEndCoord = nextTopCornerPos.subtract(trigCoefficient);
+
 			if (!way.oneway)
 				draw.line(
 					centreStartCoord,
@@ -837,9 +800,7 @@ async function togglePopup(
 		return;
 	}
 
-	while (popup.lastChild) {
-		popup.lastChild.remove();
-	}
+	while (popup.lastChild) popup.lastChild.remove();
 
 	if (reason != "welcome")
 		popup.append(new ElementBuilder("h2").text(reason ?? "").build());
@@ -905,7 +866,6 @@ async function togglePopup(
 			break;
 		}
 		case "settings": {
-			// const settingsList = element("div", { id: "settings-list" });
 			const list = new ElementBuilder("div").id("settings-list").build();
 
 			settings.keys().forEach(key => {
@@ -1042,10 +1002,10 @@ function hoverPath(click = true) {
 			returner = true;
 			if (!click) return;
 			wayInfoId.innerHTML = `Way <a href="https://www.openstreetmap.org/way/${element.wayId}" target="_blank">${element.wayId}</a>`;
+
 			// purge all children before adding new ones
-			while (wayInfoTags.lastChild) {
+			while (wayInfoTags.lastChild)
 				wayInfoTags.removeChild(wayInfoTags.lastChild);
-			}
 
 			// create heading row
 			const tagHeading = new ElementBuilder("th").text("Tag").build();
@@ -1156,11 +1116,8 @@ canvas.addEventListener("wheel", e => {
 
 	if (!data.get()) return;
 
-	if (e.deltaY / Math.abs(e.deltaY) == 1) {
-		zoomInOut("out", "mouse");
-	} else {
-		zoomInOut("in", "mouse");
-	}
+	if (e.deltaY / Math.abs(e.deltaY) == 1) zoomInOut("out", "mouse");
+	else zoomInOut("in", "mouse");
 });
 
 canvas.addEventListener("mousedown", e => {
@@ -1168,10 +1125,7 @@ canvas.addEventListener("mousedown", e => {
 
 	mouseDown.set(true);
 	mouseDownPos.set(
-		new Coordinate(
-			e.clientX - mouseOffset.get().x,
-			e.clientY - mouseOffset.get().y
-		)
+		new Coordinate(e.clientX, e.clientY).subtract(mouseOffset.get())
 	);
 	mouseMoved.set(false);
 });
@@ -1189,7 +1143,6 @@ canvas.addEventListener("mouseup", e => {
 	}
 
 	mouseDown.set(false);
-
 	mouseMoved.set(false);
 });
 
@@ -1203,42 +1156,30 @@ canvas.addEventListener("mousemove", e => {
 
 	if (mouseDown.get()) {
 		mouseOffset.set(
-			new Coordinate(
-				e.clientX - mouseDownPos.get().x,
-				e.clientY - mouseDownPos.get().y
-			)
+			// new Coordinate(
+			// 	e.clientX - mouseDownPos.get().x,
+			// 	e.clientY - mouseDownPos.get().y
+			// )
+			new Coordinate(e.clientX, e.clientY).subtract(mouseDownPos.get())
 		);
 	}
 
-	if (hoverPath(false)) {
-		canvas.style.cursor = "pointer";
-	} else {
-		canvas.style.cursor = "move";
-	}
+	if (hoverPath(false)) canvas.style.cursor = "pointer";
+	else canvas.style.cursor = "move";
 });
 
 new ResizeObserver(() =>
 	canvasDimensions.set(new Coordinate(canvas.width, canvas.height))
 ).observe(canvas);
 
-zoomInButton.addEventListener("click", () => {
-	zoomInOut("in", "button");
-});
+zoomInButton.addEventListener("click", () => zoomInOut("in", "button"));
 
-zoomOutButton.addEventListener("click", () => {
-	zoomInOut("out", "button");
-});
+zoomOutButton.addEventListener("click", () => zoomInOut("out", "button"));
 
-zoomResetButton.addEventListener("click", () => {
-	setHTMLSizes();
-	centre();
-});
+zoomResetButton.addEventListener("click", () => centre());
 
 fullscreenButton.addEventListener("click", () => {
-	canvas.setAttribute(
-		"fullscreen",
-		canvas.getAttribute("fullscreen") == "true" ? "false" : "true"
-	);
+	canvas.toggleAttribute("fullscreen");
 	setHTMLSizes();
 });
 
