@@ -8,12 +8,12 @@ export const data = new Atomic<ImportedData | undefined>(undefined);
 export const currentRelationId = new Atomic<number | undefined>(undefined);
 export const drawnElements = new Atomic<{
 	[key: number]: {
-		wayId: string;
+		wayId: number;
 		path: Path2D;
 	};
 }>({});
 export const selectedWay = new Atomic(-1);
-export const allWays = new Atomic<Record<number, OverpassWay>>({});
+export const allWays = new Atomic<Map<number, OverpassWay>>(new Map());
 export const canvasDimensions = new Atomic(new Coordinate());
 export const canvasOffset = new Atomic(new Coordinate());
 export const mousePos = new Atomic(new Coordinate());
@@ -38,8 +38,8 @@ export const multiplier = new Computed(() => {
 
 	const allLats: number[] = [];
 	const allLons: number[] = [];
-	Object.values(dataCache).forEach(way => {
-		Object.values(way.nodes).forEach(node => {
+	dataCache.forEach(way => {
+		way.nodes.forEach(node => {
 			allLats.push(node.lat);
 			allLons.push(node.lon);
 		});

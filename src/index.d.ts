@@ -22,16 +22,17 @@ export interface OverpassWay {
 	id: number;
 	nodes: number[];
 	tags: {
-		"highway": string;
-		"lanes": number;
-		"maxspeed": number;
-		"oneway": string;
-		"junction": string;
-		"lanes:forward": number;
-		"lanes:backward": number;
-		"turn:lanes": string;
-		"turn:lanes:forward": string;
-		"turn:lanes:backward": string;
+		"highway"?: string;
+		"lanes"?: string;
+		"maxspeed"?: string;
+		"oneway"?: string;
+		"junction"?: string;
+		"lanes:forward"?: string;
+		"lanes:backward"?: string;
+		"turn:lanes"?: string;
+		"turn:lanes:forward"?: string;
+		"turn:lanes:backward"?: string;
+		"surface"?: string;
 	};
 	timestamp: string;
 	type: "way";
@@ -54,26 +55,33 @@ export interface OverpassNode {
 
 export type OverpassElement = OverpassRelation | OverpassWay | OverpassNode;
 
-export interface ImportedData {
-	[key: string]: {
-		"nodes": {
-			[key: string]: {
-				id: number;
-				lat: number;
-				lon: number;
-			};
-		};
-		"orderedNodes": number[];
-		"oneway": boolean;
-		"lanes": number | null;
-		"lanes:forward": number | null;
-		"lanes:backward": number | null;
-		"turn:lanes:forward": string;
-		"turn:lanes:backward": string;
-		"surface": string | null;
-		"warnings": number[];
+export interface WayData {
+	nodes: Map<number, OverpassNode>;
+	// "nodes": {
+	// 	[key: string]: {
+	// 		id: number;
+	// 		lat: number;
+	// 		lon: number;
+	// 	};
+	// };
+	originalWay: OverpassWay;
+	orderedNodes: number[];
+	tags: {
+		junction?: string;
+		oneway?: boolean;
+		lanes?: number;
+		lanesForward?: number;
+		lanesBackward?: number;
+		turnLanes?: Array<Array<string>>;
+		turnLanesForward?: Array<Array<string>>;
+		turnLanesBackward?: Array<Array<string>>;
+		surface?: string;
 	};
+	warnings: number[];
+	inferences: Set<keyof WayData["tags"]>;
 }
+
+export type ImportedData = Map<number, WayData>;
 
 export interface Setting<T> {
 	name: string;

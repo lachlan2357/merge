@@ -40,3 +40,7 @@ export class Coordinate {
 		else return new Coordinate(this.x / coord.x, this.y / coord.y);
 	}
 }
+
+export function nullish(value: unknown): value is null | undefined {
+	return value === null || value === undefined;
+}

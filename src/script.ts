@@ -3,6 +3,7 @@ import type {
 	OverpassNode,
 	ImportedData,
 	OverpassRelation,
+	WayData,
 } from "./index.js";
 import {
 	coordToScreenSpace,
@@ -13,9 +14,15 @@ import {
 } from "./supplement/conversions.js";
 import * as draw from "./supplement/drawing.js";
 import { roadColours } from "./supplement/drawing.js";
-import { Coordinate, zoomIncrement } from "./supplement/index.js";
-import { displayMessage } from "./supplement/messages.js";
-import { overpassQuery } from "./supplement/overpass.js";
+import { Coordinate, nullish, zoomIncrement } from "./supplement/index.js";
+import { AppMsg, displayMessage } from "./supplement/messages.js";
+import {
+	array,
+	bool,
+	dArray,
+	number,
+	overpassQuery,
+} from "./supplement/overpass.js";
 import { Settings } from "./supplement/settings.js";
 import {
 	zoom,
@@ -68,76 +75,58 @@ export function centre() {
 	zoom.set(0);
 }
 
-export async function display(name: string) {
+export async function search(name: string) {
+	const propagateError = (e: AppMsg) => {
+		displayMessage(e);
+		setSearching(false);
+	};
+
 	setSearching();
-
 	const roadName = name;
+	const roadNumber = Number(name);
 
-	if (roadName.length == 0) {
-		displayMessage("noSearchTerm");
-		setSearching(false);
-		return;
-	}
+	if (roadName.length === 0) return propagateError("noSearchTerm");
 
-	if (roadName.includes('"')) {
-		displayMessage("malformedSearchTerm");
-		setSearching(false);
-		return;
-	}
+	if (roadName.includes('"')) return propagateError("malformedSearchTerm");
 
-	const searchMode = isNaN(parseInt(roadName))
+	const searchMode = isNaN(roadNumber)
 		? `<has-kv k="name" v="${roadName}"/>`
 		: `<id-query type="relation" ref="${roadName}"/>`;
 
-	const query = await overpassQuery(
-		`<osm-script output="json"><union><query type="relation">${searchMode}</query><recurse type="relation-way"/><recurse type="way-node"/><recurse type="node-way"/></union><print/></osm-script>`
-	);
+	const query = await overpassQuery(searchMode);
 
-	const elements = query.elements;
+	const relations = new Array<OverpassRelation>();
+	const ways = new Map<number, OverpassWay>();
+	const nodes = new Map<number, OverpassNode>();
 
-	const relations: Record<number, OverpassRelation> = {};
-	const ways: Record<number, OverpassWay> = {};
-	const nodes: Record<number, OverpassNode> = {};
-
-	elements.forEach(element => {
+	query.elements.forEach(element => {
 		switch (element.type) {
 			case "relation":
-				relations[element.id] = element;
+				relations.push(element);
 				break;
 			case "way":
-				if (Object.keys(element.tags).includes("highway"))
-					ways[element.id] = element;
+				if (element.tags.highway) ways.set(element.id, element);
 				break;
 			case "node":
-				nodes[element.id] = element;
+				nodes.set(element.id, element);
 				break;
 		}
 	});
-	if (Object.keys(relations).length > 1) {
-		displayMessage("multipleRelations");
-		setSearching(false);
-		return;
-	}
 
-	const relation = Object.values(relations)[0];
+	if (relations.length > 1) return propagateError("multipleRelations");
+	const relation = relations[0];
 
-	if (!relation) {
-		displayMessage("noResult");
-		setSearching(false);
-		return;
-	}
-
+	if (!relation) return propagateError("noResult");
 	currentRelationId.set(relation.id);
-	const wayIdsInRelation: number[] = [];
-	relation.members.forEach(member => {
-		wayIdsInRelation.push(member.ref);
-	});
 
-	const externalWays: string[] = [];
-	Object.keys(ways).forEach(wayId => {
-		if (!wayIdsInRelation.includes(parseInt(wayId))) {
-			externalWays.push(ways[wayId]);
-			delete ways[wayId];
+	const wayIdsInRelation = new Array<number>();
+	relation.members.forEach(member => wayIdsInRelation.push(member.ref));
+
+	const externalWays = new Array<OverpassWay>();
+	ways.forEach((way, id) => {
+		if (!wayIdsInRelation.includes(id)) {
+			externalWays.push(way);
+			ways.delete(id);
 		}
 	});
 
@@ -151,313 +140,114 @@ export async function display(name: string) {
 }
 
 function process(
-	allWays: Record<number, OverpassWay>,
-	allNodes: Record<number, OverpassNode>
+	allWays: Map<number, OverpassWay>,
+	allNodes: Map<number, OverpassNode>
 ) {
-	const waysInfo: {
-		[key: number]: {
-			"nodes": {
-				id: number;
-				lat: number;
-				lon: number;
-			};
-			"orderedNodes": number[];
-			"oneway": boolean;
-			"lanes": number | null;
-			"lanes:forward": number | null;
-			"lanes:backward": number | null;
-			"turn:lanes": string | null;
-			"turn:lanes:forward": string | null;
-			"turn:lanes:backward": string | null;
-			"warnings": string[];
-		};
-	} = {};
-
-	// loop through each way and store information about it
-	Object.keys(allWays).forEach(wayId => {
-		const way: OverpassWay = allWays[wayId];
-		waysInfo[wayId] = {
-			"nodes": {},
-			"orderedNodes": [],
-			"oneway": false,
-			"junction": null,
-			"lanes": 0,
-			"lanes:forward": 0,
-			"lanes:backward": 0,
-			"turn:lanes": null,
-			"turn:lanes:forward": null,
-			"turn:lanes:backward": null,
-			"surface": null,
-			"warnings": [],
+	const waysInfo: ImportedData = new Map();
+	allWays.forEach((way, id) => {
+		const tags = way.tags;
+		const wayData: WayData = {
+			nodes: new Map(),
+			originalWay: way,
+			orderedNodes: way.nodes,
+			tags: {
+				oneway: bool(tags.oneway),
+				junction: tags.junction,
+				lanes: number(tags.lanes),
+				lanesForward: number(tags["lanes:forward"]),
+				lanesBackward: number(tags["lanes:backward"]),
+				turnLanes: dArray(array(tags["turn:lanes"], "none"), "none"),
+				turnLanesForward: dArray(array(tags["turn:lanes:forward"])),
+				turnLanesBackward: dArray(array(tags["turn:lanes:backward"])),
+				surface: tags.surface,
+			},
+			warnings: [],
+			inferences: new Set(),
 		};
 
-		allWays[wayId].nodes.forEach(nodeId => {
-			waysInfo[wayId].nodes[nodeId] = {
-				id: nodeId,
-				lat: allNodes[nodeId].lat,
-				lon: allNodes[nodeId].lon,
-			};
-
-			waysInfo[wayId].orderedNodes.push(nodeId);
+		way.nodes.forEach(id => {
+			const node = allNodes.get(id);
+			if (!node) return;
+			wayData.nodes.set(id, node);
 		});
 
-		// set junction
-		waysInfo[wayId].junction = Object.keys(way.tags).includes("junction")
-			? way.tags.junction
-			: null;
-
-		// set oneway
-		waysInfo[wayId].oneway =
-			(Object.keys(way.tags).includes("oneway") &&
-				way.tags.oneway == "yes") ||
-			(Object.keys(way.tags).includes("junction") &&
-				way.tags.junction == "roundabout")
-				? true
-				: false;
-
-		// set lanes to specified value
-		waysInfo[wayId].lanes = Object.keys(way.tags).includes("lanes")
-			? way.tags.lanes
-			: null;
-
-		// set lanes:forward to specified value
-		waysInfo[wayId]["lanes:forward"] = Object.keys(way.tags).includes(
-			"lanes:forward"
-		)
-			? way.tags["lanes:forward"]
-			: null;
-
-		// set lanes:backward to specified value
-		waysInfo[wayId]["lanes:backward"] = Object.keys(way.tags).includes(
-			"lanes:backward"
-		)
-			? way.tags["lanes:backward"]
-			: null;
-
-		// set turn:lanes:forward to specified value, or default if not
-		waysInfo[wayId]["turn:lanes:forward"] = Object.keys(way.tags).includes(
-			"turn:lanes:forward"
-		)
-			? way.tags["turn:lanes:forward"]
-			: null;
-
-		// set turn:lanes:backward to specified value, or default if not
-		waysInfo[wayId]["turn:lanes:backward"] = Object.keys(way.tags).includes(
-			"turn:lanes:backward"
-		)
-			? way.tags["turn:lanes:backward"]
-			: null;
-
-		// set surface to specified value, or unknown if not
-		waysInfo[wayId]["surface"] = Object.keys(way.tags).includes("surface")
-			? way.tags["surface"]
-			: "unknown";
-
-		// loop through the following data that could be inferred until no more changes can be made
+		// infer data
 		let noChanges = false;
 		while (!noChanges) {
 			noChanges = true;
+			const tags = wayData.tags;
 
-			// fill in lanes if isn't specified, but can be inferred from other values
-			if (
-				waysInfo[wayId].lanes == null &&
-				waysInfo[wayId]["lanes:forward"] != null &&
-				waysInfo[wayId]["lanes:backward"] != null
-			) {
-				waysInfo[wayId].lanes =
-					(parseInt(waysInfo[wayId]["lanes:forward"]) || 0) +
-					(parseInt(waysInfo[wayId]["lanes:backward"]) || 0);
-				noChanges = false;
+			// lanes
+			if (nullish(tags.lanes) && !nullish(tags.lanesForward)) {
+				if (tags.oneway) {
+					tags.lanes = tags.lanesForward;
+					noChanges = false;
+				} else if (!nullish(tags.lanesBackward)) {
+					tags.lanes = tags.lanesForward + tags.lanesBackward;
+					noChanges = false;
+				}
 			}
 
-			// fill in lanes:forward if isn't specified, but can be inferred from other values
-			if (
-				waysInfo[wayId]["lanes:forward"] == null &&
-				waysInfo[wayId].lanes != null &&
-				waysInfo[wayId]["lanes:backward"] != null
-			) {
-				waysInfo[wayId]["lanes:forward"] =
-					(waysInfo[wayId].lanes || 0) -
-					(waysInfo[wayId]["lanes:backward"] || 0);
-				noChanges = false;
-			} else if (
-				waysInfo[wayId]["lanes:forward"] == null &&
-				waysInfo[wayId].lanes != null &&
-				waysInfo[wayId].oneway
-			) {
-				waysInfo[wayId]["lanes:forward"] = waysInfo[wayId].lanes;
-				noChanges = false;
-			} else if (
-				waysInfo[wayId]["lanes:forward"] == null &&
-				!waysInfo[wayId].oneway &&
-				waysInfo[wayId].lanes != null &&
-				(waysInfo[wayId].lanes || 0) % 2 == 0
-			) {
-				waysInfo[wayId]["lanes:forward"] =
-					(waysInfo[wayId].lanes || 0) / 2;
+			// lanes:forward
+			if (nullish(tags.lanesForward) && !nullish(tags.lanes)) {
+				if (tags.oneway) {
+					tags.lanesForward = tags.lanes;
+					noChanges = false;
+				} else if (!nullish(tags.lanesBackward)) {
+					tags.lanesForward = tags.lanes - tags.lanesBackward;
+					noChanges = false;
+				} else if (!tags.oneway && tags.lanes % 2 === 0) {
+					tags.lanesForward = tags.lanes / 2;
+					noChanges = false;
+				}
 			}
 
-			// fill in lanes:backward if isn't specified, but can be inferred from other values
-			if (
-				waysInfo[wayId]["lanes:backward"] == null &&
-				waysInfo[wayId].lanes != null &&
-				waysInfo[wayId]["lanes:forward"] != null
-			) {
-				waysInfo[wayId]["lanes:backward"] =
-					(waysInfo[wayId].lanes || 0) -
-					(waysInfo[wayId]["lanes:forward"] || 0);
-				noChanges = false;
-			} else if (
-				waysInfo[wayId]["lanes:backward"] == null &&
-				waysInfo[wayId].lanes != null &&
-				waysInfo[wayId].oneway
-			) {
-				waysInfo[wayId]["lanes:backward"] = 0;
-				noChanges = false;
-			} else if (
-				waysInfo[wayId]["lanes:backward"] == null &&
-				!waysInfo[wayId].oneway &&
-				waysInfo[wayId].lanes != null &&
-				(waysInfo[wayId].lanes || 0) % 2 == 0
-			) {
-				waysInfo[wayId]["lanes:backward"] =
-					(waysInfo[wayId].lanes || 0) / 2;
-				noChanges = false;
+			// lanes:backward
+			if (nullish(tags.lanesBackward)) {
+				if (tags.oneway) {
+					tags.lanesBackward = 0;
+					noChanges = false;
+				} else if (
+					!nullish(tags.lanes) &&
+					!nullish(tags.lanesForward)
+				) {
+					tags.lanesBackward = tags.lanes - tags.lanesForward;
+					noChanges = false;
+				} else if (!nullish(tags.lanes) && !(tags.lanes % 2)) {
+					tags.lanesBackward = tags.lanes / 2;
+					noChanges = false;
+				}
 			}
 
-			// fill in turn:lanes:forward if isn't specified, but can be inferred from other values
-			if (
-				waysInfo[wayId]["turn:lanes:forward"] == null &&
-				waysInfo[wayId].oneway &&
-				Object.keys(way.tags).includes("turn:lanes") &&
-				way.tags["turn:lanes"] != null
-			) {
-				waysInfo[wayId]["turn:lanes:forward"] = way.tags["turn:lanes"];
-				noChanges = false;
-			} else if (
-				waysInfo[wayId]["turn:lanes:forward"] == null &&
-				waysInfo[wayId]["lanes:forward"] != null
-			) {
-				waysInfo[wayId]["turn:lanes:forward"] =
-					"none|"
-						.repeat(waysInfo[wayId]["lanes:forward"] || 0)
-						.slice(0, -1) || null;
-				noChanges = false;
+			// turn:lanes:forward
+			if (nullish(tags.turnLanesForward)) {
+				if (tags.oneway && !nullish(tags.turnLanes)) {
+					tags.turnLanesForward = tags.turnLanes;
+					noChanges = false;
+				} else if (!nullish(tags.lanesForward)) {
+					tags.turnLanesForward = dArray(
+						array("|".repeat(tags.lanesForward))
+					);
+					noChanges = false;
+				}
 			}
 
-			// fill in turn:lanes:backward if isn't specified, but can be inferred from other values
+			// turn:lanes:backward
 			if (
-				waysInfo[wayId]["turn:lanes:backward"] == null &&
-				waysInfo[wayId]["lanes:backward"] != null
+				nullish(tags.turnLanesBackward) &&
+				!nullish(tags.lanesBackward)
 			) {
-				waysInfo[wayId]["turn:lanes:backward"] =
-					"none|"
-						.repeat(waysInfo[wayId]["lanes:backward"] || 0)
-						.slice(0, -1) || null;
+				tags.turnLanesBackward = dArray(
+					array("|".repeat(tags.lanesBackward))
+				);
+				noChanges = false;
 			}
 		}
 
-		// replace all the "|" with "none|" in turn lanes
-		if (waysInfo[wayId]["turn:lanes:forward"] != null) {
-			const turnLanesForward: string[] = (
-				waysInfo[wayId]["turn:lanes:forward"] || "none"
-			).split("|");
-			let turnLanesForwardString = "";
-
-			for (let i = 0; i < turnLanesForward.length; i++) {
-				const marking = turnLanesForward[i] || "none";
-				turnLanesForwardString += `${marking}|`;
-			}
-
-			turnLanesForwardString = turnLanesForwardString.substring(
-				0,
-				turnLanesForwardString.length - 1
-			);
-
-			waysInfo[wayId]["turn:lanes:forward"] = turnLanesForwardString;
-		}
-
-		if (waysInfo[wayId]["turn:lanes:backward"] != null) {
-			const turnLanesBackward: string[] = (
-				waysInfo[wayId]["turn:lanes:backward"] || "none"
-			).split("|");
-			let turnLanesBackwardString = "";
-
-			for (let i = 0; i < turnLanesBackward.length; i++) {
-				const marking = turnLanesBackward[i] || "none";
-				turnLanesBackwardString += `${marking}|`;
-			}
-
-			turnLanesBackwardString = turnLanesBackwardString.substring(
-				0,
-				turnLanesBackwardString.length - 1
-			);
-
-			waysInfo[wayId]["turn:lanes:backward"] = turnLanesBackwardString;
-		}
-
-		// add a "none" to the end of strings with a | at the end
-		if (
-			waysInfo[wayId]["turn:lanes:backward"] != null &&
-			waysInfo[wayId]["turn:lanes:backward"].slice(-1) == "|"
-		) {
-			waysInfo[wayId]["turn:lanes:backward"] += "none";
-		}
-
-		if (
-			waysInfo[wayId]["turn:lanes:forward"] != null &&
-			waysInfo[wayId]["turn:lanes:forward"].slice(-1) == "|"
-		) {
-			waysInfo[wayId]["turn:lanes:forward"] += "none";
-		}
+		waysInfo.set(id, wayData);
 	});
 
-	const convertedData: ImportedData = {};
-
-	Object.keys(waysInfo).forEach(wayId => {
-		const way: {
-			"nodes": {
-				[key: number]: {
-					id: number;
-					lat: number;
-					lon: number;
-				};
-			};
-			"orderedNodes": number[];
-			"oneway": boolean;
-			"lanes": number | null;
-			"lanes:forward": number | null;
-			"lanes:backward": number | null;
-			"turn:lanes": string | null;
-			"turn:lanes:forward": string | null;
-			"turn:lanes:backward": string | null;
-			"warnings": number[];
-		} = waysInfo[wayId];
-
-		convertedData[wayId] = {
-			"nodes": {},
-			"orderedNodes": way.orderedNodes,
-			"oneway": way.oneway,
-			"lanes": way.lanes,
-			"lanes:forward": way["lanes:forward"],
-			"lanes:backward": way["lanes:backward"],
-			"turn:lanes:forward": way["turn:lanes:forward"] || "none",
-			"turn:lanes:backward": way["turn:lanes:backward"] || "none",
-			"surface": way["surface"] || "unknown",
-			"warnings": way.warnings,
-		};
-
-		Object.keys(way.nodes).forEach(nodeId => {
-			const node = allNodes[nodeId];
-			convertedData[wayId].nodes[node.id] = {
-				id: node.id,
-				lat: node.lat,
-				lon: node.lon,
-			};
-		});
-	});
-
-	data.set(convertedData);
+	data.set(waysInfo);
 }
 
 export async function drawCanvas() {
@@ -466,30 +256,21 @@ export async function drawCanvas() {
 	context.clearRect(0, 0, dimensions.x, dimensions.y);
 	drawnElements.set({});
 
-	// if no data, return
 	const dataCache = data.get();
 	if (!dataCache) return;
 	else document.getElementById("empty-message")?.remove();
 
-	// reset ignoreCache
 	settings.set("ignoreCache", false);
 
-	// for way in data
-	for (const wayId in dataCache) {
-		const way = dataCache[wayId];
-		const lanes = way.lanes || 2;
-		for (const key in way.orderedNodes) {
-			const nextKey = (parseInt(key) + 1).toString();
+	dataCache.forEach((way, wayId) => {
+		const lanes = way.tags.lanes || 2;
+		way.orderedNodes.forEach((thisNodeId, index) => {
+			const nextNodeId = way.orderedNodes[index + 1];
+			const thisNode = way.nodes.get(thisNodeId);
+			const nextNode = way.nodes.get(nextNodeId);
 
-			if (parseInt(nextKey) == way.orderedNodes.length) continue;
+			if (!thisNode || !nextNode) return;
 
-			const thisNodeId = way.orderedNodes[key];
-			const nextNodeId = way.orderedNodes[nextKey];
-
-			const thisNode = way.nodes[thisNodeId];
-			const nextNode = way.nodes[nextNodeId];
-
-			// points along the way
 			const x1 = thisNode.lon;
 			const y1 = thisNode.lat;
 			const x2 = nextNode.lon;
@@ -498,7 +279,9 @@ export async function drawCanvas() {
 			const thisPos = new Coordinate(x1, y1);
 			const nextPos = new Coordinate(x2, y2);
 
-			// angles are the atan of the gradient, however gradients doesn't tell direction. the condition checks if the configuration of points leads to a 'flipped' gradient
+			// angles are the atan of the gradient, however gradients
+			// don't tell direction. the condition checks if the
+			// configuration of points leads to a 'flipped' gradient
 			const gradient = (y2 - y1) / (x2 - x1);
 			const angle =
 				(y1 > y2 && x1 > x2) || (y1 < y2 && x1 > x2)
@@ -579,23 +362,24 @@ export async function drawCanvas() {
 				else allOffScreen[1][i] = "in";
 			}
 
-			// see if all x and y values are in the same 'place' and display box accordingly
 			const allXEqual = allOffScreen[0].every(
 				(val, i, arr) => val === arr[0]
 			);
 			const allYEqual = allOffScreen[1].every(
 				(val, i, arr) => val === arr[0]
 			);
+
+			// check if the entire way is offscreen
 			if (
 				(allXEqual && allOffScreen[0][0] != "in") ||
 				(allYEqual && allOffScreen[1][0] != "in")
 			)
-				continue;
+				return;
 
 			const lanesForward =
-				way["lanes:forward"] || (way.oneway ? lanes : lanes / 2);
+				way["lanes:forward"] || (way.tags.oneway ? lanes : lanes / 2);
 			const lanesBackward =
-				way["lanes:backward"] || (way.oneway ? 0 : lanes / 2);
+				way["lanes:backward"] || (way.tags.oneway ? 0 : lanes / 2);
 			const turnLanesForward = (
 				way["turn:lanes:forward"] || "none"
 			).split("|");
@@ -610,9 +394,9 @@ export async function drawCanvas() {
 				const roadColour =
 					roadColours[
 						Object.keys(roadColours).includes(
-							way.surface || "unknown"
+							way.tags.surface || "unknown"
 						)
-							? way.surface || "unknown"
+							? way.tags.surface || "unknown"
 							: "unknown"
 					];
 
@@ -683,7 +467,8 @@ export async function drawCanvas() {
 					Math.min(...allY)
 				);
 
-				// along with finding the length and width, adjust them to be negative if it is a backwards lane
+				// find the length and width, adjusting to be negative if it is
+				// a "backwards" lanes
 				const centre = maxCoord.add(minCoord).divide(2);
 				const length =
 					Math.sqrt(
@@ -709,7 +494,6 @@ export async function drawCanvas() {
 				}
 			}
 
-			// centre line
 			const trigCoefficient = trigCoord
 				.multiply(laneLength)
 				.multiply(lanesForward);
@@ -717,7 +501,7 @@ export async function drawCanvas() {
 			const centreStartCoord = thisTopCornerPos.subtract(trigCoefficient);
 			const centreEndCoord = nextTopCornerPos.subtract(trigCoefficient);
 
-			if (!way.oneway)
+			if (!way.tags.oneway)
 				draw.line(
 					centreStartCoord,
 					centreEndCoord,
@@ -726,7 +510,7 @@ export async function drawCanvas() {
 				);
 
 			// draw select outline if selected
-			const outlined = selectedWay.get() == parseInt(wayId);
+			const outlined = selectedWay.get() == wayId;
 			const path = draw.polygon(
 				[
 					thisBtmCornerPos,
@@ -745,8 +529,8 @@ export async function drawCanvas() {
 					[key]: { wayId, path },
 				};
 			});
-		}
-	}
+		});
+	});
 }
 
 export function hoverPath(click = true) {
@@ -754,10 +538,13 @@ export function hoverPath(click = true) {
 
 	const drawnCache = drawnElements.get();
 	const canvasOffsetCache = canvasOffset.get();
-	Object.keys(drawnCache).forEach(id => {
-		const element: { wayId: string; path: Path2D } = drawnCache[id];
-		const way = allWays.get()[element.wayId];
+	const results = Object.keys(drawnCache).map(id => {
+		const element: { wayId: number; path: Path2D } = drawnCache[id];
+		const way = allWays.get().get(element.wayId);
 		const path = element.path;
+
+		if (!way) return false;
+
 		if (
 			context.isPointInPath(
 				path,
@@ -768,8 +555,11 @@ export function hoverPath(click = true) {
 			if (click) displayPopup(element, way);
 			return true;
 		}
+
+		return false;
 	});
-	return false;
+
+	return results.includes(true);
 }
 
 export function openID() {

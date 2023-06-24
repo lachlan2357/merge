@@ -1,7 +1,7 @@
 import { OverpassWay } from "../index.js";
 import {
 	centre,
-	display,
+	search,
 	editID,
 	hoverPath,
 	openID,
@@ -59,7 +59,7 @@ searchForm.addEventListener("submit", e => {
 	e.preventDefault();
 	const form = e.target as HTMLFormElement;
 	const formData = new FormData(form);
-	display(formData.get("relation")?.toString() ?? "");
+	search(formData.get("relation")?.toString() ?? "");
 });
 
 // canvas
@@ -359,7 +359,7 @@ export async function togglePopup(reason?: PopupReason) {
 }
 
 export function displayPopup(
-	element: { wayId: string; path: Path2D },
+	element: { wayId: number; path: Path2D },
 	way: OverpassWay
 ) {
 	wayInfoId.innerHTML = `Way <a href="https://www.openstreetmap.org/way/${element.wayId}" target="_blank">${element.wayId}</a>`;
