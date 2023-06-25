@@ -28,7 +28,7 @@ import {
 export const getElement = <K>(id: string) => document.getElementById(id) as K;
 
 const canvas = getElement<HTMLCanvasElement>("canvas");
-const canvasOverlay = getElement<HTMLDivElement>("canvas-overlay");
+const canvasContainer = getElement<HTMLDivElement>("canvas-container");
 const searchButton = getElement<HTMLButtonElement>("search");
 const advancedButton = getElement<HTMLButtonElement>("advanced");
 const settingsButton = getElement<HTMLButtonElement>("settings");
@@ -112,26 +112,35 @@ canvas.addEventListener("mousemove", e => {
 });
 
 function updateCanvasSize() {
-	canvas.setAttribute("width", `${canvas.clientWidth}px`);
-	canvas.setAttribute("height", `${canvas.clientHeight}px`);
-
-	canvasOverlay.style.width = `${canvas.width}px`;
-	canvasOverlay.style.top = `${canvas.offsetTop}px`;
-	canvasOverlay.style.left = `${canvas.offsetLeft}px`;
-
-	// why is this being done after the above? experiment.
-	const newHeight = window.innerHeight - canvas.offsetTop - 20;
-	document.documentElement.style.setProperty(
-		"--canvas-height",
-		`${newHeight}px`
+	const dimensions = new Coordinate(
+		canvasContainer.clientWidth,
+		canvasContainer.clientHeight
 	);
-	canvas.height = newHeight;
 
-	canvasOffset.set(new Coordinate(canvas.offsetLeft, canvas.offsetTop));
-	canvasDimensions.set(new Coordinate(canvas.width, canvas.height));
+	const offsetParent = canvasContainer.offsetParent as
+		| HTMLElement
+		| undefined;
+
+	const parentOffset = new Coordinate(
+		offsetParent?.offsetLeft || 0,
+		offsetParent?.offsetTop || 0
+	);
+
+	const localOffset = new Coordinate(
+		canvasContainer.offsetLeft,
+		canvasContainer.offsetTop
+	);
+
+	const offset = parentOffset.add(localOffset);
+
+	canvas.setAttribute("width", dimensions.x.toString());
+	canvas.setAttribute("height", dimensions.y.toString());
+
+	canvasOffset.set(offset);
+	canvasDimensions.set(dimensions);
 }
 
-new ResizeObserver(updateCanvasSize).observe(canvas);
+new ResizeObserver(updateCanvasSize).observe(canvasContainer);
 window.addEventListener("resize", updateCanvasSize);
 
 // canvas buttons
@@ -139,7 +148,7 @@ zoomInButton.addEventListener("click", () => zoomInOut("in", "button"));
 zoomOutButton.addEventListener("click", () => zoomInOut("out", "button"));
 zoomResetButton.addEventListener("click", centre);
 fullscreenButton.addEventListener("click", () =>
-	canvas.toggleAttribute("fullscreen")
+	canvasContainer.toggleAttribute("fullscreen")
 );
 editInID.addEventListener("click", editID);
 editInJOSM.addEventListener("click", openJOSM);
@@ -224,7 +233,7 @@ export async function togglePopup(reason?: PopupReason) {
 				.build();
 
 			const openWithContainer = new ElementBuilder("div")
-				.class("open-with-container")
+				.id("open-with-container")
 				.children(iDButton, josmButton)
 				.build();
 
@@ -256,10 +265,12 @@ export async function togglePopup(reason?: PopupReason) {
 					.text(setting.name)
 					.build();
 				const text = new ElementBuilder("p")
+					.class("setting-title")
 					.text(settingDescription)
 					.build();
 
 				const inputBox = new ElementBuilder("input")
+					.class("setting-input")
 					.inputType(isBoolean ? "checkbox" : "text")
 					.attribute("data-setting", key)
 					.event("change", e => {

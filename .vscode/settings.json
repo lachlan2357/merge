@@ -10,7 +10,11 @@
 		"Lons",
 		"maxspeed",
 		"nodenext",
+		"stylelint",
 		"tsbuildinfo",
 		"wayid"
-	]
+	],
+	"css.validate": false,
+	"scss.validate": false,
+	"stylelint.validate": ["scss"]
 }

@@ -6,4 +6,4 @@ mkdirSync("dist", { recursive: true });
 cpSync("src/pages", "dist", { recursive: true });
 cpSync("assets", "dist", { recursive: true });
 execSync("tsc");
-execSync("sass src/style.scss:dist/style.css");
+execSync("sass src/styles:dist --no-source-map");

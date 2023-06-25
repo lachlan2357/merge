@@ -1,0 +1,38 @@
+input[type="checkbox"] {
+	appearance: none;
+	background-color: var(--background-colour);
+	border-radius: var(--radius);
+	cursor: pointer;
+	flex-shrink: 0;
+	height: 1.5em;
+	position: relative;
+	user-select: none;
+	width: 1.5em;
+
+	&:hover {
+		background-color: var(--foreground-colour);
+	}
+
+	&:active,
+	&:checked {
+		background-color: var(--link);
+	}
+
+	&:after {
+		opacity: 0;
+	}
+
+	&:checked:after {
+		border: 2px var(--background-colour);
+		border-style: none solid solid none;
+		content: "";
+		display: block;
+		height: 50%;
+		left: 50%;
+		opacity: 1;
+		position: relative;
+		top: 50%;
+		transform: translateX(-50%) translateY(calc(-50% - 1px)) rotate(45deg);
+		width: 25%;
+	}
+}

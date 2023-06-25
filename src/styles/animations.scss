@@ -1,0 +1,62 @@
+@keyframes spin {
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
+}
+
+@keyframes fade-in {
+	0% {
+		opacity: 0;
+	}
+	100% {
+		opacity: 1;
+	}
+}
+
+@keyframes fade-in-backdrop {
+	0% {
+		opacity: 0;
+	}
+	100% {
+		opacity: 0.5;
+	}
+}
+
+@keyframes fade-out {
+	0% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0;
+	}
+}
+
+@keyframes fade-out-backdrop {
+	0% {
+		opacity: 0.5;
+	}
+	100% {
+		opacity: 0;
+	}
+}
+
+@keyframes fade-out-and-shrink {
+	0% {
+		opacity: 1;
+	}
+	100% {
+		height: 0;
+		margin-block-end: 0;
+		opacity: 0;
+		padding-block: 0;
+	}
+}
+
+@media screen and (max-width: 540px) {
+	header {
+		flex-direction: column;
+	}
+}
