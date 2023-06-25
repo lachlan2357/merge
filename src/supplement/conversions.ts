@@ -16,6 +16,10 @@ export function degreesToPixels(degrees: number) {
 	return degrees * totalMultiplier.get();
 }
 
+export function metresToPixels(metres: number) {
+	return degreesToPixels(metresToDegrees(metres));
+}
+
 export function coordToScreenSpace(coord: Coordinate) {
 	const totalMultiplierCache = totalMultiplier.get();
 	const offsetCache = offset.get();

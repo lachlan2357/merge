@@ -1,7 +1,7 @@
 import { ImportedData, OverpassWay } from "../index.js";
-import { drawCanvas } from "../script.js";
+import { drawCanvas } from "./canvas.js";
 import { Coordinate } from "./index.js";
-import { Computed, Atomic, Effect } from "./state.js";
+import { Atomic, Computed, Effect } from "./state.js";
 
 // atomics
 export const data = new Atomic<ImportedData | undefined>(undefined);
@@ -90,7 +90,7 @@ new Effect(drawCanvas, [
 	zoomOffset,
 	mouseDown,
 	mouseMoved,
-	zoom,
+	zoom
 ]);
 
 new Effect(

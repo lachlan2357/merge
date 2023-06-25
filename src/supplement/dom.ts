@@ -1,16 +1,9 @@
 import { OverpassWay } from "../index.js";
-import {
-	centre,
-	search,
-	editID,
-	hoverPath,
-	openID,
-	openJOSM,
-	settings,
-	zoomInOut,
-} from "../script.js";
+import { settings } from "../script.js";
+import { centre, hoverPath, zoomInOut } from "./canvas.js";
 import { ElementBuilder, FontAwesomeIcon, LinkChip } from "./elements.js";
 import { Coordinate } from "./index.js";
+import { search } from "./overpass.js";
 import { SettingName } from "./settings.js";
 import {
 	canvasDimensions,
@@ -22,13 +15,15 @@ import {
 	mouseMoved,
 	mouseOffset,
 	mousePos,
-	selectedWay,
+	multiplier,
+	selectedWay
 } from "./view.js";
 
 export const getElement = <K>(id: string) => document.getElementById(id) as K;
 
 const canvas = getElement<HTMLCanvasElement>("canvas");
 const canvasContainer = getElement<HTMLDivElement>("canvas-container");
+const messages = getElement<HTMLDivElement>("messages");
 const searchButton = getElement<HTMLButtonElement>("search");
 const advancedButton = getElement<HTMLButtonElement>("advanced");
 const settingsButton = getElement<HTMLButtonElement>("settings");
@@ -404,4 +399,42 @@ export function displayPopup(
 
 	wayInfo.removeAttribute("hidden");
 	selectedWay.set(way.id);
+}
+
+export function openID() {
+	window.open(
+		`https://www.openstreetmap.org/relation/${currentRelationId.get()}`,
+		"_blank",
+		"noreferrer noopener"
+	);
+}
+
+export function editID() {
+	window.open(
+		`https://www.openstreetmap.org/edit?way=${selectedWay.get()}`,
+		"_blank",
+		"noreferrer noopener"
+	);
+}
+
+export function openJOSM() {
+	const { minLat, maxLat, minLon, maxLon } = multiplier.get();
+	const url = `127.0.0.1:8111/load_and_zoom?left=${minLon}&right=${maxLon}&top=${maxLat}&bottom=${minLat}&select=relation${currentRelationId.get()}`;
+	fetch(url);
+}
+
+export async function addMessage(message: HTMLDivElement) {
+	messages.append(message);
+
+	await new Promise(resolve => setTimeout(resolve, 5000));
+	message.setAttribute("closing", "");
+	message.addEventListener(
+		"animationend",
+		() => {
+			message.removeAttribute("closing");
+			message.removeAttribute("visible");
+			message.parentElement?.removeChild(message);
+		},
+		{ once: true }
+	);
 }

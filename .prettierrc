@@ -2,5 +2,11 @@
 	"tabWidth": 4,
 	"useTabs": true,
 	"arrowParens": "avoid",
-	"quoteProps": "consistent"
+	"quoteProps": "consistent",
+	"bracketSameLine": false,
+	"bracketSpacing": true,
+	"semi": true,
+	"trailingComma": "none",
+	"importOrderSeparation": true,
+	"importOrderSortSpecifiers": true
 }

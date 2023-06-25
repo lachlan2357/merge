@@ -91,7 +91,7 @@ export class Settings {
 			"endpoint",
 			"firstLaunch",
 			"ignoreCache",
-			"leftHandTraffic",
+			"leftHandTraffic"
 		] as Array<SettingName>;
 	}
 
@@ -111,7 +111,7 @@ const defaultSettings: SettingsObject = {
 		inputType: "boolean",
 		value: false,
 		setLocalStorage: true,
-		inSettings: true,
+		inSettings: true
 	},
 	endpoint: {
 		name: "Endpoint",
@@ -120,7 +120,7 @@ const defaultSettings: SettingsObject = {
 		inputType: "string",
 		value: "https://overpass-api.de/api/interpreter",
 		setLocalStorage: true,
-		inSettings: true,
+		inSettings: true
 	},
 	ignoreCache: {
 		name: "Ignore Cache",
@@ -129,7 +129,7 @@ const defaultSettings: SettingsObject = {
 		inputType: "boolean",
 		value: false,
 		setLocalStorage: false,
-		inSettings: true,
+		inSettings: true
 	},
 	darkMode: {
 		name: "Dark Mode",
@@ -137,7 +137,7 @@ const defaultSettings: SettingsObject = {
 		inputType: "boolean",
 		value: false,
 		setLocalStorage: true,
-		inSettings: true,
+		inSettings: true
 	},
 	firstLaunch: {
 		name: "First Launch",
@@ -145,6 +145,6 @@ const defaultSettings: SettingsObject = {
 		inputType: "boolean",
 		value: true,
 		setLocalStorage: true,
-		inSettings: false,
-	},
+		inSettings: false
+	}
 };

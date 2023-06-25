@@ -1,4 +1,5 @@
-import { getElement } from "./dom.js";
+import { addMessage } from "./dom.js";
+import { ElementBuilder } from "./elements.js";
 
 export const AppMsgMap = {
 	emptyShare: "Map is empty. Nothing to share.",
@@ -6,7 +7,7 @@ export const AppMsgMap = {
 	noSearchTerm: "Please enter a search term.",
 	malformedSearchTerm: "Currently, double quotes are not supported.",
 	multipleRelations: "Multiple relations share that name. Use relation id.",
-	noResult: "No Results.",
+	noResult: "No Results."
 } as const;
 
 export type AppMsg = keyof typeof AppMsgMap;
@@ -15,29 +16,13 @@ export function getMsg(key: AppMsg) {
 	return AppMsgMap[key];
 }
 
-const messages = getElement<HTMLDivElement>("messages");
 export async function displayMessage(key: AppMsg) {
-	document.createElement("div", { is: "canvas-message" });
+	const messageText = new ElementBuilder("p").text(getMsg(key)).build();
+	const message = new ElementBuilder("div")
+		.class("message-box")
+		.children(messageText)
+		.attribute("visible", "")
+		.build();
 
-	const newDiv = document.createElement("div");
-	newDiv.classList.add("message-box");
-
-	const newParagraph = document.createElement("p");
-	newParagraph.textContent = getMsg(key);
-	newDiv.appendChild(newParagraph);
-
-	messages.appendChild(newDiv);
-
-	newDiv.setAttribute("visible", "");
-	await new Promise(r => setTimeout(r, 5000));
-	newDiv.setAttribute("closing", "");
-	newDiv.addEventListener(
-		"animationend",
-		() => {
-			newDiv.removeAttribute("closing");
-			newDiv.removeAttribute("visible");
-			messages.removeChild(newDiv);
-		},
-		{ once: true }
-	);
+	addMessage(message);
 }

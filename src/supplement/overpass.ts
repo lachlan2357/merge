@@ -1,12 +1,81 @@
 import {
+	OverpassNode,
+	OverpassRelation,
+	OverpassResponse,
+	OverpassWay
+} from "../index.js";
+import { process, settings } from "../script.js";
+import { centre } from "./canvas.js";
+import {
+	deleteEntry,
 	getAllCacheKeys,
 	getCachedFor,
-	deleteEntry,
-	insertInto,
+	insertInto
 } from "./database.js";
-import { settings } from "../script.js";
-import { OverpassResponse } from "../index.js";
-import { displayMessage } from "./messages.js";
+import { setSearching } from "./dom.js";
+import { AppMsg, displayMessage } from "./messages.js";
+import { allWays, currentRelationId } from "./view.js";
+
+export async function search(name: string) {
+	const propagateError = (e: AppMsg) => {
+		displayMessage(e);
+		setSearching(false);
+	};
+
+	setSearching();
+	const roadName = name;
+	const roadNumber = Number(name);
+
+	if (roadName.length === 0) return propagateError("noSearchTerm");
+
+	if (roadName.includes('"')) return propagateError("malformedSearchTerm");
+
+	const searchMode = isNaN(roadNumber)
+		? `<has-kv k="name" v="${roadName}"/>`
+		: `<id-query type="relation" ref="${roadName}"/>`;
+
+	const query = await overpassQuery(searchMode);
+
+	const relations = new Array<OverpassRelation>();
+	const ways = new Map<number, OverpassWay>();
+	const nodes = new Map<number, OverpassNode>();
+
+	query.elements.forEach(element => {
+		switch (element.type) {
+			case "relation":
+				relations.push(element);
+				break;
+			case "way":
+				if (element.tags.highway) ways.set(element.id, element);
+				break;
+			case "node":
+				nodes.set(element.id, element);
+				break;
+		}
+	});
+
+	if (relations.length > 1) return propagateError("multipleRelations");
+	const relation = relations[0];
+
+	if (!relation) return propagateError("noResult");
+	currentRelationId.set(relation.id);
+
+	const wayIdsInRelation = new Array<number>();
+	relation.members.forEach(member => wayIdsInRelation.push(member.ref));
+
+	const externalWays = new Array<OverpassWay>();
+	ways.forEach((way, id) => {
+		if (!wayIdsInRelation.includes(id)) {
+			externalWays.push(way);
+			ways.delete(id);
+		}
+	});
+
+	process(ways, nodes);
+	centre();
+	allWays.set(ways);
+	setSearching(false);
+}
 
 export async function overpassQuery(mode: string): Promise<OverpassResponse> {
 	const query = `<osm-script output="json"><union><query type="relation">${mode}</query><recurse type="relation-way"/><recurse type="way-node"/><recurse type="node-way"/></union><print/></osm-script>`;
@@ -23,7 +92,7 @@ export async function overpassGetData(query: string) {
 
 	const req = await fetch(settings.get("endpoint"), {
 		method: "POST",
-		body: query,
+		body: query
 	});
 	const json: OverpassResponse = await req.json();
 

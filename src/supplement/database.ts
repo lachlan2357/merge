@@ -52,7 +52,7 @@ export function insertInto(request: string, value: string) {
 		const objectStore = transaction.objectStore("overpass-cache");
 		const transactionRequest = objectStore.add({
 			request: request,
-			value: value,
+			value: value
 		});
 
 		transactionRequest.onerror = e => {

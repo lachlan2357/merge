@@ -1,4 +1,8 @@
-import { degreesToPixels, metresToDegrees } from "./conversions.js";
+import {
+	degreesToPixels,
+	metresToDegrees,
+	metresToPixels
+} from "./conversions.js";
 import { context } from "./dom.js";
 import { Coordinate } from "./index.js";
 import { offset, totalMultiplier } from "./view.js";
@@ -10,7 +14,7 @@ export const roadColours = {
 	concrete: "#cfc0b9",
 	cobblestone: "#ffd6bc",
 	paving_stones: "#ab9da4",
-	unknown: "#000000",
+	unknown: "#000000"
 };
 
 export function line(
@@ -117,14 +121,7 @@ export function arrow(
 			arrowStart.y - Math.sin(arrowBaseAngle) * arrowBaseLength
 		);
 
-		line(
-			lineStart,
-			lineEnd,
-			degreesToPixels(metresToDegrees(0.2)),
-			"white",
-			null,
-			"round"
-		);
+		line(lineStart, lineEnd, metresToPixels(0.2), "white", null, "round");
 		polygon([lineEnd, arrowStart, arrowEnd], 0, "white", "white");
 	} else if (type == "left") {
 		const lineStart = new Coordinate(
