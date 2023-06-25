@@ -1,6 +1,5 @@
 @use "mixins";
 
-// todo - change this to an id
 #open-with-container {
 	@include mixins.flexbox($gap: 0.5em);
 	@include mixins.flexbox-align(center, center);
@@ -23,7 +22,7 @@
 	background-color: var(--accent);
 	border-radius: 5px;
 	display: flex;
-	gap: 20px;
+	gap: 1em;
 	justify-content: space-between;
 	padding: 1em;
 
@@ -105,11 +104,6 @@ canvas {
 		@include mixins.flexbox-align(center, center);
 		aspect-ratio: 1;
 		overflow: hidden;
-
-		// todo - why is this here?
-		i {
-			pointer-events: none;
-		}
 	}
 
 	#search-form {
@@ -181,8 +175,6 @@ canvas {
 	}
 
 	#messages {
-		// todo - update this to be correct instead of 20px
-		// todo - figure out the 25vw
 		@include mixins.flexbox(column);
 		grid-column: 3;
 		grid-row: 1 / -1;

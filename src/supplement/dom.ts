@@ -58,8 +58,6 @@ searchForm.addEventListener("submit", e => {
 });
 
 // canvas
-export const context = canvas.getContext("2d") as CanvasRenderingContext2D;
-
 canvas.addEventListener("wheel", e => {
 	e.preventDefault();
 	if (!data.get()) return;

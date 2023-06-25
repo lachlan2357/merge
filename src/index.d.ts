@@ -57,13 +57,6 @@ export type OverpassElement = OverpassRelation | OverpassWay | OverpassNode;
 
 export interface WayData {
 	nodes: Map<number, OverpassNode>;
-	// "nodes": {
-	// 	[key: string]: {
-	// 		id: number;
-	// 		lat: number;
-	// 		lon: number;
-	// 	};
-	// };
 	originalWay: OverpassWay;
 	orderedNodes: number[];
 	tags: {

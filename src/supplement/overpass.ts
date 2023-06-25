@@ -1,10 +1,12 @@
 import {
+	ImportedData,
 	OverpassNode,
 	OverpassRelation,
 	OverpassResponse,
-	OverpassWay
+	OverpassWay,
+	WayData
 } from "../index.js";
-import { process, settings } from "../script.js";
+import { settings } from "../script.js";
 import { centre } from "./canvas.js";
 import {
 	deleteEntry,
@@ -13,8 +15,38 @@ import {
 	insertInto
 } from "./database.js";
 import { setSearching } from "./dom.js";
+import { nullish } from "./index.js";
 import { AppMsg, displayMessage } from "./messages.js";
-import { allWays, currentRelationId } from "./view.js";
+import { allWays, currentRelationId, data } from "./view.js";
+
+export function bool(value?: string) {
+	if (value) return value === "yes";
+	else return undefined;
+}
+
+export function number(value?: string) {
+	const num = Number(value);
+	if (!isNaN(num)) return num;
+	else return undefined;
+}
+
+export function array(value?: string, fallback = "none", delimiter = "|") {
+	let split = value?.split(delimiter);
+	if (fallback) split = split?.map(value => value ?? fallback);
+	return split;
+}
+
+export function dArray(
+	array?: Array<string>,
+	fallback = "none",
+	delimiter = ";"
+) {
+	return array?.map(value => {
+		let _split = value.split(delimiter);
+		if (fallback) _split = _split.map(value => value ?? fallback);
+		return _split;
+	});
+}
 
 export async function search(name: string) {
 	const propagateError = (e: AppMsg) => {
@@ -102,31 +134,113 @@ export async function overpassGetData(query: string) {
 	return json;
 }
 
-export function bool(value?: string) {
-	if (value) return value === "yes";
-	else return undefined;
-}
-
-export function number(value?: string) {
-	const num = Number(value);
-	if (!isNaN(num)) return num;
-	else return undefined;
-}
-
-export function array(value?: string, fallback = "none", delimiter = "|") {
-	let split = value?.split(delimiter);
-	if (fallback) split = split?.map(value => value ?? fallback);
-	return split;
-}
-
-export function dArray(
-	array?: Array<string>,
-	fallback = "none",
-	delimiter = ";"
+export function process(
+	allWays: Map<number, OverpassWay>,
+	allNodes: Map<number, OverpassNode>
 ) {
-	return array?.map(value => {
-		let _split = value.split(delimiter);
-		if (fallback) _split = _split.map(value => value ?? fallback);
-		return _split;
+	const waysInfo: ImportedData = new Map();
+	allWays.forEach((way, id) => {
+		const tags = way.tags;
+		const wayData: WayData = {
+			nodes: new Map(),
+			originalWay: way,
+			orderedNodes: way.nodes,
+			tags: {
+				oneway: bool(tags.oneway),
+				junction: tags.junction,
+				lanes: number(tags.lanes),
+				lanesForward: number(tags["lanes:forward"]),
+				lanesBackward: number(tags["lanes:backward"]),
+				turnLanes: dArray(array(tags["turn:lanes"], "none"), "none"),
+				turnLanesForward: dArray(array(tags["turn:lanes:forward"])),
+				turnLanesBackward: dArray(array(tags["turn:lanes:backward"])),
+				surface: tags.surface
+			},
+			warnings: [],
+			inferences: new Set()
+		};
+
+		way.nodes.forEach(id => {
+			const node = allNodes.get(id);
+			if (!node) return;
+			wayData.nodes.set(id, node);
+		});
+
+		// infer data
+		let noChanges = false;
+		while (!noChanges) {
+			noChanges = true;
+			const tags = wayData.tags;
+
+			// lanes
+			if (nullish(tags.lanes) && !nullish(tags.lanesForward)) {
+				if (tags.oneway) {
+					tags.lanes = tags.lanesForward;
+					noChanges = false;
+				} else if (!nullish(tags.lanesBackward)) {
+					tags.lanes = tags.lanesForward + tags.lanesBackward;
+					noChanges = false;
+				}
+			}
+
+			// lanes:forward
+			if (nullish(tags.lanesForward) && !nullish(tags.lanes)) {
+				if (tags.oneway) {
+					tags.lanesForward = tags.lanes;
+					noChanges = false;
+				} else if (!nullish(tags.lanesBackward)) {
+					tags.lanesForward = tags.lanes - tags.lanesBackward;
+					noChanges = false;
+				} else if (!tags.oneway && tags.lanes % 2 === 0) {
+					tags.lanesForward = tags.lanes / 2;
+					noChanges = false;
+				}
+			}
+
+			// lanes:backward
+			if (nullish(tags.lanesBackward)) {
+				if (tags.oneway) {
+					tags.lanesBackward = 0;
+					noChanges = false;
+				} else if (
+					!nullish(tags.lanes) &&
+					!nullish(tags.lanesForward)
+				) {
+					tags.lanesBackward = tags.lanes - tags.lanesForward;
+					noChanges = false;
+				} else if (!nullish(tags.lanes) && !(tags.lanes % 2)) {
+					tags.lanesBackward = tags.lanes / 2;
+					noChanges = false;
+				}
+			}
+
+			// turn:lanes:forward
+			if (nullish(tags.turnLanesForward)) {
+				if (tags.oneway && !nullish(tags.turnLanes)) {
+					tags.turnLanesForward = tags.turnLanes;
+					noChanges = false;
+				} else if (!nullish(tags.lanesForward)) {
+					tags.turnLanesForward = dArray(
+						array("|".repeat(tags.lanesForward))
+					);
+					noChanges = false;
+				}
+			}
+
+			// turn:lanes:backward
+			if (
+				nullish(tags.turnLanesBackward) &&
+				!nullish(tags.lanesBackward)
+			) {
+				tags.turnLanesBackward = dArray(
+					array("|".repeat(tags.lanesBackward))
+				);
+				noChanges = false;
+			}
+		}
+
+		waysInfo.set(id, wayData);
 	});
+
+	data.set(waysInfo);
 }

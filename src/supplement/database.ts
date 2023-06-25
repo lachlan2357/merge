@@ -1,20 +1,9 @@
 import { CachedQuery, OverpassResponse } from "../index.js";
-
-let db: IDBDatabase;
-const openIDB = window.indexedDB.open("Overpass Data");
-
-openIDB.onerror = e => console.error((e.target as IDBOpenDBRequest).error);
-
-openIDB.onupgradeneeded = e => {
-	const tempDB = (e.target as IDBOpenDBRequest).result;
-	tempDB.createObjectStore("overpass-cache", { keyPath: "request" });
-};
-
-openIDB.onsuccess = e => (db = (e.target as IDBOpenDBRequest).result);
+import { database } from "../script.js";
 
 export function getAllCacheKeys() {
 	return new Promise<string[]>(resolve => {
-		const transaction = db.transaction("overpass-cache", "readonly");
+		const transaction = database.transaction("overpass-cache", "readonly");
 		const objectStore = transaction.objectStore("overpass-cache");
 		const transactionRequest = objectStore.getAllKeys();
 
@@ -30,7 +19,7 @@ export function getAllCacheKeys() {
 
 export function getCachedFor(key: string) {
 	return new Promise<OverpassResponse>(resolve => {
-		const transaction = db.transaction("overpass-cache", "readonly");
+		const transaction = database.transaction("overpass-cache", "readonly");
 		const objectStore = transaction.objectStore("overpass-cache");
 		const transactionRequest = objectStore.get(key);
 
@@ -48,7 +37,7 @@ export function getCachedFor(key: string) {
 
 export function insertInto(request: string, value: string) {
 	return new Promise<boolean>(resolve => {
-		const transaction = db.transaction("overpass-cache", "readwrite");
+		const transaction = database.transaction("overpass-cache", "readwrite");
 		const objectStore = transaction.objectStore("overpass-cache");
 		const transactionRequest = objectStore.add({
 			request: request,
@@ -68,7 +57,7 @@ export function insertInto(request: string, value: string) {
 
 export function deleteEntry(key: string) {
 	return new Promise<boolean>(resolve => {
-		const transaction = db.transaction("overpass-cache", "readwrite");
+		const transaction = database.transaction("overpass-cache", "readwrite");
 		const objectStore = transaction.objectStore("overpass-cache");
 		const transactionRequest = objectStore.delete(key);
 

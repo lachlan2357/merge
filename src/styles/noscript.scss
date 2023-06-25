@@ -1,0 +1,10 @@
+@use "mixins";
+
+main {
+	@include mixins.flexbox(column);
+	@include mixins.flexbox-align(center, center);
+
+	#canvas-container {
+		display: none;
+	}
+}

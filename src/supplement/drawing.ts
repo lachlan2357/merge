@@ -1,9 +1,9 @@
+import { context } from "../script.js";
 import {
 	degreesToPixels,
 	metresToDegrees,
 	metresToPixels
 } from "./conversions.js";
-import { context } from "./dom.js";
 import { Coordinate } from "./index.js";
 import { offset, totalMultiplier } from "./view.js";
 

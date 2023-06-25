@@ -1,11 +1,11 @@
-import { settings } from "../script.js";
+import { context, settings } from "../script.js";
 import {
 	coordToScreenSpace,
 	laneLength,
 	metresToPixels,
 	screenSpaceToCoord
 } from "./conversions.js";
-import { context, displayPopup } from "./dom.js";
+import { displayPopup } from "./dom.js";
 import * as draw from "./drawing.js";
 import { roadColours } from "./drawing.js";
 import { Coordinate, zoomIncrement } from "./index.js";

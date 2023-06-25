@@ -1,129 +1,86 @@
-import type {
-	ImportedData,
-	OverpassNode,
-	OverpassWay,
-	WayData
-} from "./index.js";
+import { Result } from "./index.js";
 import { togglePopup } from "./supplement/dom.js";
-import { nullish } from "./supplement/index.js";
-import { array, bool, dArray, number } from "./supplement/overpass.js";
+import { ElementBuilder } from "./supplement/elements.js";
+import { Err, isErr, resultConstructor } from "./supplement/errors.js";
 import { Settings } from "./supplement/settings.js";
-import { data } from "./supplement/view.js";
 
-export const settings = new Settings();
-
-export function process(
-	allWays: Map<number, OverpassWay>,
-	allNodes: Map<number, OverpassNode>
-) {
-	const waysInfo: ImportedData = new Map();
-	allWays.forEach((way, id) => {
-		const tags = way.tags;
-		const wayData: WayData = {
-			nodes: new Map(),
-			originalWay: way,
-			orderedNodes: way.nodes,
-			tags: {
-				oneway: bool(tags.oneway),
-				junction: tags.junction,
-				lanes: number(tags.lanes),
-				lanesForward: number(tags["lanes:forward"]),
-				lanesBackward: number(tags["lanes:backward"]),
-				turnLanes: dArray(array(tags["turn:lanes"], "none"), "none"),
-				turnLanesForward: dArray(array(tags["turn:lanes:forward"])),
-				turnLanesBackward: dArray(array(tags["turn:lanes:backward"])),
-				surface: tags.surface
-			},
-			warnings: [],
-			inferences: new Set()
-		};
-
-		way.nodes.forEach(id => {
-			const node = allNodes.get(id);
-			if (!node) return;
-			wayData.nodes.set(id, node);
-		});
-
-		// infer data
-		let noChanges = false;
-		while (!noChanges) {
-			noChanges = true;
-			const tags = wayData.tags;
-
-			// lanes
-			if (nullish(tags.lanes) && !nullish(tags.lanesForward)) {
-				if (tags.oneway) {
-					tags.lanes = tags.lanesForward;
-					noChanges = false;
-				} else if (!nullish(tags.lanesBackward)) {
-					tags.lanes = tags.lanesForward + tags.lanesBackward;
-					noChanges = false;
-				}
-			}
-
-			// lanes:forward
-			if (nullish(tags.lanesForward) && !nullish(tags.lanes)) {
-				if (tags.oneway) {
-					tags.lanesForward = tags.lanes;
-					noChanges = false;
-				} else if (!nullish(tags.lanesBackward)) {
-					tags.lanesForward = tags.lanes - tags.lanesBackward;
-					noChanges = false;
-				} else if (!tags.oneway && tags.lanes % 2 === 0) {
-					tags.lanesForward = tags.lanes / 2;
-					noChanges = false;
-				}
-			}
-
-			// lanes:backward
-			if (nullish(tags.lanesBackward)) {
-				if (tags.oneway) {
-					tags.lanesBackward = 0;
-					noChanges = false;
-				} else if (
-					!nullish(tags.lanes) &&
-					!nullish(tags.lanesForward)
-				) {
-					tags.lanesBackward = tags.lanes - tags.lanesForward;
-					noChanges = false;
-				} else if (!nullish(tags.lanes) && !(tags.lanes % 2)) {
-					tags.lanesBackward = tags.lanes / 2;
-					noChanges = false;
-				}
-			}
-
-			// turn:lanes:forward
-			if (nullish(tags.turnLanesForward)) {
-				if (tags.oneway && !nullish(tags.turnLanes)) {
-					tags.turnLanesForward = tags.turnLanes;
-					noChanges = false;
-				} else if (!nullish(tags.lanesForward)) {
-					tags.turnLanesForward = dArray(
-						array("|".repeat(tags.lanesForward))
-					);
-					noChanges = false;
-				}
-			}
-
-			// turn:lanes:backward
-			if (
-				nullish(tags.turnLanesBackward) &&
-				!nullish(tags.lanesBackward)
-			) {
-				tags.turnLanesBackward = dArray(
-					array("|".repeat(tags.lanesBackward))
-				);
-				noChanges = false;
-			}
+const stage = <T>(
+	description: string,
+	setupFn: () => Promise<Result<T, undefined>>
+) => ({
+	description,
+	check: async () => {
+		try {
+			return await setupFn();
+		} catch {
+			return new Err(undefined);
 		}
+	}
+});
 
-		waysInfo.set(id, wayData);
-	});
+async function setup() {
+	const settings = await stage("local storage compatibility", async () => {
+		return resultConstructor(new Settings());
+	}).check();
+	if (!settings.ok) return settings;
 
-	data.set(waysInfo);
+	const database = await stage("database", () => {
+		return new Promise<Result<IDBDatabase, undefined>>(resolve => {
+			const timeout = setTimeout(() => resolve(new Err(undefined)), 5000);
+			const openRequest = window.indexedDB.open("Overpass Data");
+
+			openRequest.onerror = () => {
+				window.clearTimeout(timeout);
+				resolve(new Err(undefined));
+			};
+			openRequest.onupgradeneeded = function (e) {
+				const tempDB = (e.target as IDBOpenDBRequest).result;
+				tempDB.createObjectStore("overpass-cache", {
+					keyPath: "request"
+				});
+			};
+
+			openRequest.onsuccess = function () {
+				window.clearTimeout(timeout);
+				resolve(resultConstructor(this.result));
+			};
+		});
+	}).check();
+	if (!database.ok) return database;
+
+	const context = await stage("dom + canvas", async () => {
+		const canvas = document.getElementsByTagName("canvas").item(0);
+		const context = canvas?.getContext("2d") ?? undefined;
+		return resultConstructor(context);
+	}).check();
+	if (!context.ok) return context;
+
+	return { settings, database, context };
 }
 
-// show first launch popup if first launch
+const result = await setup();
+
+if (isErr(result)) {
+	const main = document.querySelector("main");
+	if (!main) throw "DOM cannot be located";
+
+	while (main.lastChild) main.removeChild(main.lastChild);
+
+	const title = new ElementBuilder("h2").text("Incompatible Device").build();
+	const message = new ElementBuilder("p")
+		.text("Your device is incompatible with this Application.")
+		.build();
+
+	main.append(title, message);
+	main.setAttribute("error", "");
+
+	throw "Your device cannot run this application.";
+}
+
+export const settings = result.settings.unwrap();
+export const database = result.database.unwrap();
+export const context = result.context.unwrap();
+
 if (settings.get("firstLaunch")) {
 	settings.set("firstLaunch", false);
 	togglePopup("welcome");

@@ -135,7 +135,7 @@ const defaultSettings: SettingsObject = {
 		name: "Dark Mode",
 		description: "Not light mode.",
 		inputType: "boolean",
-		value: false,
+		value: window.matchMedia("(prefers-color-scheme: dark)").matches,
 		setLocalStorage: true,
 		inSettings: true
 	},
