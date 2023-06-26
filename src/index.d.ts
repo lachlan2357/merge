@@ -12,7 +12,7 @@ export interface OverpassResponse {
 
 export interface OverpassRelation {
 	id: number;
-	members: { ref: number; role: string; type: string }[];
+	members: Array<{ ref: number; role: string; type: string }>;
 	tags: Record<string, string>;
 	type: "relation";
 }
@@ -20,7 +20,7 @@ export interface OverpassRelation {
 export interface OverpassWay {
 	changeset: number;
 	id: number;
-	nodes: number[];
+	nodes: Array<number>;
 	tags: {
 		"highway"?: string;
 		"lanes"?: string;
@@ -58,7 +58,7 @@ export type OverpassElement = OverpassRelation | OverpassWay | OverpassNode;
 export interface WayData {
 	nodes: Map<number, OverpassNode>;
 	originalWay: OverpassWay;
-	orderedNodes: number[];
+	orderedNodes: Array<number>;
 	tags: {
 		junction?: string;
 		oneway?: boolean;
@@ -70,7 +70,7 @@ export interface WayData {
 		turnLanesBackward?: Array<Array<string>>;
 		surface?: string;
 	};
-	warnings: number[];
+	warnings: Array<number>;
 	inferences: Set<keyof WayData["tags"]>;
 }
 

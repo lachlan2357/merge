@@ -36,12 +36,12 @@ export const multiplier = new Computed(() => {
 	const canvasCache = canvasDimensions.get();
 	if (!dataCache) return { minLat, maxLat, minLon, maxLon, multiplier };
 
-	const allLats: number[] = [];
-	const allLons: number[] = [];
+	const allLats = new Array<number>();
+	const allLons = new Array<number>();
 	dataCache.forEach(way => {
-		way.nodes.forEach(node => {
-			allLats.push(node.lat);
-			allLons.push(node.lon);
+		way.nodes.forEach(({ lat, lon }) => {
+			allLats.push(lat);
+			allLons.push(lon);
 		});
 	});
 
@@ -50,9 +50,9 @@ export const multiplier = new Computed(() => {
 	maxLon = Math.max(...allLons);
 	minLon = Math.min(...allLons);
 
-	const diffLat = maxLat - minLat;
-	const diffLon = maxLon - minLon;
-	const minDiff = Math.min(canvasCache.x / diffLat, canvasCache.y / diffLon);
+	const diff = new Coordinate(maxLon - minLon, maxLat - minLat);
+	const diffScale = canvasCache.divide(diff);
+	const minDiff = Math.min(diffScale.x, diffScale.y);
 
 	multiplier = Math.sqrt(minDiff);
 

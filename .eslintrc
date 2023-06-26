@@ -14,8 +14,8 @@
 		"ecmaVersion": "latest",
 		"sourceType": "module"
 	},
-	"plugins": [
-		"@typescript-eslint"
-	],
-	"rules": {}
+	"plugins": ["@typescript-eslint"],
+	"rules": {
+		"@typescript-eslint/no-array-constructor": "off"
+	}
 }

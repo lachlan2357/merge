@@ -49,7 +49,7 @@ export function zoomInOut(inOut: "in" | "out", source: "mouse" | "button") {
 	zoomOffset.setDynamic(old => old.add(diff));
 }
 
-export async function drawCanvas() {
+export function drawCanvas() {
 	// clear canvas from previous drawings
 	const dimensions = canvasDimensions.get();
 	context.clearRect(0, 0, dimensions.x, dimensions.y);
@@ -124,24 +124,12 @@ export async function drawCanvas() {
 					nextBtmCornerPos.y
 				]
 			];
-			const allOffScreen: ("above" | "in" | "below" | "unknown")[][] = [
-				[
-					"unknown",
-					"unknown",
-					"unknown",
-					"unknown",
-					"unknown",
-					"unknown"
-				],
-				[
-					"unknown",
-					"unknown",
-					"unknown",
-					"unknown",
-					"unknown",
-					"unknown"
-				]
-			];
+
+			type Position = "above" | "in" | "below" | "unknown";
+			const allOffScreen = new Array(
+				new Array<Position>().fill("unknown", 0, 6),
+				new Array<Position>().fill("unknown", 0, 6)
+			);
 
 			// check to see if any of the box is visible on screen
 			for (let i = 0; i < 6; i++) {

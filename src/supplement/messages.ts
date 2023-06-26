@@ -7,7 +7,8 @@ export const AppMsgMap = {
 	noSearchTerm: "Please enter a search term.",
 	malformedSearchTerm: "Currently, double quotes are not supported.",
 	multipleRelations: "Multiple relations share that name. Use relation id.",
-	noResult: "No Results."
+	noResult: "No Results.",
+	overpassError: "Error retrieving data from Overpass."
 } as const;
 
 export type AppMsg = keyof typeof AppMsgMap;

@@ -5,8 +5,8 @@ export class Store<T> {
 
 	constructor(initial: T) {
 		this.data = initial;
-		this.dependents = [];
-		this.effects = [];
+		this.dependents = new Array();
+		this.effects = new Array();
 	}
 
 	get() {

@@ -39,3 +39,25 @@ export function isErr(obj: unknown): obj is Err<unknown> {
 		return false;
 	}
 }
+
+const appErrMap = {
+	db: "Cannot process database request.",
+	overpass: "Cannot retrieve data from Overpass."
+};
+export type AppErr = keyof typeof appErrMap;
+
+export async function promiseWrapper<T, E>(error: E, promise: Promise<T>) {
+	try {
+		return new Ok(await promise);
+	} catch {
+		return new Err(error);
+	}
+}
+
+export async function asyncWrapper<T, E>(error: E, fn: () => Promise<T>) {
+	try {
+		return new Ok(await fn());
+	} catch {
+		return new Err(error);
+	}
+}

@@ -1,73 +1,84 @@
 import { CachedQuery, OverpassResponse } from "../index.js";
 import { database } from "../script.js";
+import { AppErr, promiseWrapper } from "./errors.js";
+import { nullish } from "./index.js";
 
-export function getAllCacheKeys() {
-	return new Promise<string[]>(resolve => {
-		const transaction = database.transaction("overpass-cache", "readonly");
-		const objectStore = transaction.objectStore("overpass-cache");
-		const transactionRequest = objectStore.getAllKeys();
+export async function getAllCacheKeys() {
+	return promiseWrapper<Array<string>, AppErr>(
+		"db",
+		new Promise((resolve, reject) => {
+			const transaction = database.transaction(
+				"overpass-cache",
+				"readonly"
+			);
+			const objectStore = transaction.objectStore("overpass-cache");
+			const transactionRequest = objectStore.getAllKeys();
 
-		transactionRequest.onerror = e => {
-			console.error(`Error: ${(e.target as IDBRequest).error}`);
-		};
-
-		transactionRequest.onsuccess = e => {
-			resolve((e.target as IDBRequest).result);
-		};
-	});
+			transactionRequest.onerror = reject;
+			transactionRequest.onsuccess = function () {
+				resolve(this.result.map(key => key.toString()));
+			};
+		})
+	);
 }
 
-export function getCachedFor(key: string) {
-	return new Promise<OverpassResponse>(resolve => {
-		const transaction = database.transaction("overpass-cache", "readonly");
-		const objectStore = transaction.objectStore("overpass-cache");
-		const transactionRequest = objectStore.get(key);
+export async function getCachedFor(key: string) {
+	return promiseWrapper<OverpassResponse, AppErr>(
+		"db",
+		new Promise((resolve, reject) => {
+			const transaction = database.transaction(
+				"overpass-cache",
+				"readonly"
+			);
+			const objectStore = transaction.objectStore("overpass-cache");
+			const transactionRequest = objectStore.get(key);
 
-		transactionRequest.onerror = e => {
-			console.error(`Error: ${(e.target as IDBRequest).error}`);
-		};
+			transactionRequest.onerror = reject;
+			transactionRequest.onsuccess = function () {
+				const result: CachedQuery | undefined = this.result;
+				if (nullish(result)) return reject();
 
-		transactionRequest.onsuccess = e => {
-			const result: CachedQuery = (e.target as IDBRequest).result;
-			const json: OverpassResponse = JSON.parse(result.value);
-			resolve(json);
-		};
-	});
+				const json: OverpassResponse = JSON.parse(result.value);
+				resolve(json);
+			};
+		})
+	);
 }
 
 export function insertInto(request: string, value: string) {
-	return new Promise<boolean>(resolve => {
-		const transaction = database.transaction("overpass-cache", "readwrite");
-		const objectStore = transaction.objectStore("overpass-cache");
-		const transactionRequest = objectStore.add({
-			request: request,
-			value: value
-		});
+	return promiseWrapper<boolean, AppErr>(
+		"db",
+		new Promise<boolean>((resolve, reject) => {
+			const transaction = database.transaction(
+				"overpass-cache",
+				"readwrite"
+			);
+			const objectStore = transaction.objectStore("overpass-cache");
+			const transactionRequest = objectStore.add({ request, value });
 
-		transactionRequest.onerror = e => {
-			console.error(`Error: ${(e.target as IDBRequest).error}`);
-			resolve(false);
-		};
-
-		transactionRequest.onsuccess = () => {
-			resolve(true);
-		};
-	});
+			transactionRequest.onerror = reject;
+			transactionRequest.onsuccess = function () {
+				resolve(this.result !== undefined);
+			};
+		})
+	);
 }
 
 export function deleteEntry(key: string) {
-	return new Promise<boolean>(resolve => {
-		const transaction = database.transaction("overpass-cache", "readwrite");
-		const objectStore = transaction.objectStore("overpass-cache");
-		const transactionRequest = objectStore.delete(key);
+	return promiseWrapper<boolean, AppErr>(
+		"db",
+		new Promise<boolean>((resolve, reject) => {
+			const transaction = database.transaction(
+				"overpass-cache",
+				"readwrite"
+			);
+			const objectStore = transaction.objectStore("overpass-cache");
+			const transactionRequest = objectStore.delete(key);
 
-		transactionRequest.onerror = e => {
-			console.error(`Error: ${(e.target as IDBRequest).error}`);
-			resolve(false);
-		};
-
-		transactionRequest.onsuccess = () => {
-			resolve(true);
-		};
-	});
+			transactionRequest.onerror = reject;
+			transactionRequest.onsuccess = function () {
+				resolve(true);
+			};
+		})
+	);
 }

@@ -15,6 +15,7 @@ import {
 	insertInto
 } from "./database.js";
 import { setSearching } from "./dom.js";
+import { AppErr, asyncWrapper } from "./errors.js";
 import { nullish } from "./index.js";
 import { AppMsg, displayMessage } from "./messages.js";
 import { allWays, currentRelationId, data } from "./view.js";
@@ -66,7 +67,9 @@ export async function search(name: string) {
 		? `<has-kv k="name" v="${roadName}"/>`
 		: `<id-query type="relation" ref="${roadName}"/>`;
 
-	const query = await overpassQuery(searchMode);
+	const queryResult = await overpassQuery(searchMode);
+	if (!queryResult.ok) return propagateError("overpassError");
+	const query = queryResult.unwrap();
 
 	const relations = new Array<OverpassRelation>();
 	const ways = new Map<number, OverpassWay>();
@@ -109,29 +112,32 @@ export async function search(name: string) {
 	setSearching(false);
 }
 
-export async function overpassQuery(mode: string): Promise<OverpassResponse> {
+export async function overpassQuery(mode: string) {
 	const query = `<osm-script output="json"><union><query type="relation">${mode}</query><recurse type="relation-way"/><recurse type="way-node"/><recurse type="node-way"/></union><print/></osm-script>`;
-	const allCacheKeys = await getAllCacheKeys();
-	const inCache = allCacheKeys.includes(query);
 	const ignoreCache = settings.get("ignoreCache");
 
-	if (inCache && !ignoreCache) return await getCachedFor(query);
-	else return overpassGetData(query);
+	const result = await getCachedFor(query);
+	if (!result.ok || ignoreCache) return await overpassGetData(query);
+	else return result;
 }
 
 export async function overpassGetData(query: string) {
-	displayMessage("overpassDownload");
+	return asyncWrapper<OverpassResponse, AppErr>("overpass", async () => {
+		displayMessage("overpassDownload");
+		const req = await fetch(settings.get("endpoint"), {
+			method: "POST",
+			body: query
+		});
+		const json: OverpassResponse | undefined = await req.json();
+		if (!json) throw new Error();
 
-	const req = await fetch(settings.get("endpoint"), {
-		method: "POST",
-		body: query
+		const allKeys = await getAllCacheKeys();
+		if (allKeys.ok)
+			if (allKeys.unwrap().includes(query)) await deleteEntry(query);
+		if (json.elements.length > 0)
+			await insertInto(query, JSON.stringify(json));
+		return json;
 	});
-	const json: OverpassResponse = await req.json();
-
-	const allKeys = await getAllCacheKeys();
-	if (allKeys.includes(query)) await deleteEntry(query);
-	if (json.elements.length > 0) await insertInto(query, JSON.stringify(json));
-	return json;
 }
 
 export function process(
@@ -156,7 +162,7 @@ export function process(
 				turnLanesBackward: dArray(array(tags["turn:lanes:backward"])),
 				surface: tags.surface
 			},
-			warnings: [],
+			warnings: new Array(),
 			inferences: new Set()
 		};
 

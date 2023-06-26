@@ -50,10 +50,10 @@ export function line(
 }
 
 export function polygon(
-	coordinates: Coordinate[],
-	strokeThickness: number | null = null,
-	strokeColour: string | null = null,
-	fillColour: string | null = null
+	coordinates: Array<Coordinate>,
+	strokeThickness?: number,
+	strokeColour?: string,
+	fillColour?: string
 ) {
 	// set zoom and offset
 	const totalMultiplierCache = totalMultiplier.get();
@@ -79,10 +79,10 @@ export function polygon(
 
 	path.closePath();
 
-	if (strokeColour != null) {
+	if (strokeColour) {
 		context.stroke(path);
 	}
-	if (fillColour != null) {
+	if (fillColour) {
 		context.fill(path);
 	}
 
