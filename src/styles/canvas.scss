@@ -42,7 +42,10 @@ canvas {
 }
 
 #canvas-container {
+	background-color: var(--canvas);
+	border-radius: var(--radius);
 	height: 100%;
+	position: relative;
 	width: 100%;
 
 	&[fullscreen] {
@@ -80,7 +83,7 @@ canvas {
 	grid-template-columns: max-content max-content auto max-content;
 	grid-template-rows: min-content min-content min-content auto min-content;
 
-	inset: 1.5em;
+	inset: 0.5em;
 	// might need these?
 	// height: var(--height);
 	// width: var(--width);
@@ -205,10 +208,12 @@ canvas {
 		background-color: var(--foreground-colour);
 		border-radius: var(--radius);
 		font-size: 0.75em;
-		grid-column: 4;
+		grid-column: 1 / -1;
 		grid-row: 5;
+		margin-inline-start: auto;
 		padding: 0.5em;
 		text-align: right;
+		width: fit-content;
 	}
 }
 
