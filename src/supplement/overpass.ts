@@ -81,7 +81,7 @@ export async function search(name: string) {
 				relations.push(element);
 				break;
 			case "way":
-				if (element.tags.highway) ways.set(element.id, element);
+				if (element.tags?.highway) ways.set(element.id, element);
 				break;
 			case "node":
 				nodes.set(element.id, element);
@@ -152,15 +152,15 @@ export function process(
 			originalWay: way,
 			orderedNodes: way.nodes,
 			tags: {
-				oneway: bool(tags.oneway),
-				junction: tags.junction,
-				lanes: number(tags.lanes),
-				lanesForward: number(tags["lanes:forward"]),
-				lanesBackward: number(tags["lanes:backward"]),
-				turnLanes: dArray(array(tags["turn:lanes"], "none"), "none"),
-				turnLanesForward: dArray(array(tags["turn:lanes:forward"])),
-				turnLanesBackward: dArray(array(tags["turn:lanes:backward"])),
-				surface: tags.surface
+				oneway: bool(tags?.oneway),
+				junction: tags?.junction,
+				lanes: number(tags?.lanes),
+				lanesForward: number(tags?.["lanes:forward"]),
+				lanesBackward: number(tags?.["lanes:backward"]),
+				turnLanes: dArray(array(tags?.["turn:lanes"], "none"), "none"),
+				turnLanesForward: dArray(array(tags?.["turn:lanes:forward"])),
+				turnLanesBackward: dArray(array(tags?.["turn:lanes:backward"])),
+				surface: tags?.surface
 			},
 			warnings: new Array(),
 			inferences: new Set()

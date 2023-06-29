@@ -40,6 +40,7 @@ const wayInfoId = getElement<HTMLHeadingElement>("wayid");
 const wayInfoTags = getElement<HTMLTableElement>("tags");
 const editInID = getElement<HTMLButtonElement>("edit-id");
 const editInJOSM = getElement<HTMLButtonElement>("edit-josm");
+const searchInput = getElement<HTMLInputElement>("relation-name");
 const searchForm = getElement<HTMLFormElement>("search-form");
 
 // popup buttons
@@ -149,6 +150,11 @@ editInJOSM.addEventListener("click", openJOSM);
 // hooks
 export function getContext() {
 	return canvas.getContext("2d") ?? undefined;
+}
+
+export function setAndSearch(term?: string) {
+	searchInput.value = term ?? "";
+	if (term) search(term);
 }
 
 export function setSearching(searching = true) {
@@ -387,7 +393,7 @@ export function displayPopup(
 	wayInfoTags.append(row);
 
 	// content rows
-	Object.entries(way.tags).forEach(([tag, value]) => {
+	Object.entries(way.tags ?? {}).forEach(([tag, value]) => {
 		const tagCell = new ElementBuilder("td").text(tag.toString()).build();
 		const valueCell = new ElementBuilder("td")
 			.text(value.toString())

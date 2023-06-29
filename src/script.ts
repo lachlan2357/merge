@@ -1,5 +1,5 @@
 import { Result } from "./index.js";
-import { togglePopup } from "./supplement/dom.js";
+import { setAndSearch, togglePopup } from "./supplement/dom.js";
 import { ElementBuilder } from "./supplement/elements.js";
 import { Err, isErr, resultConstructor } from "./supplement/errors.js";
 import { Settings } from "./supplement/settings.js";
@@ -81,6 +81,15 @@ export const settings = result.settings.unwrap();
 export const database = result.database.unwrap();
 export const context = result.context.unwrap();
 
+// permalinks
+const hash = window.location.hash;
+if (hash.length > 0) {
+	const id = Number(hash.substring(1));
+	if (!isNaN(id)) setAndSearch(id.toString());
+	else setAndSearch();
+} else setAndSearch();
+
+// first time popup
 if (settings.get("firstLaunch")) {
 	settings.set("firstLaunch", false);
 	togglePopup("welcome");

@@ -13,7 +13,7 @@ export interface OverpassResponse {
 export interface OverpassRelation {
 	id: number;
 	members: Array<{ ref: number; role: string; type: string }>;
-	tags: Record<string, string>;
+	tags?: Record<string, string>;
 	type: "relation";
 }
 
@@ -21,7 +21,7 @@ export interface OverpassWay {
 	changeset: number;
 	id: number;
 	nodes: Array<number>;
-	tags: {
+	tags?: {
 		"highway"?: string;
 		"lanes"?: string;
 		"maxspeed"?: string;
