@@ -147,6 +147,10 @@ editInID.addEventListener("click", editID);
 editInJOSM.addEventListener("click", openJOSM);
 
 // hooks
+export function getContext() {
+	return canvas.getContext("2d") ?? undefined;
+}
+
 export function setSearching(searching = true) {
 	while (searchButton.lastChild) searchButton.lastChild.remove();
 

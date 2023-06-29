@@ -1,11 +1,11 @@
-import { context, settings } from "../script.js";
+import { settings } from "../script.js";
 import {
 	coordToScreenSpace,
 	laneLength,
 	metresToPixels,
 	screenSpaceToCoord
 } from "./conversions.js";
-import { displayPopup } from "./dom.js";
+import { displayPopup, getContext } from "./dom.js";
 import * as draw from "./drawing.js";
 import { roadColours } from "./drawing.js";
 import { Coordinate, zoomIncrement } from "./index.js";
@@ -52,12 +52,14 @@ export function zoomInOut(inOut: "in" | "out", source: "mouse" | "button") {
 export function drawCanvas() {
 	// clear canvas from previous drawings
 	const dimensions = canvasDimensions.get();
+	const context = getContext();
+	const dataCache = data.get();
+
+	if (!dataCache || !context) return;
+	else document.getElementById("empty-message")?.remove();
+
 	context.clearRect(0, 0, dimensions.x, dimensions.y);
 	drawnElements.set({});
-
-	const dataCache = data.get();
-	if (!dataCache) return;
-	else document.getElementById("empty-message")?.remove();
 
 	settings.set("ignoreCache", false);
 
@@ -321,7 +323,8 @@ export function drawCanvas() {
 }
 
 export function hoverPath(click = true) {
-	if (!data.get()) return;
+	const context = getContext();
+	if (!data.get() || !context) return;
 
 	const drawnCache = drawnElements.get();
 	const canvasOffsetCache = canvasOffset.get();
