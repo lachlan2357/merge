@@ -1,9 +1,13 @@
 import { execSync } from "child_process";
-import { mkdirSync, rmSync, cpSync } from "fs";
+import { cpSync, mkdirSync, rmSync } from "fs";
 
-rmSync("dist", { recursive: true, force: true });
-mkdirSync("dist", { recursive: true });
-cpSync("src/pages", "dist", { recursive: true });
-cpSync("assets", "dist", { recursive: true });
-execSync("tsc");
-execSync("sass src/styles:dist --no-source-map");
+try {
+	rmSync("dist", { recursive: true, force: true });
+	mkdirSync("dist", { recursive: true });
+	cpSync("src/pages", "dist", { recursive: true });
+	cpSync("assets", "dist", { recursive: true });
+	execSync("tsc");
+	execSync("sass src/styles:dist --no-source-map");
+} catch (e) {
+	throw e.stdout.toString();
+}
