@@ -1,4 +1,3 @@
-import { settings } from "../script.js";
 import {
 	coordToScreenSpace,
 	laneLength,
@@ -8,7 +7,8 @@ import {
 import { displayPopup, getContext } from "./dom.js";
 import * as draw from "./drawing.js";
 import { roadColours } from "./drawing.js";
-import { Coordinate, zoomIncrement } from "./index.js";
+import { settings } from "./index.js";
+import { Coordinate, zoomIncrement } from "./supplement.js";
 import {
 	allWays,
 	canvasDimensions,

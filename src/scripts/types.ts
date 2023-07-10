@@ -1,4 +1,4 @@
-import { Err, Ok } from "./supplement/errors.ts";
+import { Err, Ok } from "./errors.js";
 
 export interface OverpassResponse {
 	version: number;

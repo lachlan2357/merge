@@ -1,5 +1,5 @@
-import { Result } from "../index.js";
-import { nullish } from "./index.js";
+import { nullish } from "./supplement.js";
+import { Result } from "./types.js";
 
 export class Ok<T> {
 	data: T;

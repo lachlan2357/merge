@@ -1,8 +1,8 @@
-import { Result } from "./index.js";
-import { setAndSearch, togglePopup } from "./supplement/dom.js";
-import { ElementBuilder } from "./supplement/elements.js";
-import { Err, isErr, resultConstructor } from "./supplement/errors.js";
-import { Settings } from "./supplement/settings.js";
+import { setAndSearch, togglePopup } from "./dom.js";
+import { ElementBuilder } from "./elements.js";
+import { Err, isErr, resultConstructor } from "./errors.js";
+import { Settings } from "./settings.js";
+import { Result } from "./types.js";
 
 const stage = <T>(
 	description: string,
@@ -83,11 +83,9 @@ export const context = result.context.unwrap();
 
 // permalinks
 const hash = window.location.hash;
-if (hash.length > 0) {
-	const id = Number(hash.substring(1));
-	if (!isNaN(id)) setAndSearch(id.toString());
-	else setAndSearch();
-} else setAndSearch();
+const id = Number(hash.substring(1));
+if (hash.length > 0 && !isNaN(id)) setAndSearch(id.toString());
+else setAndSearch();
 
 // first time popup
 if (settings.get("firstLaunch")) {

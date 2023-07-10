@@ -1,10 +1,10 @@
-import { context } from "../script.js";
 import {
 	degreesToPixels,
 	metresToDegrees,
 	metresToPixels
 } from "./conversions.js";
-import { Coordinate } from "./index.js";
+import { context } from "./index.js";
+import { Coordinate } from "./supplement.js";
 import { offset, totalMultiplier } from "./view.js";
 
 export const roadColours = {

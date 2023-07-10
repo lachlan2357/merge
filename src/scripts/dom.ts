@@ -1,10 +1,10 @@
-import { OverpassWay } from "../index.js";
-import { settings } from "../script.js";
 import { centre, hoverPath, zoomInOut } from "./canvas.js";
 import { ElementBuilder, FontAwesomeIcon, LinkChip } from "./elements.js";
-import { Coordinate } from "./index.js";
+import { settings } from "./index.js";
 import { search } from "./overpass.js";
 import { SettingName } from "./settings.js";
+import { Coordinate } from "./supplement.js";
+import { OverpassWay } from "./types.js";
 import {
 	canvasDimensions,
 	canvasOffset,

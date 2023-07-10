@@ -1,12 +1,3 @@
-import {
-	ImportedData,
-	OverpassNode,
-	OverpassRelation,
-	OverpassResponse,
-	OverpassWay,
-	WayData
-} from "../index.js";
-import { settings } from "../script.js";
 import { centre } from "./canvas.js";
 import {
 	deleteEntry,
@@ -16,8 +7,17 @@ import {
 } from "./database.js";
 import { setSearching } from "./dom.js";
 import { AppErr, asyncWrapper } from "./errors.js";
-import { nullish } from "./index.js";
+import { settings } from "./index.js";
 import { AppMsg, displayMessage } from "./messages.js";
+import { nullish } from "./supplement.js";
+import {
+	ImportedData,
+	OverpassNode,
+	OverpassRelation,
+	OverpassResponse,
+	OverpassWay,
+	WayData
+} from "./types.js";
 import { allWays, currentRelationId, data } from "./view.js";
 
 export function bool(value?: string) {

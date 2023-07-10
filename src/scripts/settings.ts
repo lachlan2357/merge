@@ -1,4 +1,4 @@
-import { Setting } from "../index.js";
+import { Setting } from "./types.js";
 
 export interface SettingMap {
 	leftHandTraffic: boolean;

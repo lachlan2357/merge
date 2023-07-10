@@ -1,4 +1,4 @@
-import { Coordinate } from "./index.js";
+import { Coordinate } from "./supplement.js";
 import { offset, totalMultiplier } from "./view.js";
 
 const earthRadius = 6371000;

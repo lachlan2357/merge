@@ -1,7 +1,7 @@
-import { ImportedData, OverpassWay } from "../index.js";
 import { drawCanvas } from "./canvas.js";
-import { Coordinate } from "./index.js";
 import { Atomic, Computed, Effect } from "./state.js";
+import { Coordinate } from "./supplement.js";
+import { ImportedData, OverpassWay } from "./types.js";
 
 // atomics
 export const data = new Atomic<ImportedData | undefined>(undefined);

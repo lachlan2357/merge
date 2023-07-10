@@ -1,7 +1,7 @@
-import { CachedQuery, OverpassResponse } from "../index.js";
-import { database } from "../script.js";
 import { AppErr, promiseWrapper } from "./errors.js";
-import { nullish } from "./index.js";
+import { database } from "./index.js";
+import { nullish } from "./supplement.js";
+import { CachedQuery, OverpassResponse } from "./types.js";
 
 export async function getAllCacheKeys() {
 	return promiseWrapper<Array<string>, AppErr>(
