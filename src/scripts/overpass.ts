@@ -31,22 +31,19 @@ export function number(value?: string) {
 	else return undefined;
 }
 
-export function array(value?: string, fallback = "none", delimiter = "|") {
-	let split = value?.split(delimiter);
-	if (fallback) split = split?.map(value => value ?? fallback);
-	return split;
+export function array(value?: string, delimiter = "|") {
+	return (
+		value?.split(delimiter).map(value => value || "none") ??
+		new Array<string>()
+	);
 }
 
-export function dArray(
-	array?: Array<string>,
-	fallback = "none",
-	delimiter = ";"
-) {
-	return array?.map(value => {
-		let _split = value.split(delimiter);
-		if (fallback) _split = _split.map(value => value ?? fallback);
-		return _split;
-	});
+export function dArray(array?: Array<string>, delimiter = ";") {
+	return (
+		array?.map(value =>
+			value.split(delimiter).map(value => value || "none")
+		) ?? new Array<Array<string>>()
+	);
 }
 
 export async function search(name: string) {
@@ -157,7 +154,7 @@ export function process(
 				lanes: number(tags?.lanes),
 				lanesForward: number(tags?.["lanes:forward"]),
 				lanesBackward: number(tags?.["lanes:backward"]),
-				turnLanes: dArray(array(tags?.["turn:lanes"], "none"), "none"),
+				turnLanes: dArray(array(tags?.["turn:lanes"])),
 				turnLanesForward: dArray(array(tags?.["turn:lanes:forward"])),
 				turnLanesBackward: dArray(array(tags?.["turn:lanes:backward"])),
 				surface: tags?.surface

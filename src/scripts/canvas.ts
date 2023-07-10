@@ -152,10 +152,10 @@ export function drawCanvas() {
 			}
 
 			const allXEqual = allOffScreen[0].every(
-				(val, i, arr) => val === arr[0]
+				(val, _, arr) => val === arr[0]
 			);
 			const allYEqual = allOffScreen[1].every(
-				(val, i, arr) => val === arr[0]
+				(val, _, arr) => val === arr[0]
 			);
 
 			// check if the entire way is offscreen
@@ -166,15 +166,15 @@ export function drawCanvas() {
 				return;
 
 			const lanesForward =
-				way["lanes:forward"] || (way.tags.oneway ? lanes : lanes / 2);
+				way.tags.lanesForward ?? (way.tags.oneway ? lanes : lanes / 2);
 			const lanesBackward =
-				way["lanes:backward"] || (way.tags.oneway ? 0 : lanes / 2);
-			const turnLanesForward = (
-				way["turn:lanes:forward"] || "none"
-			).split("|");
-			const turnLanesBackward = (
-				way["turn:lanes:backward"] || "none"
-			).split("|");
+				way.tags.lanesBackward ?? (way.tags.oneway ? 0 : lanes / 2);
+			const turnLanesForward =
+				(way.tags.turnLanesForward ?? way.tags.oneway
+					? way.tags.turnLanes
+					: undefined) ?? new Array<Array<string>>();
+			const turnLanesBackward =
+				way.tags.turnLanesBackward ?? new Array<Array<string>>();
 
 			const leftTraffic = settings.get("leftHandTraffic");
 			const directionality = leftTraffic ? 1 : -1;
@@ -209,30 +209,26 @@ export function drawCanvas() {
 				);
 
 				// turn markings
-				let lanesString: string;
+				let markings = new Array<string>();
 				if (leftTraffic) {
-					lanesString =
+					markings =
 						i < lanesForward
-							? turnLanesForward[i] || "none"
+							? turnLanesForward[i] || new Array<string>()
 							: turnLanesBackward[
 									turnLanesBackward.length +
 										(lanesForward - i) -
 										1
-							  ] || "none";
+							  ] || new Array<string>();
 				} else {
-					lanesString =
+					markings =
 						i < lanesBackward
-							? turnLanesBackward[i] || "none"
+							? turnLanesBackward[i] || new Array<string>()
 							: turnLanesForward[
 									turnLanesForward.length +
 										(lanesBackward - i) -
 										1
-							  ] || "none";
+							  ] || new Array<string>();
 				}
-
-				const markings = lanesString.includes(";")
-					? lanesString.split(";")
-					: [lanesString];
 
 				const allX = [
 					thisSrtCoord.x,
