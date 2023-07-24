@@ -152,18 +152,9 @@ button:has(i:only-child) {
 	@include mixins.icon-button();
 }
 
-// todo - figure out why this exists
-input[type="text"] {
-	background-color: var(--background-colour);
-	border: none;
-	border-radius: 5px;
-	height: 2.5em;
-	padding-inline: 10px;
-}
-
 #popup {
 	@include mixins.flexbox(column);
-	background-color: var(--foreground-colour);
+	background-color: var(--background-colour);
 	border: none;
 	border-radius: var(--radius);
 	box-shadow: var(--box-shadow);
@@ -193,6 +184,14 @@ input[type="text"] {
 		position: absolute;
 		right: 1em;
 		top: 1em;
+	}
+
+	input[type="text"] {
+		background-color: var(--foreground-colour);
+		border: none;
+		border-radius: 5px;
+		height: 2.5em;
+		padding-inline: 10px;
 	}
 }
 
