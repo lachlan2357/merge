@@ -1,7 +1,7 @@
-import { addMessage } from "./dom.js";
+import { getElement } from "./dom.js";
 import { ElementBuilder } from "./elements.js";
 
-export const AppMsgMap = {
+const appMsgMap = {
 	emptyShare: "Map is empty. Nothing to share.",
 	overpassDownload: "Downloading from Overpass...",
 	noSearchTerm: "Please enter a search term.",
@@ -11,19 +11,31 @@ export const AppMsgMap = {
 	overpassError: "Error retrieving data from Overpass."
 } as const;
 
-export type AppMsg = keyof typeof AppMsgMap;
+export type AppMsg = keyof typeof appMsgMap;
 
-export function getMsg(key: AppMsg) {
-	return AppMsgMap[key];
-}
+export class Message {
+	static element: HTMLDivElement = getElement("messages");
 
-export async function displayMessage(key: AppMsg) {
-	const messageText = new ElementBuilder("p").text(getMsg(key)).build();
-	const message = new ElementBuilder("div")
-		.class("message-box")
-		.children(messageText)
-		.attribute("visible", "")
-		.build();
+	static async display(key: AppMsg) {
+		const messageText = new ElementBuilder("p").text(appMsgMap[key]).build();
+		const message = new ElementBuilder("div")
+			.class("message-box")
+			.children(messageText)
+			.attribute("visible", "")
+			.build();
 
-	addMessage(message);
+		Message.element.append(message);
+
+		await new Promise(resolve => setTimeout(resolve, 5000));
+		message.setAttribute("closing", "");
+		message.addEventListener(
+			"animationend",
+			() => {
+				message.removeAttribute("closing");
+				message.removeAttribute("visible");
+				message.parentElement?.removeChild(message);
+			},
+			{ once: true }
+		);
+	}
 }

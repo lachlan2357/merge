@@ -1,8 +1,7 @@
-import { centre, hoverPath, zoomInOut } from "./canvas.js";
+import { Canvas } from "./canvas.js";
 import { ElementBuilder, FontAwesomeIcon, LinkChip } from "./elements.js";
-import { settings } from "./index.js";
-import { search } from "./overpass.js";
-import { SettingName } from "./settings.js";
+import { Overpass } from "./overpass.js";
+import { Settings, SettingsObject } from "./settings.js";
 import { Coordinate } from "./supplement.js";
 import { OverpassWay } from "./types.js";
 import {
@@ -19,11 +18,12 @@ import {
 	selectedWay
 } from "./view.js";
 
-export const getElement = <K>(id: string) => document.getElementById(id) as K;
+export function getElement<K>(id: string) {
+	return document.getElementById(id) as K;
+}
 
 const canvas = getElement<HTMLCanvasElement>("canvas");
 const canvasContainer = getElement<HTMLDivElement>("canvas-container");
-const messages = getElement<HTMLDivElement>("messages");
 const searchButton = getElement<HTMLButtonElement>("search");
 const advancedButton = getElement<HTMLButtonElement>("advanced");
 const settingsButton = getElement<HTMLButtonElement>("settings");
@@ -55,7 +55,7 @@ searchForm.addEventListener("submit", e => {
 	e.preventDefault();
 	const form = e.target as HTMLFormElement;
 	const formData = new FormData(form);
-	search(formData.get("relation")?.toString() ?? "");
+	Overpass.search(formData.get("relation")?.toString() ?? "");
 });
 
 // canvas
@@ -64,7 +64,7 @@ canvas.addEventListener("wheel", e => {
 	if (!data.get()) return;
 
 	const inOut = e.deltaY > 0 ? "out" : "in";
-	zoomInOut(inOut, "mouse");
+	Canvas.zoom(inOut, "mouse");
 });
 
 canvas.addEventListener("mousedown", e => {
@@ -82,7 +82,7 @@ canvas.addEventListener("mouseup", e => {
 	e.preventDefault();
 	if (!data.get()) return;
 
-	if (!mouseMoved.get() && !hoverPath()) {
+	if (!mouseMoved.get() && !Canvas.checkHover()) {
 		wayInfo.setAttribute("hidden", "");
 		selectedWay.set(-1);
 	}
@@ -102,7 +102,7 @@ canvas.addEventListener("mousemove", e => {
 	if (mouseDown.get())
 		mouseOffset.set(new Coordinate(x, y).subtract(mouseDownPos.get()));
 
-	canvas.style.cursor = hoverPath(false) ? "pointer" : "move";
+	canvas.style.cursor = Canvas.checkHover(false) ? "pointer" : "move";
 });
 
 function updateCanvasSize() {
@@ -138,9 +138,9 @@ new ResizeObserver(updateCanvasSize).observe(canvasContainer);
 window.addEventListener("resize", updateCanvasSize);
 
 // canvas buttons
-zoomInButton.addEventListener("click", () => zoomInOut("in", "button"));
-zoomOutButton.addEventListener("click", () => zoomInOut("out", "button"));
-zoomResetButton.addEventListener("click", centre);
+zoomInButton.addEventListener("click", () => Canvas.zoom("in", "button"));
+zoomOutButton.addEventListener("click", () => Canvas.zoom("out", "button"));
+zoomResetButton.addEventListener("click", () => Canvas.centre());
 fullscreenButton.addEventListener("click", () =>
 	canvasContainer.toggleAttribute("fullscreen")
 );
@@ -154,7 +154,7 @@ export function getContext() {
 
 export function setAndSearch(term?: string) {
 	searchInput.value = term ?? "";
-	if (term) search(term);
+	if (term) Overpass.search(term);
 }
 
 export function setSearching(searching = true) {
@@ -196,9 +196,8 @@ export async function togglePopup(reason?: PopupReason) {
 
 	switch (reason) {
 		case "share": {
-			const shareText = `${window.location.origin}${
-				window.location.pathname
-			}#${currentRelationId.get()}`;
+			const shareText = `${window.location.origin}${window.location.pathname
+				}#${currentRelationId.get()}`;
 
 			const copyIcon = new FontAwesomeIcon("solid", "copy").build();
 			const copyButton = new ElementBuilder("button")
@@ -257,8 +256,8 @@ export async function togglePopup(reason?: PopupReason) {
 		case "settings": {
 			const list = new ElementBuilder("div").id("settings-list").build();
 
-			settings.keys().forEach(key => {
-				const setting = settings.getFull(key);
+			Settings.keys().forEach(key => {
+				const setting = Settings.getObject(key);
 				if (!setting.inSettings) return;
 
 				const settingDescription = setting.description;
@@ -278,8 +277,8 @@ export async function togglePopup(reason?: PopupReason) {
 					.attribute("data-setting", key)
 					.event("change", e => {
 						const target = e.target as HTMLInputElement;
-						settings.set(
-							target.getAttribute("data-setting") as SettingName,
+						Settings.set(
+							target.getAttribute("data-setting") as keyof SettingsObject,
 							target.getAttribute("type") == "checkbox"
 								? target.checked
 								: target.value
@@ -429,20 +428,4 @@ export function openJOSM() {
 	const { minLat, maxLat, minLon, maxLon } = multiplier.get();
 	const url = `127.0.0.1:8111/load_and_zoom?left=${minLon}&right=${maxLon}&top=${maxLat}&bottom=${minLat}&select=relation${currentRelationId.get()}`;
 	fetch(url);
-}
-
-export async function addMessage(message: HTMLDivElement) {
-	messages.append(message);
-
-	await new Promise(resolve => setTimeout(resolve, 5000));
-	message.setAttribute("closing", "");
-	message.addEventListener(
-		"animationend",
-		() => {
-			message.removeAttribute("closing");
-			message.removeAttribute("visible");
-			message.parentElement?.removeChild(message);
-		},
-		{ once: true }
-	);
 }

@@ -1,4 +1,4 @@
-import { drawCanvas } from "./canvas.js";
+import { Canvas } from "./canvas.js";
 import { Atomic, Computed, Effect } from "./state.js";
 import { Coordinate } from "./supplement.js";
 import { ImportedData, OverpassWay } from "./types.js";
@@ -70,18 +70,18 @@ export const offset = new Computed(() => {
 
 	return new Coordinate(
 		canvasCache.x / 2 -
-			(minLon + (maxLon - minLon) / 2) * totalMultiplierCache +
-			mouseOffset.get().x +
-			zoomOffset.get().x,
+		(minLon + (maxLon - minLon) / 2) * totalMultiplierCache +
+		mouseOffset.get().x +
+		zoomOffset.get().x,
 		canvasCache.y / 2 +
-			(minLat + (maxLat - minLat) / 2) * totalMultiplierCache +
-			mouseOffset.get().y +
-			zoomOffset.get().y
+		(minLat + (maxLat - minLat) / 2) * totalMultiplierCache +
+		mouseOffset.get().y +
+		zoomOffset.get().y
 	);
 }, [totalMultiplier, multiplier, canvasDimensions, mouseOffset, zoomOffset]);
 
 // effects
-new Effect(drawCanvas, [
+new Effect(Canvas.draw, [
 	data,
 	canvasDimensions,
 	mousePos,
