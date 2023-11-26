@@ -8,7 +8,8 @@ const appMsgMap = {
 	malformedSearchTerm: "Currently, double quotes are not supported.",
 	multipleRelations: "Multiple relations share that name. Use relation id.",
 	noResult: "No Results.",
-	overpassError: "Error retrieving data from Overpass."
+	overpassError: "Error retrieving data from Overpass.",
+	error: "Something went wrong."
 } as const;
 
 export type AppMsg = keyof typeof appMsgMap;
@@ -17,7 +18,12 @@ export class Message {
 	static element: HTMLDivElement = getElement("messages");
 
 	static async display(key: AppMsg) {
-		const messageText = new ElementBuilder("p").text(appMsgMap[key]).build();
+		const message = appMsgMap[key];
+		this.displayString(message);
+	}
+
+	static async displayString(msg: string) {
+		const messageText = new ElementBuilder("p").text(msg).build();
 		const message = new ElementBuilder("div")
 			.class("message-box")
 			.children(messageText)

@@ -5,9 +5,8 @@ import {
 	screenSpaceToCoord
 } from "./conversions.js";
 import { displayPopup, getContext, getElement } from "./dom.js";
-import * as draw from "./drawing.js";
+import { Draw } from "./drawing.js";
 import { roadColours } from "./drawing.js";
-import { Overpass } from "./overpass.js";
 import { Settings } from "./settings.js";
 import { Coordinate, zoomIncrement } from "./supplement.js";
 import {
@@ -203,11 +202,13 @@ export class Canvas {
 					const nextSrtCoord = thisTopCornerPos.subtract(nextCoefficient);
 					const nextEndCoord = nextTopCornerPos.subtract(nextCoefficient);
 
-					draw.polygon(
+					Draw.polygon(
 						[thisSrtCoord, thisEndCoord, nextEndCoord, nextSrtCoord],
-						metresToPixels(0.15),
-						"#dddddd",
-						roadColour
+						{
+							thickness: metresToPixels(0.15),
+							colour: "#dddddd",
+							fill: roadColour
+						}
 					);
 
 					// turn markings
@@ -269,15 +270,15 @@ export class Canvas {
 						) * (i < lanesForward ? directionality : -directionality);
 
 					if (markings.includes("through")) {
-						draw.arrow("through", width, length, centre, angle);
+						Draw.arrow("through", width, length, centre, angle);
 					}
 
 					if (markings.includes("left")) {
-						draw.arrow("left", width, length, centre, angle);
+						Draw.arrow("left", width, length, centre, angle);
 					}
 
 					if (markings.includes("right")) {
-						draw.arrow("right", width, length, centre, angle);
+						Draw.arrow("right", width, length, centre, angle);
 					}
 				}
 
@@ -289,25 +290,31 @@ export class Canvas {
 				const centreEndCoord = nextTopCornerPos.subtract(trigCoefficient);
 
 				if (!way.tags.oneway)
-					draw.line(
+					Draw.line(
 						centreStartCoord,
 						centreEndCoord,
-						metresToPixels(0.5),
-						"white"
+						{
+							thickness: metresToPixels(0.5),
+							colour: "white"
+						}
 					);
 
 				// draw select outline if selected
 				const outlined = selectedWay.get() == wayId;
-				const path = draw.polygon(
+				const path = Draw.polygon(
 					[
 						thisBtmCornerPos,
 						thisTopCornerPos,
 						nextTopCornerPos,
 						nextBtmCornerPos
 					],
-					outlined ? 5 : 1,
-					outlined ? "lightblue" : "#222233"
+					{
+						thickness: outlined ? 5 : 1,
+						colour: outlined ? "lightblue" : "#222233"
+					}
 				);
+
+				if (path === undefined) return;
 
 				drawnElements.setDynamic(old => {
 					const key = Object.keys(old).length;
@@ -350,8 +357,9 @@ export class Canvas {
 		return results.includes(true);
 	}
 
-	private static getContext() {
+	static getContext() {
 		const context = this.canvas.getContext("2d");
+		if (context === null) throw new Error("Context could not be retrieved");
 		return context;
 	}
 }

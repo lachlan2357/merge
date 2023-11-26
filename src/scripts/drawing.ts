@@ -1,9 +1,5 @@
-import {
-	degreesToPixels,
-	metresToDegrees,
-	metresToPixels
-} from "./conversions.js";
-import { context } from "./index.js";
+import { Canvas } from "./canvas.js";
+import { metresToPixels } from "./conversions.js";
 import { Coordinate } from "./supplement.js";
 import { offset, totalMultiplier } from "./view.js";
 
@@ -17,205 +13,192 @@ export const roadColours = {
 	unknown: "#000000"
 };
 
-export function line(
-	coordStart: Coordinate,
-	coordEnd: Coordinate,
-	strokeThickness: number | null = null,
-	strokeColour: string | null = null,
-	fillColour: string | null = null,
-	lineCap: "butt" | "round" | "square" = "butt"
-) {
-	// set zoom and offset
-	const totalMultiplierCache = totalMultiplier.get();
-	const offsetCache = offset.get();
-
-	// draw
-	context.strokeStyle = strokeColour || "black";
-	context.lineWidth = strokeThickness || 1;
-	context.fillStyle = fillColour || "black";
-	context.lineCap = lineCap;
-
-	context.beginPath();
-	context.moveTo(
-		offsetCache.x + coordStart.x * totalMultiplierCache,
-		offsetCache.y - coordStart.y * totalMultiplierCache
-	);
-	context.lineTo(
-		offsetCache.x + coordEnd.x * totalMultiplierCache,
-		offsetCache.y - coordEnd.y * totalMultiplierCache
-	);
-
-	if (fillColour != null) context.fill();
-	if (strokeColour != null) context.stroke();
+type DrawingSettings = {
+	thickness?: number;
+	colour?: string;
+	fill?: string;
+	cap?: CanvasLineCap;
 }
 
-export function polygon(
-	coordinates: Array<Coordinate>,
-	strokeThickness?: number,
-	strokeColour?: string,
-	fillColour?: string
-) {
-	// set zoom and offset
-	const totalMultiplierCache = totalMultiplier.get();
-	const offsetCache = offset.get();
+export class Draw {
+	static line(
+		coordStart: Coordinate,
+		coordEnd: Coordinate,
+		settings: DrawingSettings
+	) {
+		const totalMultiplierCache = totalMultiplier.get();
+		const offsetCache = offset.get();
 
-	context.strokeStyle = strokeColour || "black";
-	context.lineWidth = strokeThickness || 1;
-	context.fillStyle = fillColour || "black";
-	context.lineCap = "round";
+		const context = this.setStyle(settings);
 
-	const path = new Path2D();
-
-	path.moveTo(
-		offsetCache.x + coordinates[0].x * totalMultiplierCache,
-		offsetCache.y - coordinates[0].y * totalMultiplierCache
-	);
-	for (let i = 1; i < coordinates.length; i++) {
-		path.lineTo(
-			offsetCache.x + coordinates[i].x * totalMultiplierCache,
-			offsetCache.y - coordinates[i].y * totalMultiplierCache
+		// draw
+		context.beginPath();
+		context.moveTo(
+			offsetCache.x + coordStart.x * totalMultiplierCache,
+			offsetCache.y - coordStart.y * totalMultiplierCache
 		);
+		context.lineTo(
+			offsetCache.x + coordEnd.x * totalMultiplierCache,
+			offsetCache.y - coordEnd.y * totalMultiplierCache
+		);
+
+		this.applyStyle(context, settings);
 	}
 
-	path.closePath();
+	static polygon(
+		coordinates: Array<Coordinate>,
+		settings: DrawingSettings
+	) {
+		const totalMultiplierCache = totalMultiplier.get();
+		const offsetCache = offset.get();
 
-	if (strokeColour) {
-		context.stroke(path);
+		const context = this.setStyle(settings);
+
+		// draw
+		const path = new Path2D();
+
+		path.moveTo(
+			offsetCache.x + coordinates[0].x * totalMultiplierCache,
+			offsetCache.y - coordinates[0].y * totalMultiplierCache
+		);
+		for (let i = 1; i < coordinates.length; i++) {
+			path.lineTo(
+				offsetCache.x + coordinates[i].x * totalMultiplierCache,
+				offsetCache.y - coordinates[i].y * totalMultiplierCache
+			);
+		}
+
+		path.closePath();
+		this.applyStyle(context, settings, path);
+
+		return path;
 	}
-	if (fillColour) {
-		context.fill(path);
+
+	static arrow(
+		type: "left" | "right" | "through",
+		width: number,
+		length: number,
+		centre: Coordinate,
+		angle: number
+	) {
+		const arrowBaseLength = width * 0.35;
+		const arrowArmLength = arrowBaseLength / 2 / Math.tan(Math.PI / 12);
+
+		const thickness = metresToPixels(0.2);
+		const lineStyle: DrawingSettings = { thickness, colour: "white", cap: "round" };
+		const backgroundStyle: DrawingSettings = { thickness: 0, colour: "white", fill: "white" };
+
+		if (type == "through") {
+			const lineStart = new Coordinate(
+				centre.x - ((Math.cos(angle) * length) / 2) * 0.9,
+				centre.y - ((Math.sin(angle) * length) / 2) * 0.9
+			);
+			const lineEnd = new Coordinate(
+				centre.x + ((Math.cos(angle) * length) / 2) * 0.9,
+				centre.y + ((Math.sin(angle) * length) / 2) * 0.9
+			);
+
+			const arrowArmAngle = angle + (Math.PI * 1) / 6;
+			const arrowBaseAngle = arrowArmAngle - (Math.PI * 2) / 3;
+
+			const arrowStart = new Coordinate(
+				lineEnd.x - (Math.cos(arrowArmAngle) * arrowArmLength) / 2,
+				lineEnd.y - (Math.sin(arrowArmAngle) * arrowArmLength) / 2
+			);
+			const arrowEnd = new Coordinate(
+				arrowStart.x - Math.cos(arrowBaseAngle) * arrowBaseLength,
+				arrowStart.y - Math.sin(arrowBaseAngle) * arrowBaseLength
+			);
+
+			this.line(lineStart, lineEnd, lineStyle);
+			this.polygon([lineEnd, arrowStart, arrowEnd], backgroundStyle);
+		} else if (type == "left") {
+			const lineStart = new Coordinate(
+				centre.x - ((Math.cos(angle) * length) / 2) * 0.9,
+				centre.y - ((Math.sin(angle) * length) / 2) * 0.9
+			);
+			const lineEnd = new Coordinate(
+				centre.x + ((Math.cos(angle) * length) / 2) * 0,
+				centre.y + ((Math.sin(angle) * length) / 2) * 0
+			);
+			const arrowLineEnd = new Coordinate(
+				lineEnd.x + Math.cos(angle + Math.PI / 2) * width * 0.075,
+				lineEnd.y + Math.sin(angle + Math.PI / 2) * width * 0.075
+			);
+
+			const arrowArmAngle = angle - (Math.PI * 1) / 3;
+			const arrowBaseAngle = arrowArmAngle + (Math.PI * 2) / 3;
+
+			const arrowStart = new Coordinate(
+				arrowLineEnd.x + (Math.cos(angle) * arrowBaseLength) / 2,
+				arrowLineEnd.y + (Math.sin(angle) * arrowBaseLength) / 2
+			);
+			const arrowMid = new Coordinate(
+				arrowStart.x - (Math.cos(arrowArmAngle) * arrowArmLength) / 2,
+				arrowStart.y - (Math.sin(arrowArmAngle) * arrowArmLength) / 2
+			);
+			const arrowEnd = new Coordinate(
+				arrowMid.x - (Math.cos(arrowBaseAngle) * arrowArmLength) / 2,
+				arrowMid.y - (Math.sin(arrowBaseAngle) * arrowArmLength) / 2
+			);
+
+			this.line(lineStart, lineEnd, lineStyle);
+			this.line(lineEnd, arrowLineEnd, lineStyle);
+			this.polygon([arrowStart, arrowMid, arrowEnd], backgroundStyle);
+		} else if (type == "right") {
+			const lineStart = new Coordinate(
+				centre.x - ((Math.cos(angle) * length) / 2) * 0.9,
+				centre.y - ((Math.sin(angle) * length) / 2) * 0.9
+			);
+			const lineEnd = new Coordinate(
+				centre.x + ((Math.cos(angle) * length) / 2) * 0,
+				centre.y + ((Math.sin(angle) * length) / 2) * 0
+			);
+			const arrowLineEnd = new Coordinate(
+				lineEnd.x + Math.cos(angle - Math.PI / 2) * width * 0.075,
+				lineEnd.y + Math.sin(angle - Math.PI / 2) * width * 0.075
+			);
+
+			const arrowArmAngle = angle + (Math.PI * 1) / 3;
+			const arrowBaseAngle = arrowArmAngle + (Math.PI * 1) / 3;
+
+			const arrowStart = new Coordinate(
+				arrowLineEnd.x + (Math.cos(angle) * arrowBaseLength) / 2,
+				arrowLineEnd.y + (Math.sin(angle) * arrowBaseLength) / 2
+			);
+			const arrowMid = new Coordinate(
+				arrowStart.x - (Math.cos(arrowArmAngle) * arrowArmLength) / 2,
+				arrowStart.y - (Math.sin(arrowArmAngle) * arrowArmLength) / 2
+			);
+			const arrowEnd = new Coordinate(
+				arrowMid.x + (Math.cos(arrowBaseAngle) * arrowArmLength) / 2,
+				arrowMid.y + (Math.sin(arrowBaseAngle) * arrowArmLength) / 2
+			);
+
+			this.line(lineStart, lineEnd, lineStyle);
+			this.line(lineEnd, arrowLineEnd, lineStyle);
+			this.polygon([arrowStart, arrowMid, arrowEnd], backgroundStyle);
+		}
 	}
 
-	return path;
-}
+	static setStyle(settings: DrawingSettings) {
+		const context = Canvas.getContext();
 
-export function arrow(
-	type: "left" | "right" | "through",
-	width: number,
-	length: number,
-	centre: Coordinate,
-	angle: number
-) {
-	const arrowBaseLength = width * 0.35;
-	const arrowArmLength = arrowBaseLength / 2 / Math.tan(Math.PI / 12);
+		context.strokeStyle = settings.colour || "black";
+		context.lineWidth = settings.thickness || 1;
+		context.fillStyle = settings.fill || "black";
+		context.lineCap = settings.cap || "butt";
 
-	if (type == "through") {
-		const lineStart = new Coordinate(
-			centre.x - ((Math.cos(angle) * length) / 2) * 0.9,
-			centre.y - ((Math.sin(angle) * length) / 2) * 0.9
-		);
-		const lineEnd = new Coordinate(
-			centre.x + ((Math.cos(angle) * length) / 2) * 0.9,
-			centre.y + ((Math.sin(angle) * length) / 2) * 0.9
-		);
+		return context;
+	}
 
-		const arrowArmAngle = angle + (Math.PI * 1) / 6;
-		const arrowBaseAngle = arrowArmAngle - (Math.PI * 2) / 3;
-
-		const arrowStart = new Coordinate(
-			lineEnd.x - (Math.cos(arrowArmAngle) * arrowArmLength) / 2,
-			lineEnd.y - (Math.sin(arrowArmAngle) * arrowArmLength) / 2
-		);
-		const arrowEnd = new Coordinate(
-			arrowStart.x - Math.cos(arrowBaseAngle) * arrowBaseLength,
-			arrowStart.y - Math.sin(arrowBaseAngle) * arrowBaseLength
-		);
-
-		line(lineStart, lineEnd, metresToPixels(0.2), "white", null, "round");
-		polygon([lineEnd, arrowStart, arrowEnd], 0, "white", "white");
-	} else if (type == "left") {
-		const lineStart = new Coordinate(
-			centre.x - ((Math.cos(angle) * length) / 2) * 0.9,
-			centre.y - ((Math.sin(angle) * length) / 2) * 0.9
-		);
-		const lineEnd = new Coordinate(
-			centre.x + ((Math.cos(angle) * length) / 2) * 0,
-			centre.y + ((Math.sin(angle) * length) / 2) * 0
-		);
-		const arrowLineEnd = new Coordinate(
-			lineEnd.x + Math.cos(angle + Math.PI / 2) * width * 0.075,
-			lineEnd.y + Math.sin(angle + Math.PI / 2) * width * 0.075
-		);
-
-		const arrowArmAngle = angle - (Math.PI * 1) / 3;
-		const arrowBaseAngle = arrowArmAngle + (Math.PI * 2) / 3;
-
-		const arrowStart = new Coordinate(
-			arrowLineEnd.x + (Math.cos(angle) * arrowBaseLength) / 2,
-			arrowLineEnd.y + (Math.sin(angle) * arrowBaseLength) / 2
-		);
-		const arrowMid = new Coordinate(
-			arrowStart.x - (Math.cos(arrowArmAngle) * arrowArmLength) / 2,
-			arrowStart.y - (Math.sin(arrowArmAngle) * arrowArmLength) / 2
-		);
-		const arrowEnd = new Coordinate(
-			arrowMid.x - (Math.cos(arrowBaseAngle) * arrowArmLength) / 2,
-			arrowMid.y - (Math.sin(arrowBaseAngle) * arrowArmLength) / 2
-		);
-
-		line(
-			lineStart,
-			lineEnd,
-			degreesToPixels(metresToDegrees(0.2)),
-			"white",
-			null,
-			"round"
-		);
-		line(
-			lineEnd,
-			arrowLineEnd,
-			degreesToPixels(metresToDegrees(0.2)),
-			"white",
-			null,
-			"round"
-		);
-		polygon([arrowStart, arrowMid, arrowEnd], 0, "white", "white");
-	} else if (type == "right") {
-		const lineStart = new Coordinate(
-			centre.x - ((Math.cos(angle) * length) / 2) * 0.9,
-			centre.y - ((Math.sin(angle) * length) / 2) * 0.9
-		);
-		const lineEnd = new Coordinate(
-			centre.x + ((Math.cos(angle) * length) / 2) * 0,
-			centre.y + ((Math.sin(angle) * length) / 2) * 0
-		);
-		const arrowLineEnd = new Coordinate(
-			lineEnd.x + Math.cos(angle - Math.PI / 2) * width * 0.075,
-			lineEnd.y + Math.sin(angle - Math.PI / 2) * width * 0.075
-		);
-
-		const arrowArmAngle = angle + (Math.PI * 1) / 3;
-		const arrowBaseAngle = arrowArmAngle + (Math.PI * 1) / 3;
-
-		const arrowStart = new Coordinate(
-			arrowLineEnd.x + (Math.cos(angle) * arrowBaseLength) / 2,
-			arrowLineEnd.y + (Math.sin(angle) * arrowBaseLength) / 2
-		);
-		const arrowMid = new Coordinate(
-			arrowStart.x - (Math.cos(arrowArmAngle) * arrowArmLength) / 2,
-			arrowStart.y - (Math.sin(arrowArmAngle) * arrowArmLength) / 2
-		);
-		const arrowEnd = new Coordinate(
-			arrowMid.x + (Math.cos(arrowBaseAngle) * arrowArmLength) / 2,
-			arrowMid.y + (Math.sin(arrowBaseAngle) * arrowArmLength) / 2
-		);
-
-		line(
-			lineStart,
-			lineEnd,
-			degreesToPixels(metresToDegrees(0.2)),
-			"white",
-			null,
-			"round"
-		);
-		line(
-			lineEnd,
-			arrowLineEnd,
-			degreesToPixels(metresToDegrees(0.2)),
-			"white",
-			null,
-			"round"
-		);
-		polygon([arrowStart, arrowMid, arrowEnd], 0, "white", "white");
+	static applyStyle(context: CanvasRenderingContext2D, settings: DrawingSettings, path?: Path2D) {
+		if (path === undefined) {
+			if (settings.fill !== undefined) context.fill();
+			if (settings.colour !== undefined) context.stroke();
+		} else {
+			if (settings.fill !== undefined) context.fill(path);
+			if (settings.colour !== undefined) context.stroke(path);
+		}
 	}
 }

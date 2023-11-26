@@ -1,5 +1,8 @@
 import { setAndSearch, togglePopup } from "./dom.js";
+import { Message } from "./messages.js";
 import { Settings } from "./settings.js";
+
+window.addEventListener("error", () => Message.display("error"));
 
 // permalinks
 const hash = window.location.hash;

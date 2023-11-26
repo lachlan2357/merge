@@ -81,7 +81,7 @@ export const offset = new Computed(() => {
 }, [totalMultiplier, multiplier, canvasDimensions, mouseOffset, zoomOffset]);
 
 // effects
-new Effect(Canvas.draw, [
+new Effect(() => Canvas.draw(), [
 	data,
 	canvasDimensions,
 	mousePos,
