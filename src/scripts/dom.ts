@@ -4,19 +4,7 @@ import { Overpass } from "./overpass.js";
 import { Settings, SettingsObject } from "./settings.js";
 import { Coordinate } from "./supplement.js";
 import { OverpassWay } from "./types.js";
-import {
-	canvasDimensions,
-	canvasOffset,
-	currentRelationId,
-	data,
-	mouseDown,
-	mouseDownPos,
-	mouseMoved,
-	mouseOffset,
-	mousePos,
-	multiplier,
-	selectedWay
-} from "./view.js";
+import { State } from "./state.js";
 
 export function getElement<K>(id: string) {
 	return document.getElementById(id) as K;
@@ -61,7 +49,7 @@ searchForm.addEventListener("submit", e => {
 // canvas
 canvas.addEventListener("wheel", e => {
 	e.preventDefault();
-	if (!data.get()) return;
+	if (!State.data.get()) return;
 
 	const inOut = e.deltaY > 0 ? "out" : "in";
 	Canvas.zoom(inOut, "mouse");
@@ -69,38 +57,40 @@ canvas.addEventListener("wheel", e => {
 
 canvas.addEventListener("mousedown", e => {
 	e.preventDefault();
-	if (!data.get()) return;
+	if (!State.data.get()) return;
 
 	const [x, y] = [e.clientX, e.clientY];
-	const pos = new Coordinate(x, y).subtract(mouseOffset.get());
-	mouseDownPos.set(pos);
-	mouseDown.set(true);
-	mouseMoved.set(false);
+	const pos = new Coordinate(x, y).subtract(State.mouseOffset.get());
+	State.mouseDownPos.set(pos);
+	State.mouseDown.set(true);
+	State.mouseMoved.set(false);
 });
 
 canvas.addEventListener("mouseup", e => {
 	e.preventDefault();
-	if (!data.get()) return;
+	if (!State.data.get()) return;
 
-	if (!mouseMoved.get() && !Canvas.checkHover()) {
+	if (!State.mouseMoved.get() && !Canvas.checkHover()) {
 		wayInfo.setAttribute("hidden", "");
-		selectedWay.set(-1);
+		State.selectedWay.set(-1);
 	}
 
-	mouseDown.set(false);
-	mouseMoved.set(false);
+	State.mouseDown.set(false);
+	State.mouseMoved.set(false);
 });
 
 canvas.addEventListener("mousemove", e => {
 	e.preventDefault();
-	if (!data.get()) return;
+	if (!State.data.get()) return;
 
 	const [x, y] = [e.clientX, e.clientY];
-	mousePos.set(new Coordinate(x, y));
-	mouseMoved.set(true);
+	State.mousePos.set(new Coordinate(x, y));
+	State.mouseMoved.set(true);
 
-	if (mouseDown.get())
-		mouseOffset.set(new Coordinate(x, y).subtract(mouseDownPos.get()));
+	if (State.mouseDown.get())
+		State.mouseOffset.set(
+			new Coordinate(x, y).subtract(State.mouseDownPos.get())
+		);
 
 	canvas.style.cursor = Canvas.checkHover(false) ? "pointer" : "move";
 });
@@ -130,8 +120,8 @@ function updateCanvasSize() {
 	canvas.setAttribute("width", dimensions.x.toString());
 	canvas.setAttribute("height", dimensions.y.toString());
 
-	canvasOffset.set(offset);
-	canvasDimensions.set(dimensions);
+	State.canvasOffset.set(offset);
+	State.canvasDimensions.set(dimensions);
 }
 
 new ResizeObserver(updateCanvasSize).observe(canvasContainer);
@@ -196,8 +186,9 @@ export async function togglePopup(reason?: PopupReason) {
 
 	switch (reason) {
 		case "share": {
-			const shareText = `${window.location.origin}${window.location.pathname
-				}#${currentRelationId.get()}`;
+			const shareText = `${window.location.origin}${
+				window.location.pathname
+			}#${State.currentRelationId.get()}`;
 
 			const copyIcon = new FontAwesomeIcon("solid", "copy").build();
 			const copyButton = new ElementBuilder("button")
@@ -278,7 +269,9 @@ export async function togglePopup(reason?: PopupReason) {
 					.event("change", e => {
 						const target = e.target as HTMLInputElement;
 						Settings.set(
-							target.getAttribute("data-setting") as keyof SettingsObject,
+							target.getAttribute(
+								"data-setting"
+							) as keyof SettingsObject,
 							target.getAttribute("type") == "checkbox"
 								? target.checked
 								: target.value
@@ -405,12 +398,12 @@ export function displayPopup(
 	});
 
 	wayInfo.removeAttribute("hidden");
-	selectedWay.set(way.id);
+	State.selectedWay.set(way.id);
 }
 
 export function openID() {
 	window.open(
-		`https://www.openstreetmap.org/relation/${currentRelationId.get()}`,
+		`https://www.openstreetmap.org/relation/${State.currentRelationId.get()}`,
 		"_blank",
 		"noreferrer noopener"
 	);
@@ -418,14 +411,14 @@ export function openID() {
 
 export function editID() {
 	window.open(
-		`https://www.openstreetmap.org/edit?way=${selectedWay.get()}`,
+		`https://www.openstreetmap.org/edit?way=${State.selectedWay.get()}`,
 		"_blank",
 		"noreferrer noopener"
 	);
 }
 
 export function openJOSM() {
-	const { minLat, maxLat, minLon, maxLon } = multiplier.get();
-	const url = `127.0.0.1:8111/load_and_zoom?left=${minLon}&right=${maxLon}&top=${maxLat}&bottom=${minLat}&select=relation${currentRelationId.get()}`;
+	const { minLat, maxLat, minLon, maxLon } = State.multiplier.get();
+	const url = `127.0.0.1:8111/load_and_zoom?left=${minLon}&right=${maxLon}&top=${maxLat}&bottom=${minLat}&select=relation${State.currentRelationId.get()}`;
 	fetch(url);
 }

@@ -1,5 +1,4 @@
-import { Coordinate } from "./supplement.js";
-import { offset, totalMultiplier } from "./view.js";
+import { State } from "./state.js";
 
 const earthRadius = 6371000;
 const earthCircumference = 2 * Math.PI * earthRadius;
@@ -13,27 +12,9 @@ export function metresToDegrees(metres: number) {
 }
 
 export function degreesToPixels(degrees: number) {
-	return degrees * totalMultiplier.get();
+	return degrees * State.totalMultiplier.get();
 }
 
 export function metresToPixels(metres: number) {
 	return degreesToPixels(metresToDegrees(metres));
-}
-
-export function coordToScreenSpace(coord: Coordinate) {
-	const totalMultiplierCache = totalMultiplier.get();
-	const offsetCache = offset.get();
-	return new Coordinate(
-		offsetCache.x + coord.x * totalMultiplierCache,
-		offsetCache.y - coord.y * totalMultiplierCache
-	);
-}
-
-export function screenSpaceToCoord(coord: Coordinate) {
-	const totalMultiplierCache = totalMultiplier.get();
-	const offsetCache = offset.get();
-	return new Coordinate(
-		(coord.x - offsetCache.x) / totalMultiplierCache,
-		-(coord.y - offsetCache.y) / totalMultiplierCache
-	);
 }

@@ -15,15 +15,18 @@ const appMsgMap = {
 export type AppMsg = keyof typeof appMsgMap;
 
 export class Message {
-	static element: HTMLDivElement = getElement("messages");
+	static readonly element: HTMLDivElement = getElement("messages");
 
-	static async display(key: AppMsg) {
+	static display(key: AppMsg) {
 		const message = appMsgMap[key];
 		this.displayString(message);
 	}
 
 	static async displayString(msg: string) {
-		const messageText = new ElementBuilder("p").text(msg).build();
+		const messageText = new ElementBuilder("p")
+			.text(msg)
+			.build();
+
 		const message = new ElementBuilder("div")
 			.class("message-box")
 			.children(messageText)
@@ -33,6 +36,7 @@ export class Message {
 		Message.element.append(message);
 
 		await new Promise(resolve => setTimeout(resolve, 5000));
+
 		message.setAttribute("closing", "");
 		message.addEventListener(
 			"animationend",

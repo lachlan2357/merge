@@ -1,12 +1,13 @@
 {
-	"tabWidth": 4,
-	"useTabs": true,
 	"arrowParens": "avoid",
-	"quoteProps": "consistent",
 	"bracketSameLine": false,
 	"bracketSpacing": true,
-	"semi": true,
-	"trailingComma": "none",
 	"importOrderSeparation": true,
-	"importOrderSortSpecifiers": true
+	"importOrderSortSpecifiers": true,
+	"printWidth": 100,
+	"quoteProps": "consistent",
+	"semi": true,
+	"tabWidth": 4,
+	"trailingComma": "none",
+	"useTabs": true
 }

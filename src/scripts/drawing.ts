@@ -1,7 +1,7 @@
 import { Canvas } from "./canvas.js";
 import { metresToPixels } from "./conversions.js";
+import { State } from "./state.js";
 import { Coordinate } from "./supplement.js";
-import { offset, totalMultiplier } from "./view.js";
 
 export const roadColours = {
 	asphalt: "#222233",
@@ -13,21 +13,22 @@ export const roadColours = {
 	unknown: "#000000"
 };
 
+export type DrawnElement = {
+	wayId: number;
+	path: Path2D;
+};
+
 type DrawingSettings = {
 	thickness?: number;
 	colour?: string;
 	fill?: string;
 	cap?: CanvasLineCap;
-}
+};
 
 export class Draw {
-	static line(
-		coordStart: Coordinate,
-		coordEnd: Coordinate,
-		settings: DrawingSettings
-	) {
-		const totalMultiplierCache = totalMultiplier.get();
-		const offsetCache = offset.get();
+	static line(coordStart: Coordinate, coordEnd: Coordinate, settings: DrawingSettings) {
+		const totalMultiplierCache = State.totalMultiplier.get();
+		const offsetCache = State.offset.get();
 
 		const context = this.setStyle(settings);
 
@@ -45,12 +46,9 @@ export class Draw {
 		this.applyStyle(context, settings);
 	}
 
-	static polygon(
-		coordinates: Array<Coordinate>,
-		settings: DrawingSettings
-	) {
-		const totalMultiplierCache = totalMultiplier.get();
-		const offsetCache = offset.get();
+	static polygon(coordinates: Array<Coordinate>, settings: DrawingSettings) {
+		const totalMultiplierCache = State.totalMultiplier.get();
+		const offsetCache = State.offset.get();
 
 		const context = this.setStyle(settings);
 
@@ -85,8 +83,16 @@ export class Draw {
 		const arrowArmLength = arrowBaseLength / 2 / Math.tan(Math.PI / 12);
 
 		const thickness = metresToPixels(0.2);
-		const lineStyle: DrawingSettings = { thickness, colour: "white", cap: "round" };
-		const backgroundStyle: DrawingSettings = { thickness: 0, colour: "white", fill: "white" };
+		const lineStyle: DrawingSettings = {
+			thickness,
+			colour: "white",
+			cap: "round"
+		};
+		const backgroundStyle: DrawingSettings = {
+			thickness: 0,
+			colour: "white",
+			fill: "white"
+		};
 
 		if (type == "through") {
 			const lineStart = new Coordinate(

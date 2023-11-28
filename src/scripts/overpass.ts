@@ -4,6 +4,7 @@ import { setSearching } from "./dom.js";
 import { AppErr, asyncWrapper } from "./errors.js";
 import { AppMsg, Message } from "./messages.js";
 import { Settings } from "./settings.js";
+import { State } from "./state.js";
 import { nullish } from "./supplement.js";
 import {
 	ImportedData,
@@ -13,7 +14,6 @@ import {
 	OverpassWay,
 	WayData
 } from "./types.js";
-import { allWays, currentRelationId, data } from "./view.js";
 
 export class Overpass {
 	static async search(name: string) {
@@ -28,7 +28,8 @@ export class Overpass {
 
 		if (roadName.length === 0) return propagateError("noSearchTerm");
 
-		if (roadName.includes('"')) return propagateError("malformedSearchTerm");
+		if (roadName.includes('"'))
+			return propagateError("malformedSearchTerm");
 
 		const searchMode = isNaN(roadNumber)
 			? `<has-kv k="name" v="${roadName}"/>`
@@ -60,7 +61,7 @@ export class Overpass {
 		const relation = relations[0];
 
 		if (!relation) return propagateError("noResult");
-		currentRelationId.set(relation.id);
+		State.currentRelationId.set(relation.id);
 
 		const wayIdsInRelation = new Array<number>();
 		relation.members.forEach(member => wayIdsInRelation.push(member.ref));
@@ -75,7 +76,7 @@ export class Overpass {
 
 		this.process(ways, nodes);
 		Canvas.centre();
-		allWays.set(ways);
+		State.allWays.set(ways);
 		setSearching(false);
 	}
 
@@ -102,7 +103,8 @@ export class Overpass {
 
 			const allKeys = await Database.keys();
 			if (allKeys.ok)
-				if (allKeys.unwrap().includes(query)) await Database.delete(query);
+				if (allKeys.unwrap().includes(query))
+					await Database.delete(query);
 
 			if (json.elements.length > 0)
 				await Database.insert(query, JSON.stringify(json));
@@ -112,7 +114,10 @@ export class Overpass {
 		});
 	}
 
-	static process(allWays: Map<number, OverpassWay>, allNodes: Map<number, OverpassNode>) {
+	static process(
+		allWays: Map<number, OverpassWay>,
+		allNodes: Map<number, OverpassNode>
+	) {
 		const waysInfo: ImportedData = new Map();
 		allWays.forEach((way, id) => {
 			const tags = way.tags;
@@ -127,8 +132,12 @@ export class Overpass {
 					lanesForward: this.number(tags?.["lanes:forward"]),
 					lanesBackward: this.number(tags?.["lanes:backward"]),
 					turnLanes: this.dArray(this.array(tags?.["turn:lanes"])),
-					turnLanesForward: this.dArray(this.array(tags?.["turn:lanes:forward"])),
-					turnLanesBackward: this.dArray(this.array(tags?.["turn:lanes:backward"])),
+					turnLanesForward: this.dArray(
+						this.array(tags?.["turn:lanes:forward"])
+					),
+					turnLanesBackward: this.dArray(
+						this.array(tags?.["turn:lanes:backward"])
+					),
 					surface: tags?.surface
 				},
 				warnings: new Array(),
@@ -217,7 +226,7 @@ export class Overpass {
 			waysInfo.set(id, wayData);
 		});
 
-		data.set(waysInfo);
+		State.data.set(waysInfo);
 	}
 
 	private static bool(value?: string) {
@@ -246,4 +255,3 @@ export class Overpass {
 		);
 	}
 }
-

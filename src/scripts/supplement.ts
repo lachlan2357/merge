@@ -1,3 +1,5 @@
+import { State } from "./state.js";
+
 // global values
 export const zoomIncrement = 40;
 
@@ -6,38 +8,56 @@ export class Coordinate {
 	y: number;
 
 	constructor(x = 0, y = 0) {
-		[this.x, this.y] = [x, y];
+		this.x = x;
+		this.y = y;
 	}
 
-	setCoordinates(x?: number, y?: number) {
-		this.x = x ?? this.x;
-		this.y = y ?? this.y;
+	set(x = this.x, y = this.y) {
+		this.x = x;
+		this.y = y;
 	}
 
-	resetCoordinates() {
-		[this.x, this.y] = [0, 0];
+	reset() {
+		this.x = 0;
+		this.y = 0;
 	}
 
-	add(coord: Coordinate | number) {
-		if (typeof coord === "number")
-			return new Coordinate(this.x + coord, this.y + coord);
-		else return new Coordinate(this.x + coord.x, this.y + coord.y);
+	add(value: Coordinate | number) {
+		if (typeof value === "number") return new Coordinate(this.x + value, this.y + value);
+		else return new Coordinate(this.x + value.x, this.y + value.y);
 	}
 
-	subtract(coord: Coordinate | number) {
-		if (typeof coord === "number")
-			return new Coordinate(this.x - coord, this.y - coord);
-		else return new Coordinate(this.x - coord.x, this.y - coord.y);
+	subtract(value: Coordinate | number) {
+		if (typeof value === "number") return new Coordinate(this.x - value, this.y - value);
+		else return new Coordinate(this.x - value.x, this.y - value.y);
 	}
-	multiply(coord: Coordinate | number) {
-		if (typeof coord === "number")
-			return new Coordinate(this.x * coord, this.y * coord);
-		else return new Coordinate(this.x * coord.x, this.y * coord.y);
+
+	multiply(value: Coordinate | number) {
+		if (typeof value === "number") return new Coordinate(this.x * value, this.y * value);
+		else return new Coordinate(this.x * value.x, this.y * value.y);
 	}
-	divide(coord: Coordinate | number) {
-		if (typeof coord === "number")
-			return new Coordinate(this.x / coord, this.y / coord);
-		else return new Coordinate(this.x / coord.x, this.y / coord.y);
+
+	divide(value: Coordinate | number) {
+		if (typeof value === "number") return new Coordinate(this.x / value, this.y / value);
+		else return new Coordinate(this.x / value.x, this.y / value.y);
+	}
+
+	toScreen() {
+		const totalMultiplierCache = State.totalMultiplier.get();
+		const offsetCache = State.offset.get();
+		return new Coordinate(
+			offsetCache.x + this.x * totalMultiplierCache,
+			offsetCache.y - this.y * totalMultiplierCache
+		);
+	}
+
+	toWorld() {
+		const totalMultiplierCache = State.totalMultiplier.get();
+		const offsetCache = State.offset.get();
+		return new Coordinate(
+			(this.x - offsetCache.x) / totalMultiplierCache,
+			-(this.y - offsetCache.y) / totalMultiplierCache
+		);
 	}
 }
 
