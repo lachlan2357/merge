@@ -17,7 +17,10 @@ export class ElementBuilder<T extends keyof HTMLElementTagNameMap> {
 	}
 
 	class(...classes: Array<string>) {
-		classes.forEach(className => this.element.classList.add(className));
+		for (let i = 0, n = classes.length; i < n; i++) {
+			this.element.classList.add(classes[i]);
+		}
+
 		return this;
 	}
 
@@ -26,10 +29,7 @@ export class ElementBuilder<T extends keyof HTMLElementTagNameMap> {
 		return this;
 	}
 
-	event<E extends keyof HTMLElementEventMap>(
-		event: E,
-		fn: EventListenerOrEventListenerObject
-	) {
+	event<E extends keyof HTMLElementEventMap>(event: E, fn: EventListenerOrEventListenerObject) {
 		this.element.addEventListener(event, fn);
 		return this;
 	}
@@ -113,8 +113,7 @@ export class FontAwesomeIcon {
 	}
 
 	build() {
-		if (!this.prefix || !this.icon)
-			console.warn("FontAwesomeIcon: prefix or icon not set");
+		if (!this.prefix || !this.icon) console.warn("FontAwesomeIcon: prefix or icon not set");
 
 		this.element.classList.add(`fa-${this.prefix}`, `fa-${this.icon}`);
 		return this.element;

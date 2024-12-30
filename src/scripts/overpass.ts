@@ -28,8 +28,7 @@ export class Overpass {
 
 		if (roadName.length === 0) return propagateError("noSearchTerm");
 
-		if (roadName.includes('"'))
-			return propagateError("malformedSearchTerm");
+		if (roadName.includes('"')) return propagateError("malformedSearchTerm");
 
 		const searchMode = isNaN(roadNumber)
 			? `<has-kv k="name" v="${roadName}"/>`
@@ -43,7 +42,9 @@ export class Overpass {
 		const ways = new Map<number, OverpassWay>();
 		const nodes = new Map<number, OverpassNode>();
 
-		query.elements.forEach(element => {
+		for (let i = 0, n = query.elements.length; i < n; i++) {
+			const element = query.elements[i];
+
 			switch (element.type) {
 				case "relation":
 					relations.push(element);
@@ -55,7 +56,7 @@ export class Overpass {
 					nodes.set(element.id, element);
 					break;
 			}
-		});
+		}
 
 		if (relations.length > 1) return propagateError("multipleRelations");
 		const relation = relations[0];
@@ -64,7 +65,10 @@ export class Overpass {
 		State.currentRelationId.set(relation.id);
 
 		const wayIdsInRelation = new Array<number>();
-		relation.members.forEach(member => wayIdsInRelation.push(member.ref));
+
+		for (let i = 0, n = relation.members.length; i < n; i++) {
+			wayIdsInRelation.push(relation.members[i].ref);
+		}
 
 		const externalWays = new Array<OverpassWay>();
 		ways.forEach((way, id) => {
@@ -102,22 +106,16 @@ export class Overpass {
 			if (json === undefined) throw new Error();
 
 			const allKeys = await Database.keys();
-			if (allKeys.ok)
-				if (allKeys.unwrap().includes(query))
-					await Database.delete(query);
+			if (allKeys.ok) if (allKeys.unwrap().includes(query)) await Database.delete(query);
 
-			if (json.elements.length > 0)
-				await Database.insert(query, JSON.stringify(json));
+			if (json.elements.length > 0) await Database.insert(query, JSON.stringify(json));
 
 			Settings.set("ignoreCache", false);
 			return json;
 		});
 	}
 
-	static process(
-		allWays: Map<number, OverpassWay>,
-		allNodes: Map<number, OverpassNode>
-	) {
+	static process(allWays: Map<number, OverpassWay>, allNodes: Map<number, OverpassNode>) {
 		const waysInfo: ImportedData = new Map();
 		allWays.forEach((way, id) => {
 			const tags = way.tags;
@@ -132,23 +130,21 @@ export class Overpass {
 					lanesForward: this.number(tags?.["lanes:forward"]),
 					lanesBackward: this.number(tags?.["lanes:backward"]),
 					turnLanes: this.dArray(this.array(tags?.["turn:lanes"])),
-					turnLanesForward: this.dArray(
-						this.array(tags?.["turn:lanes:forward"])
-					),
-					turnLanesBackward: this.dArray(
-						this.array(tags?.["turn:lanes:backward"])
-					),
+					turnLanesForward: this.dArray(this.array(tags?.["turn:lanes:forward"])),
+					turnLanesBackward: this.dArray(this.array(tags?.["turn:lanes:backward"])),
 					surface: tags?.surface
 				},
 				warnings: new Array(),
 				inferences: new Set()
 			};
 
-			way.nodes.forEach(id => {
+			for (let i = 0, n = way.nodes.length; i < n; i++) {
+				const id = way.nodes[i];
 				const node = allNodes.get(id);
-				if (!node) return;
+
+				if (!node) continue;
 				wayData.nodes.set(id, node);
-			});
+			}
 
 			// infer data
 			let noChanges = false;
@@ -186,10 +182,7 @@ export class Overpass {
 					if (tags.oneway) {
 						tags.lanesBackward = 0;
 						noChanges = false;
-					} else if (
-						!nullish(tags.lanes) &&
-						!nullish(tags.lanesForward)
-					) {
+					} else if (!nullish(tags.lanes) && !nullish(tags.lanesForward)) {
 						tags.lanesBackward = tags.lanes - tags.lanesForward;
 						noChanges = false;
 					} else if (!nullish(tags.lanes) && !(tags.lanes % 2)) {
@@ -212,10 +205,7 @@ export class Overpass {
 				}
 
 				// turn:lanes:backward
-				if (
-					nullish(tags.turnLanesBackward) &&
-					!nullish(tags.lanesBackward)
-				) {
+				if (nullish(tags.turnLanesBackward) && !nullish(tags.lanesBackward)) {
 					tags.turnLanesBackward = this.dArray(
 						this.array("|".repeat(tags.lanesBackward))
 					);
@@ -241,17 +231,13 @@ export class Overpass {
 	}
 
 	private static array(value?: string, delimiter = "|") {
-		return (
-			value?.split(delimiter).map(value => value || "none") ??
-			new Array<string>()
-		);
+		return value?.split(delimiter).map(value => value || "none") ?? new Array<string>();
 	}
 
 	private static dArray(array?: Array<string>, delimiter = ";") {
 		return (
-			array?.map(value =>
-				value.split(delimiter).map(value => value || "none")
-			) ?? new Array<Array<string>>()
+			array?.map(value => value.split(delimiter).map(value => value || "none")) ??
+			new Array<Array<string>>()
 		);
 	}
 }

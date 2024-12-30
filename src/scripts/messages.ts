@@ -23,9 +23,7 @@ export class Message {
 	}
 
 	static async displayString(msg: string) {
-		const messageText = new ElementBuilder("p")
-			.text(msg)
-			.build();
+		const messageText = new ElementBuilder("p").text(msg).build();
 
 		const message = new ElementBuilder("div")
 			.class("message-box")

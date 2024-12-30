@@ -57,12 +57,14 @@ export class Canvas {
 
 		dataCache.forEach((way, wayId) => {
 			const lanes = way.tags.lanes || 2;
-			way.orderedNodes.forEach((thisNodeId, index) => {
-				const nextNodeId = way.orderedNodes[index + 1];
+
+			for (let i = 0, n = way.orderedNodes.length; i < n; i++) {
+				const thisNodeId = way.orderedNodes[i];
+				const nextNodeId = way.orderedNodes[i + 1];
 				const thisNode = way.nodes.get(thisNodeId);
 				const nextNode = way.nodes.get(nextNodeId);
 
-				if (!thisNode || !nextNode) return;
+				if (!thisNode || !nextNode) continue;
 
 				const x1 = thisNode.lon;
 				const y1 = thisNode.lat;
@@ -141,12 +143,12 @@ export class Canvas {
 					(allXEqual && allOffScreen[0][0] != "in") ||
 					(allYEqual && allOffScreen[1][0] != "in")
 				)
-					return;
+					continue;
 
 				const lanesForward = way.tags.lanesForward ?? (way.tags.oneway ? lanes : lanes / 2);
 				const lanesBackward = way.tags.lanesBackward ?? (way.tags.oneway ? 0 : lanes / 2);
 				const turnLanesForward =
-					(way.tags.turnLanesForward ?? way.tags.oneway
+					((way.tags.turnLanesForward ?? way.tags.oneway)
 						? way.tags.turnLanes
 						: undefined) ?? new Array<Array<string>>();
 				const turnLanesBackward = way.tags.turnLanesBackward ?? new Array<Array<string>>();
@@ -184,14 +186,14 @@ export class Canvas {
 								? turnLanesForward[i] || new Array<string>()
 								: turnLanesBackward[
 										turnLanesBackward.length + (lanesForward - i) - 1
-								  ] || new Array<string>();
+									] || new Array<string>();
 					} else {
 						markings =
 							i < lanesBackward
 								? turnLanesBackward[i] || new Array<string>()
 								: turnLanesForward[
 										turnLanesForward.length + (lanesBackward - i) - 1
-								  ] || new Array<string>();
+									] || new Array<string>();
 					}
 
 					const allX = [thisSrtCoord.x, thisEndCoord.x, nextSrtCoord.x, nextEndCoord.x];
@@ -248,8 +250,6 @@ export class Canvas {
 					}
 				);
 
-				if (path === undefined) return;
-
 				State.drawnElements.setDynamic(old => {
 					const key = Object.keys(old).length;
 					return {
@@ -257,7 +257,7 @@ export class Canvas {
 						[key]: { wayId, path }
 					};
 				});
-			});
+			}
 		});
 	}
 

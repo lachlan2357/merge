@@ -2,9 +2,9 @@ import { Canvas } from "./canvas.js";
 import { ElementBuilder, FontAwesomeIcon, LinkChip } from "./elements.js";
 import { Overpass } from "./overpass.js";
 import { Settings, SettingsObject } from "./settings.js";
+import { State } from "./state.js";
 import { Coordinate } from "./supplement.js";
 import { OverpassWay } from "./types.js";
-import { State } from "./state.js";
 
 export function getElement<K>(id: string) {
 	return document.getElementById(id) as K;
@@ -88,32 +88,22 @@ canvas.addEventListener("mousemove", e => {
 	State.mouseMoved.set(true);
 
 	if (State.mouseDown.get())
-		State.mouseOffset.set(
-			new Coordinate(x, y).subtract(State.mouseDownPos.get())
-		);
+		State.mouseOffset.set(new Coordinate(x, y).subtract(State.mouseDownPos.get()));
 
 	canvas.style.cursor = Canvas.checkHover(false) ? "pointer" : "move";
 });
 
 function updateCanvasSize() {
-	const dimensions = new Coordinate(
-		canvasContainer.clientWidth,
-		canvasContainer.clientHeight
-	);
+	const dimensions = new Coordinate(canvasContainer.clientWidth, canvasContainer.clientHeight);
 
-	const offsetParent = canvasContainer.offsetParent as
-		| HTMLElement
-		| undefined;
+	const offsetParent = canvasContainer.offsetParent as HTMLElement | undefined;
 
 	const parentOffset = new Coordinate(
 		offsetParent?.offsetLeft || 0,
 		offsetParent?.offsetTop || 0
 	);
 
-	const localOffset = new Coordinate(
-		canvasContainer.offsetLeft,
-		canvasContainer.offsetTop
-	);
+	const localOffset = new Coordinate(canvasContainer.offsetLeft, canvasContainer.offsetTop);
 
 	const offset = parentOffset.add(localOffset);
 
@@ -131,9 +121,7 @@ window.addEventListener("resize", updateCanvasSize);
 zoomInButton.addEventListener("click", () => Canvas.zoom("in", "button"));
 zoomOutButton.addEventListener("click", () => Canvas.zoom("out", "button"));
 zoomResetButton.addEventListener("click", () => Canvas.centre());
-fullscreenButton.addEventListener("click", () =>
-	canvasContainer.toggleAttribute("fullscreen")
-);
+fullscreenButton.addEventListener("click", () => canvasContainer.toggleAttribute("fullscreen"));
 editInID.addEventListener("click", editID);
 editInJOSM.addEventListener("click", openJOSM);
 
@@ -158,13 +146,7 @@ export function setSearching(searching = true) {
 	settingsButton.disabled = searching;
 }
 
-type PopupReason =
-	| "share"
-	| "settings"
-	| "advanced"
-	| "help"
-	| "about"
-	| "welcome";
+type PopupReason = "share" | "settings" | "advanced" | "help" | "about" | "welcome";
 export async function togglePopup(reason?: PopupReason) {
 	if (popup.open) {
 		popup.setAttribute("closing", "");
@@ -181,8 +163,7 @@ export async function togglePopup(reason?: PopupReason) {
 
 	while (popup.lastChild) popup.lastChild.remove();
 
-	if (reason != "welcome")
-		popup.append(new ElementBuilder("h2").text(reason ?? "").build());
+	if (reason != "welcome") popup.append(new ElementBuilder("h2").text(reason ?? "").build());
 
 	switch (reason) {
 		case "share": {
@@ -197,10 +178,7 @@ export async function togglePopup(reason?: PopupReason) {
 				.children(copyIcon)
 				.build();
 
-			const share = new ElementBuilder("span")
-				.class("share")
-				.text(shareText)
-				.build();
+			const share = new ElementBuilder("span").class("share").text(shareText).build();
 
 			const container = new ElementBuilder("div")
 				.id("copy-container")
@@ -247,16 +225,17 @@ export async function togglePopup(reason?: PopupReason) {
 		case "settings": {
 			const list = new ElementBuilder("div").id("settings-list").build();
 
-			Settings.keys().forEach(key => {
+			const keys = Settings.keys();
+			for (let i = 0, n = keys.length; i < n; i++) {
+				const key = keys[i];
+
 				const setting = Settings.getObject(key);
-				if (!setting.inSettings) return;
+				if (!setting.inSettings) continue;
 
 				const settingDescription = setting.description;
 				const isBoolean = typeof setting.value === "boolean";
 
-				const heading = new ElementBuilder("h3")
-					.text(setting.name)
-					.build();
+				const heading = new ElementBuilder("h3").text(setting.name).build();
 				const text = new ElementBuilder("p")
 					.class("setting-title")
 					.text(settingDescription)
@@ -269,17 +248,14 @@ export async function togglePopup(reason?: PopupReason) {
 					.event("change", e => {
 						const target = e.target as HTMLInputElement;
 						Settings.set(
-							target.getAttribute(
-								"data-setting"
-							) as keyof SettingsObject,
+							target.getAttribute("data-setting") as keyof SettingsObject,
 							target.getAttribute("type") == "checkbox"
 								? target.checked
 								: target.value
 						);
 					});
 
-				if (typeof setting.value === "boolean")
-					inputBox.inputChecked(setting.value);
+				if (typeof setting.value === "boolean") inputBox.inputChecked(setting.value);
 				else inputBox.inputValue(setting.value);
 
 				const innerDiv = new ElementBuilder("div")
@@ -292,16 +268,14 @@ export async function togglePopup(reason?: PopupReason) {
 					.build();
 
 				list.append(outerDiv);
-			});
+			}
 
 			popup.append(list);
 
 			break;
 		}
 		case "help": {
-			const help = new ElementBuilder("p")
-				.text("Coming soon. Stay Tuned.")
-				.build();
+			const help = new ElementBuilder("p").text("Coming soon. Stay Tuned.").build();
 			popup.append(help);
 			break;
 		}
@@ -321,22 +295,14 @@ export async function togglePopup(reason?: PopupReason) {
 			break;
 		}
 		case "advanced": {
-			const advanced = new ElementBuilder("p")
-				.text("Coming soon. Stay Tuned.")
-				.build();
+			const advanced = new ElementBuilder("p").text("Coming soon. Stay Tuned.").build();
 			popup.append(advanced);
 			break;
 		}
 		case "welcome": {
-			const img = new ElementBuilder("img")
-				.id("welcome-img")
-				.src("/merge/icon.png")
-				.build();
+			const img = new ElementBuilder("img").id("welcome-img").src("/merge/icon.png").build();
 
-			const heading = new ElementBuilder("h2")
-				.id("welcome-heading")
-				.text("Merge")
-				.build();
+			const heading = new ElementBuilder("h2").id("welcome-heading").text("Merge").build();
 
 			const description = new ElementBuilder("p")
 				.text(
@@ -364,35 +330,25 @@ export async function togglePopup(reason?: PopupReason) {
 	popup.showModal();
 }
 
-export function displayPopup(
-	element: { wayId: number; path: Path2D },
-	way: OverpassWay
-) {
+export function displayPopup(element: { wayId: number; path: Path2D }, way: OverpassWay) {
 	wayInfoId.innerHTML = `Way <a href="https://www.openstreetmap.org/way/${element.wayId}" target="_blank">${element.wayId}</a>`;
 
 	// purge all children before adding new ones
-	while (wayInfoTags.lastChild)
-		wayInfoTags.removeChild(wayInfoTags.lastChild);
+	while (wayInfoTags.lastChild) wayInfoTags.removeChild(wayInfoTags.lastChild);
 
 	// create heading row
 	const tagHeading = new ElementBuilder("th").text("Tag").build();
 	const valueHeading = new ElementBuilder("th").text("Value").build();
 
-	const row = new ElementBuilder("tr")
-		.children(tagHeading, valueHeading)
-		.build();
+	const row = new ElementBuilder("tr").children(tagHeading, valueHeading).build();
 
 	wayInfoTags.append(row);
 
 	// content rows
 	Object.entries(way.tags ?? {}).forEach(([tag, value]) => {
 		const tagCell = new ElementBuilder("td").text(tag.toString()).build();
-		const valueCell = new ElementBuilder("td")
-			.text(value.toString())
-			.build();
-		const tagRow = new ElementBuilder("tr")
-			.children(tagCell, valueCell)
-			.build();
+		const valueCell = new ElementBuilder("td").text(value.toString()).build();
+		const tagRow = new ElementBuilder("tr").children(tagCell, valueCell).build();
 
 		wayInfoTags.append(tagRow);
 	});

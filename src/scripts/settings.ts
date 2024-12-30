@@ -1,23 +1,24 @@
 type Setting<T> = {
-	name: string,
-	description: string,
-	value: T,
-	setLocalStorage: boolean,
-	inSettings: boolean,
+	name: string;
+	description: string;
+	value: T;
+	setLocalStorage: boolean;
+	inSettings: boolean;
 };
 
 export type SettingsObject = {
-	leftHandTraffic: Setting<boolean>,
-	endpoint: Setting<string>,
-	ignoreCache: Setting<boolean>,
-	darkMode: Setting<boolean>,
-	firstLaunch: Setting<boolean>,
+	leftHandTraffic: Setting<boolean>;
+	endpoint: Setting<string>;
+	ignoreCache: Setting<boolean>;
+	darkMode: Setting<boolean>;
+	firstLaunch: Setting<boolean>;
 };
 
 const defaultSettings: SettingsObject = {
 	leftHandTraffic: {
 		name: "Left Hand Traffic",
-		description: "Whether the traffic drives on the left-hand-side of the road, for example in the UK, Australia, Japan, etc.",
+		description:
+			"Whether the traffic drives on the left-hand-side of the road, for example in the UK, Australia, Japan, etc.",
 		value: false,
 		setLocalStorage: true,
 		inSettings: true
@@ -31,7 +32,8 @@ const defaultSettings: SettingsObject = {
 	},
 	ignoreCache: {
 		name: "Ignore Cache",
-		description: "Whether to disregard the cache for the next request. Must be toggled on for each request.",
+		description:
+			"Whether to disregard the cache for the next request. Must be toggled on for each request.",
 		value: false,
 		setLocalStorage: false,
 		inSettings: true
@@ -52,7 +54,8 @@ const defaultSettings: SettingsObject = {
 	}
 };
 
-type SettingType<K extends keyof SettingsObject> = SettingsObject[K] extends Setting<infer T> ? T : never;
+type SettingType<K extends keyof SettingsObject> =
+	SettingsObject[K] extends Setting<infer T> ? T : never;
 
 /** Interface directly with Local Storage for settings */
 export class Settings {
@@ -94,11 +97,10 @@ export class Settings {
 
 			if (value === null) continue;
 
-			if (typeof settings[key].value === "string")
-				settings[key].value = value;
+			if (typeof settings[key].value === "string") settings[key].value = value;
 			else if (typeof settings[key].value === "boolean")
 				settings[key].value = value === "true";
-			else throw "Not a valid setting type"
+			else throw "Not a valid setting type";
 		}
 
 		return settings;

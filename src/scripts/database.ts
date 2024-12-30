@@ -5,7 +5,7 @@ import { OverpassResponse } from "./types.js";
 type CachedQuery = {
 	request: string;
 	value: string;
-}
+};
 
 export class Database {
 	private static database: IDBDatabase | null | undefined = Database.connect();
@@ -13,17 +13,17 @@ export class Database {
 	private static connect() {
 		const req = window.indexedDB.open("Overpass Data");
 
-		req.onerror = () => Database.database = null;
+		req.onerror = () => (Database.database = null);
 
 		req.onupgradeneeded = () => {
 			const database = req.result;
 			database.createObjectStore("overpass-cache", { keyPath: "request" });
-		}
+		};
 
 		req.onsuccess = () => {
 			const database = req.result;
 			Database.database = database;
-		}
+		};
 
 		return undefined;
 	}
@@ -54,60 +54,70 @@ export class Database {
 	static async get(key: string) {
 		const store = await Database.store("readonly");
 
-		return promiseWrapper<OverpassResponse, AppErr>("db", new Promise((resolve, reject) => {
-			if (store === undefined) return reject();
-			const req = store.get(key);
+		return promiseWrapper<OverpassResponse, AppErr>(
+			"db",
+			new Promise((resolve, reject) => {
+				if (store === undefined) return reject();
+				const req = store.get(key);
 
-			req.onerror = () => reject();
+				req.onerror = () => reject();
 
-			req.onsuccess = () => {
-				const data: CachedQuery | undefined = req.result;
-				if (data === undefined) return reject();
+				req.onsuccess = () => {
+					const data: CachedQuery | undefined = req.result;
+					if (data === undefined) return reject();
 
-				const json: OverpassResponse = JSON.parse(data.value);
-				resolve(json);
-			};
-		}));
+					const json: OverpassResponse = JSON.parse(data.value);
+					resolve(json);
+				};
+			})
+		);
 	}
 
 	static async keys() {
 		const store = await Database.store("readonly");
 
-		return promiseWrapper<Array<string>, AppErr>("db", new Promise((resolve, reject) => {
-			if (store === undefined) return reject();
-			const req = store.getAllKeys();
+		return promiseWrapper<Array<string>, AppErr>(
+			"db",
+			new Promise((resolve, reject) => {
+				if (store === undefined) return reject();
+				const req = store.getAllKeys();
 
-			req.onerror = () => reject();
+				req.onerror = () => reject();
 
-			req.onsuccess = () => {
-				const keys = req.result.map(key => key.toString());
-				resolve(keys);
-			};
-		}));
+				req.onsuccess = () => {
+					const keys = req.result.map(key => key.toString());
+					resolve(keys);
+				};
+			})
+		);
 	}
 
 	static async insert(request: string, value: string) {
 		const store = await Database.store("readwrite");
-		return promiseWrapper<boolean, AppErr>("db", new Promise((resolve, reject) => {
-			if (store === undefined) return reject();
-			const req = store.add({ request, value });
+		return promiseWrapper<boolean, AppErr>(
+			"db",
+			new Promise((resolve, reject) => {
+				if (store === undefined) return reject();
+				const req = store.add({ request, value });
 
-			req.onerror = reject;
-			req.onsuccess = () => resolve(req.result !== undefined);
-		})
+				req.onerror = reject;
+				req.onsuccess = () => resolve(req.result !== undefined);
+			})
 		);
 	}
 
 	static async delete(key: string) {
 		const store = await Database.store("readwrite");
 
-		return promiseWrapper<boolean, AppErr>("db", new Promise((resolve, reject) => {
-			if (store === undefined) return reject();
-			const req = store.delete(key);
+		return promiseWrapper<boolean, AppErr>(
+			"db",
+			new Promise((resolve, reject) => {
+				if (store === undefined) return reject();
+				const req = store.delete(key);
 
-			req.onerror = () => reject();
-			req.onsuccess = () => resolve(true);
-		})
+				req.onerror = () => reject();
+				req.onsuccess = () => resolve(true);
+			})
 		);
 	}
 }
