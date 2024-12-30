@@ -47,3 +47,12 @@ export class Message {
 		);
 	}
 }
+
+/**
+ * An error type that can directly send the contents of it's error to the {@link Message} box.
+ */
+export class MessageBoxError extends Error {
+	display() {
+		Message.displayString(this.message);
+	}
+}

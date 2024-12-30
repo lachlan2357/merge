@@ -1,5 +1,4 @@
-import { AppErr, promiseWrapper } from "./errors.js";
-import { sleep } from "./supplement.js";
+import { MessageBoxError } from "./messages.js";
 import { OverpassResponse } from "./types.js";
 
 type CachedQuery = {
@@ -7,117 +6,169 @@ type CachedQuery = {
 	value: string;
 };
 
+/**
+ * A connection to the local IndexedDB database.
+ *
+ * Merge currently requires data persistence in order to cache responses from the Overpass API as
+ * to not unnecessarily re-request the API.
+ *
+ * ## Usage
+ *
+ * Each time a connection to the database is required, a new {@link Database} object should be
+ * retrieved, used while in the current scope and discarded afterwards. There is little point
+ * trying to maintain an active connection.
+ */
 export class Database {
-	private static database: IDBDatabase | null | undefined = Database.connect();
+	private static readonly DB_NAME: string = "Overpass Data";
 
-	private static connect() {
-		const req = window.indexedDB.open("Overpass Data");
+	private static readonly STORE_NAME: string = "overpass-cache";
+	private static readonly STORE_OPTIONS: IDBObjectStoreParameters = { keyPath: "request" };
 
-		req.onerror = () => (Database.database = null);
+	/**
+	 * Encapsulated instance of an {@link IDBDatabase}.
+	 *
+	 * This object is what is used by this class to perform database operations.
+	 */
+	private readonly database: IDBDatabase;
 
-		req.onupgradeneeded = () => {
-			const database = req.result;
-			database.createObjectStore("overpass-cache", { keyPath: "request" });
-		};
-
-		req.onsuccess = () => {
-			const database = req.result;
-			Database.database = database;
-		};
-
-		return undefined;
+	/**
+	 * Encapsulate an {@link IDBDatabase} for use within this application.
+	 *
+	 * This construction cannot be used to get a valid {@link IDBDatabase} instance, instead being
+	 * used internally to encapsulate one. To retrieve a valid instance, see
+	 * {@link Database.connect()}.
+	 *
+	 * @param database
+	 */
+	private constructor(database: IDBDatabase) {
+		this.database = database;
 	}
 
-	private static async store(mode: IDBTransactionMode) {
-		let database: IDBDatabase | undefined = undefined;
+	/**
+	 * Retrieve a connection to the {@link Database} and {@link IDBDatabase}.
+	 *
+	 * @throws {DatabaseError} If a connection to the database could not be retrieved.
+	 * @returns
+	 */
+	static async connect() {
+		const database = await new Promise<IDBDatabase>((resolve, _) => {
+			const req = window.indexedDB.open(Database.DB_NAME);
 
-		// try 5 times to get a database, if not, give up
-		for (let i = 0; i < 5; i++) {
-			if (Database.database === undefined) {
-				await sleep(1000);
-				continue;
-			}
+			// failed connection
+			req.onerror = () => {
+				throw DatabaseError.CONNECTION_ERROR;
+			};
 
-			if (Database.database === null) return;
+			// blocked connection
+			req.onblocked = () => {
+				throw DatabaseError.BLOCKED_ERROR;
+			};
 
-			database = Database.database;
-			break;
-		}
+			// upgrade database
+			req.onupgradeneeded = () => {
+				const database = req.result;
+				database.createObjectStore(Database.STORE_NAME, Database.STORE_OPTIONS);
+			};
 
-		if (database === undefined) return;
+			// successful connection
+			req.onsuccess = () => {
+				const database = req.result;
+				resolve(database);
+			};
+		});
 
-		const transaction = database.transaction("overpass-cache", mode);
-		const store = transaction.objectStore("overpass-cache");
-		return store;
+		return new Database(database);
 	}
 
-	static async get(key: string) {
-		const store = await Database.store("readonly");
+	/**
+	 * Open a new transaction in the database to perform actions on.
+	 *
+	 * This method does not expose the {@link IDBTransaction} object, instead requiring clients to
+	 * designate a function `f` which will be run on the object store inside the transaction.
+	 *
+	 * This method signature resembles that of a {@link Promise} and can be used similarly as, when
+	 * called, this method will wrap the provided function inside a promise to complete the
+	 * required actions.
+	 *
+	 * @param mode The mode for this transaction.
+	 * @param fn The function for logic to perform on this transaction.
+	 */
+	private async transact<R>(
+		mode: IDBTransactionMode,
+		fn: (
+			store: IDBObjectStore,
+			resolve: (data: R) => void,
+			reject: (error: any) => void
+		) => void
+	): Promise<R> {
+		// open transaction
+		const transaction = this.database.transaction(Database.STORE_NAME, mode);
+		const store = transaction.objectStore(Database.STORE_NAME);
 
-		return promiseWrapper<OverpassResponse, AppErr>(
-			"db",
-			new Promise((resolve, reject) => {
-				if (store === undefined) return reject();
-				const req = store.get(key);
-
-				req.onerror = () => reject();
-
-				req.onsuccess = () => {
-					const data: CachedQuery | undefined = req.result;
-					if (data === undefined) return reject();
-
-					const json: OverpassResponse = JSON.parse(data.value);
-					resolve(json);
-				};
-			})
-		);
+		// complete actions
+		const data = await new Promise<R>((resolve, reject) => {
+			return fn(store, resolve, reject);
+		});
+		transaction.commit();
+		return data;
 	}
 
-	static async keys() {
-		const store = await Database.store("readonly");
+	/**
+	 * Retrieve cached data from the database.
+	 *
+	 * @param key The key of the cached data.
+	 * @throws {DatabaseError} If the data could not be retrieved.
+	 */
+	async get(key: string) {
+		return this.transact<OverpassResponse | null>("readonly", (store, resolve, _) => {
+			const req = store.get(key);
 
-		return promiseWrapper<Array<string>, AppErr>(
-			"db",
-			new Promise((resolve, reject) => {
-				if (store === undefined) return reject();
-				const req = store.getAllKeys();
+			req.onerror = () => {
+				throw DatabaseError.GET_ERROR;
+			};
 
-				req.onerror = () => reject();
+			req.onsuccess = () => {
+				const result: CachedQuery | undefined = req.result;
+				if (result === undefined) return resolve(null);
 
-				req.onsuccess = () => {
-					const keys = req.result.map(key => key.toString());
-					resolve(keys);
-				};
-			})
-		);
+				const json: OverpassResponse = JSON.parse(result.value);
+				resolve(json);
+			};
+		});
 	}
 
-	static async insert(request: string, value: string) {
-		const store = await Database.store("readwrite");
-		return promiseWrapper<boolean, AppErr>(
-			"db",
-			new Promise((resolve, reject) => {
-				if (store === undefined) return reject();
-				const req = store.add({ request, value });
+	/**
+	 * Cache data into the database.
+	 *
+	 * @param data The data to cache.
+	 * @throws {DatabaseError} If the data could not be cached.
+	 */
+	async set(data: CachedQuery) {
+		return this.transact<void>("readwrite", (store, resolve, _) => {
+			const req = store.put(data);
 
-				req.onerror = reject;
-				req.onsuccess = () => resolve(req.result !== undefined);
-			})
-		);
+			req.onerror = () => {
+				throw DatabaseError.SET_ERROR;
+			};
+
+			req.onsuccess = () => {
+				resolve();
+			};
+		});
 	}
+}
 
-	static async delete(key: string) {
-		const store = await Database.store("readwrite");
+/**
+ * Errors which could occur while opening a new connection to the {@link IDBDatabase}.
+ */
+export class DatabaseError extends MessageBoxError {
+	static readonly CONNECTION_ERROR = new DatabaseError(
+		"Could not connect to the local database."
+	);
+	static readonly BLOCKED_ERROR = new DatabaseError(
+		"Database is awaiting an upgrade, however other connections are still open."
+	);
 
-		return promiseWrapper<boolean, AppErr>(
-			"db",
-			new Promise((resolve, reject) => {
-				if (store === undefined) return reject();
-				const req = store.delete(key);
-
-				req.onerror = () => reject();
-				req.onsuccess = () => resolve(true);
-			})
-		);
-	}
+	static readonly GET_ERROR = new DatabaseError("Could not retrieve data from the database.");
+	static readonly SET_ERROR = new DatabaseError("Could not insert data into the database.");
 }

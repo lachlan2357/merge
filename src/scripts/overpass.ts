@@ -1,8 +1,7 @@
 import { Canvas } from "./canvas.js";
 import { Database } from "./database.js";
 import { setSearching } from "./dom.js";
-import { AppErr, asyncWrapper } from "./errors.js";
-import { AppMsg, Message } from "./messages.js";
+import { AppMsg, Message, MessageBoxError } from "./messages.js";
 import { Settings } from "./settings.js";
 import { State } from "./state.js";
 import { nullish } from "./supplement.js";
@@ -34,9 +33,13 @@ export class Overpass {
 			? `<has-kv k="name" v="${roadName}"/>`
 			: `<id-query type="relation" ref="${roadName}"/>`;
 
-		const queryResult = await this.query(searchMode);
-		if (!queryResult.ok) return propagateError("overpassError");
-		const query = queryResult.unwrap();
+		let query: OverpassResponse;
+		try {
+			query = await this.query(searchMode);
+		} catch (error) {
+			if (error instanceof MessageBoxError) error.display();
+			return propagateError("overpassError");
+		}
 
 		const relations = new Array<OverpassRelation>();
 		const ways = new Map<number, OverpassWay>();
@@ -84,35 +87,60 @@ export class Overpass {
 		setSearching(false);
 	}
 
+	/**
+	 * Request a query from the Overpass API.
+	 *
+	 * This method will first check whether a previous identical request has been cached before
+	 * performing an API request, returning the cached data if it is available and hasn't been
+	 * set to be ignored for this request.
+	 *
+	 * @param mode The Overpass search mode.
+	 * @throws {Database}
+	 * @returns
+	 */
 	static async query(mode: string) {
 		const query = `<osm-script output="json"><union><query type="relation">${mode}</query><recurse type="relation-way"/><recurse type="way-node"/><recurse type="node-way"/></union><print/></osm-script>`;
-
 		const ignoreCache = Settings.get("ignoreCache");
 
-		const result = await Database.get(query);
-		if (!result.ok || ignoreCache) return await this.fetch(query);
-		else return result;
+		let database_result: OverpassResponse | null = null;
+
+		try {
+			if (!ignoreCache) {
+				const database = await Database.connect();
+				database_result = await database.get(query);
+			}
+		} catch (error) {
+			if (error instanceof MessageBoxError) error.display();
+		} finally {
+			if (database_result !== null) return database_result;
+			else return await this.fetch(query);
+		}
 	}
 
+	/**
+	 * Perform a fetch request to the Overpass API.
+	 *
+	 * @param query The query to request from the API.
+	 * @throws {OverpassError} If the request was unsuccessful.
+	 * @returns The response from this query.
+	 */
 	static async fetch(query: string) {
-		return asyncWrapper<OverpassResponse, AppErr>("overpass", async () => {
-			Message.display("overpassDownload");
+		Message.display("overpassDownload");
 
-			const req = await fetch(Settings.get("endpoint"), {
-				method: "POST",
-				body: query
-			});
-			const json: OverpassResponse | undefined = await req.json();
-			if (json === undefined) throw new Error();
-
-			const allKeys = await Database.keys();
-			if (allKeys.ok) if (allKeys.unwrap().includes(query)) await Database.delete(query);
-
-			if (json.elements.length > 0) await Database.insert(query, JSON.stringify(json));
-
-			Settings.set("ignoreCache", false);
-			return json;
+		const req = await fetch(Settings.get("endpoint"), {
+			method: "POST",
+			body: query
 		});
+
+		const json: OverpassResponse | undefined = await req.json();
+		if (json === undefined) throw OverpassError.REQUEST_ERROR;
+
+		const database = await Database.connect();
+		if (json.elements.length > 0)
+			await database.set({ request: query, value: JSON.stringify(json) });
+
+		Settings.set("ignoreCache", false);
+		return json;
 	}
 
 	static process(allWays: Map<number, OverpassWay>, allNodes: Map<number, OverpassNode>) {
@@ -240,4 +268,8 @@ export class Overpass {
 			new Array<Array<string>>()
 		);
 	}
+}
+
+export class OverpassError extends MessageBoxError {
+	static readonly REQUEST_ERROR = new OverpassError("Overpass request failed.");
 }
