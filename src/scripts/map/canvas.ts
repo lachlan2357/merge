@@ -1,11 +1,13 @@
-import { laneLength, metresToPixels } from "./conversions.js";
-import { displayPopup, getContext, getElement } from "./dom.js";
-import { Draw } from "./drawing.js";
-import { roadColours } from "./drawing.js";
-import { Settings } from "./settings.js";
-import { State } from "./state.js";
-import { zoomIncrement } from "./supplement.js";
-import { ScreenCoordinate, WorldCoordinate } from "./coordinates.js"
+import { laneLength, metresToPixels } from "../conversions.js";
+import { Draw } from "../drawing.js";
+import { roadColours } from "../drawing.js";
+import { Settings } from "../settings.js";
+import { State } from "../state.js";
+import { zoomIncrement } from "../supplement.js";
+import { ScreenCoordinate, WorldCoordinate } from "../types/coordinate.js";
+import { getElement } from "../dom/elements.js";
+import { displayPopup, WAY_INFO } from "../dom/popup.js";
+import "./buttons.js";
 
 export type MultiplierData = {
 	minLat: number;
@@ -15,16 +17,92 @@ export type MultiplierData = {
 	multiplier: number;
 };
 
-export class Canvas {
-	private static canvas: HTMLCanvasElement = getElement("canvas");
+class Canvas {
+	/**
+	 * Reference to the HTML Canvas element.
+	 */
+	private readonly element: HTMLCanvasElement;
 
-	static centre() {
+	/**
+	 * Reference to the container for the {@link element}.
+	 */
+	private readonly container: HTMLDivElement;
+
+	constructor(id: string, containerId: string) {
+		// fetch elements
+		this.element = getElement(id, HTMLCanvasElement);
+		this.container = getElement(containerId, HTMLDivElement);
+
+		// setup event listeners
+		this.element.addEventListener("mousedown", e => {
+			e.preventDefault();
+			if (!State.data.get()) return;
+
+			const [x, y] = [e.clientX, e.clientY];
+			const pos = new ScreenCoordinate(x, y).subtract(State.mouseOffset.get());
+			State.mouseDownPos.set(pos);
+			State.mouseDown.set(true);
+			State.mouseMoved.set(false);
+		});
+
+		this.element.addEventListener("mouseup", e => {
+			e.preventDefault();
+			if (!State.data.get()) return;
+
+			if (!State.mouseMoved.get() && !this.checkHover()) {
+				WAY_INFO.setAttribute("hidden", "");
+				State.selectedWay.set(-1);
+			}
+
+			State.mouseDown.set(false);
+			State.mouseMoved.set(false);
+		});
+
+		this.element.addEventListener("mousemove", e => {
+			e.preventDefault();
+			if (!State.data.get()) return;
+
+			const [x, y] = [e.clientX, e.clientY];
+			State.mousePos.set(new ScreenCoordinate(x, y));
+			State.mouseMoved.set(true);
+
+			if (State.mouseDown.get())
+				State.mouseOffset.set(
+					new ScreenCoordinate(x, y).subtract(State.mouseDownPos.get())
+				);
+
+			this.element.style.cursor = this.checkHover(false) ? "pointer" : "move";
+		});
+
+		this.element.addEventListener("wheel", e => {
+			e.preventDefault();
+			if (!State.data.get()) return;
+
+			const inOut = e.deltaY > 0 ? "out" : "in";
+			this.zoom(inOut, "mouse");
+		});
+
+		// setup resize triggers
+		new ResizeObserver(() => this.resize()).observe(this.container);
+		window.addEventListener("resize", () => this.resize());
+	}
+
+	/**
+	 * Re-centre the canvas back to origin, resetting offset and zoom.
+	 */
+	centre() {
 		State.mouseOffset.set(new ScreenCoordinate());
 		State.zoomOffset.set(new ScreenCoordinate());
 		State.zoom.set(0);
 	}
 
-	static zoom(inOut: "in" | "out", source: "mouse" | "button") {
+	/**
+	 * Zoom the map in or out.
+	 *
+	 * @param inOut Whether to zoom the map in or out.
+	 * @param source The source of the zoom, either from the mouse scroll wheel or the zoom buttons.
+	 */
+	zoom(inOut: "in" | "out", source: "mouse" | "button") {
 		const totalMultiplierRaw = Math.sqrt(State.totalMultiplier.get());
 
 		const mousePosition =
@@ -44,7 +122,14 @@ export class Canvas {
 		State.zoomOffset.setDynamic(old => old.add(diff));
 	}
 
-	static draw() {
+	toggleFullscreen() {
+		this.container.toggleAttribute("fullscreen");
+	}
+
+	/**
+	 * Draw the map onto the canvas, taking consideration of zoom, offset, etc.
+	 */
+	draw() {
 		// clear canvas from previous drawings
 		const dimensions = State.canvasDimensions.get();
 		const context = this.getContext();
@@ -84,7 +169,10 @@ export class Canvas {
 						? Math.atan(gradient) + Math.PI
 						: Math.atan(gradient);
 				const adjacentAngle = angle + Math.PI / 2;
-				const trigCoord = new WorldCoordinate(Math.cos(adjacentAngle), Math.sin(adjacentAngle));
+				const trigCoord = new WorldCoordinate(
+					Math.cos(adjacentAngle),
+					Math.sin(adjacentAngle)
+				);
 
 				// define the four corners of the box around the way
 				const coefficient = (laneLength * lanes) / 2;
@@ -262,9 +350,42 @@ export class Canvas {
 		});
 	}
 
-	static checkHover(clicked = true) {
-		const context = getContext();
-		if (!State.data.get() || !context) return;
+	resize() {
+		const dimensions = new ScreenCoordinate(
+			this.container.clientWidth,
+			this.container.clientHeight
+		);
+
+		const offsetParent = this.container.offsetParent as HTMLElement | undefined;
+
+		const parentOffset = new ScreenCoordinate(
+			offsetParent?.offsetLeft || 0,
+			offsetParent?.offsetTop || 0
+		);
+
+		const localOffset = new ScreenCoordinate(
+			this.container.offsetLeft,
+			this.container.offsetTop
+		);
+
+		const offset = parentOffset.add(localOffset);
+
+		this.element.setAttribute("width", dimensions.x.toString());
+		this.element.setAttribute("height", dimensions.y.toString());
+
+		State.canvasOffset.set(offset);
+		State.canvasDimensions.set(dimensions);
+	}
+
+	/**
+	 * Check whether any paths in the canvas are being hovered over and/or clicked.
+	 *
+	 * @param clicked Whether the user has clicked.
+	 * @returns Whether any paths are currently being hovered over.
+	 */
+	checkHover(clicked = true) {
+		const context = this.getContext();
+		if (!State.data.get() || !context) return false;
 
 		const drawnCache = State.drawnElements.get();
 		const canvasOffsetCache = State.canvasOffset.get();
@@ -292,9 +413,16 @@ export class Canvas {
 		return results.includes(true);
 	}
 
-	static getContext() {
-		const context = this.canvas.getContext("2d");
+	/**
+	 * Retrieve the drawing context for this canvas.
+	 *
+	 * @returns The drawing context.
+	 */
+	getContext() {
+		const context = this.element.getContext("2d");
 		if (context === null) throw new Error("Context could not be retrieved");
 		return context;
 	}
 }
+
+export const CANVAS = new Canvas("canvas", "canvas-container");

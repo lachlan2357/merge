@@ -1,5 +1,5 @@
 import { MessageBoxError } from "./messages.js";
-import { OverpassResponse } from "./types.js";
+import { OverpassResponse } from "./types/overpass.js";
 
 type CachedQuery = {
 	request: string;

@@ -1,169 +1,33 @@
-import { Canvas } from "./canvas.js";
-import { ElementBuilder, FontAwesomeIcon, LinkChip } from "./elements.js";
-import { Overpass } from "./overpass.js";
-import { Settings, SettingsObject } from "./settings.js";
-import { State } from "./state.js";
-import { ScreenCoordinate } from "./coordinates.js";
-import { OverpassWay } from "./types.js";
+import { ElementBuilder, FontAwesomeIcon, LinkChip } from "../elements.js";
+import { Settings, SettingsObject } from "../settings.js";
+import { State } from "../state.js";
+import { OverpassWay } from "../types/overpass.js";
+import { getElement } from "./elements.js";
 
-export function getElement<K>(id: string) {
-	return document.getElementById(id) as K;
-}
-
-const canvas = getElement<HTMLCanvasElement>("canvas");
-const canvasContainer = getElement<HTMLDivElement>("canvas-container");
-const searchButton = getElement<HTMLButtonElement>("search");
-const advancedButton = getElement<HTMLButtonElement>("advanced");
-const settingsButton = getElement<HTMLButtonElement>("settings");
-const zoomInButton = getElement<HTMLButtonElement>("zoom-in");
-const zoomOutButton = getElement<HTMLButtonElement>("zoom-out");
-const zoomResetButton = getElement<HTMLButtonElement>("zoom-reset");
-const fullscreenButton = getElement<HTMLButtonElement>("fullscreen");
-const shareButton = getElement<HTMLButtonElement>("share");
-const helpButton = getElement<HTMLButtonElement>("help");
-const aboutButton = getElement<HTMLButtonElement>("about");
-const popup = getElement<HTMLDialogElement>("popup");
-const wayInfo = getElement<HTMLHeadingElement>("way-info");
-const wayInfoId = getElement<HTMLHeadingElement>("wayid");
-const wayInfoTags = getElement<HTMLTableElement>("tags");
-const editInID = getElement<HTMLButtonElement>("edit-id");
-const editInJOSM = getElement<HTMLButtonElement>("edit-josm");
-const searchInput = getElement<HTMLInputElement>("relation-name");
-const searchForm = getElement<HTMLFormElement>("search-form");
-
-// popup buttons
-shareButton.addEventListener("click", () => togglePopup("share"));
-settingsButton.addEventListener("click", () => togglePopup("settings"));
-advancedButton.addEventListener("click", () => togglePopup("advanced"));
-helpButton.addEventListener("click", () => togglePopup("help"));
-aboutButton.addEventListener("click", () => togglePopup("about"));
-
-// search form
-searchForm.addEventListener("submit", e => {
-	e.preventDefault();
-	const form = e.target as HTMLFormElement;
-	const formData = new FormData(form);
-	Overpass.search(formData.get("relation")?.toString() ?? "");
-});
-
-// canvas
-canvas.addEventListener("wheel", e => {
-	e.preventDefault();
-	if (!State.data.get()) return;
-
-	const inOut = e.deltaY > 0 ? "out" : "in";
-	Canvas.zoom(inOut, "mouse");
-});
-
-canvas.addEventListener("mousedown", e => {
-	e.preventDefault();
-	if (!State.data.get()) return;
-
-	const [x, y] = [e.clientX, e.clientY];
-	const pos = new ScreenCoordinate(x, y).subtract(State.mouseOffset.get());
-	State.mouseDownPos.set(pos);
-	State.mouseDown.set(true);
-	State.mouseMoved.set(false);
-});
-
-canvas.addEventListener("mouseup", e => {
-	e.preventDefault();
-	if (!State.data.get()) return;
-
-	if (!State.mouseMoved.get() && !Canvas.checkHover()) {
-		wayInfo.setAttribute("hidden", "");
-		State.selectedWay.set(-1);
-	}
-
-	State.mouseDown.set(false);
-	State.mouseMoved.set(false);
-});
-
-canvas.addEventListener("mousemove", e => {
-	e.preventDefault();
-	if (!State.data.get()) return;
-
-	const [x, y] = [e.clientX, e.clientY];
-	State.mousePos.set(new ScreenCoordinate(x, y));
-	State.mouseMoved.set(true);
-
-	if (State.mouseDown.get())
-		State.mouseOffset.set(new ScreenCoordinate(x, y).subtract(State.mouseDownPos.get()));
-
-	canvas.style.cursor = Canvas.checkHover(false) ? "pointer" : "move";
-});
-
-function updateCanvasSize() {
-	const dimensions = new ScreenCoordinate(canvasContainer.clientWidth, canvasContainer.clientHeight);
-
-	const offsetParent = canvasContainer.offsetParent as HTMLElement | undefined;
-
-	const parentOffset = new ScreenCoordinate(
-		offsetParent?.offsetLeft || 0,
-		offsetParent?.offsetTop || 0
-	);
-
-	const localOffset = new ScreenCoordinate(canvasContainer.offsetLeft, canvasContainer.offsetTop);
-
-	const offset = parentOffset.add(localOffset);
-
-	canvas.setAttribute("width", dimensions.x.toString());
-	canvas.setAttribute("height", dimensions.y.toString());
-
-	State.canvasOffset.set(offset);
-	State.canvasDimensions.set(dimensions);
-}
-
-new ResizeObserver(updateCanvasSize).observe(canvasContainer);
-window.addEventListener("resize", updateCanvasSize);
-
-// canvas buttons
-zoomInButton.addEventListener("click", () => Canvas.zoom("in", "button"));
-zoomOutButton.addEventListener("click", () => Canvas.zoom("out", "button"));
-zoomResetButton.addEventListener("click", () => Canvas.centre());
-fullscreenButton.addEventListener("click", () => canvasContainer.toggleAttribute("fullscreen"));
-editInID.addEventListener("click", editID);
-editInJOSM.addEventListener("click", openJOSM);
-
-// hooks
-export function getContext() {
-	return canvas.getContext("2d") ?? undefined;
-}
-
-export function setAndSearch(term?: string) {
-	searchInput.value = term ?? "";
-	if (term) Overpass.search(term);
-}
-
-export function setSearching(searching = true) {
-	while (searchButton.lastChild) searchButton.lastChild.remove();
-
-	const icon = new FontAwesomeIcon("solid");
-	if (searching) icon.setIcon("circle-notch").animate("spin");
-	else icon.setIcon("magnifying-glass");
-
-	searchButton.append(icon.build());
-	settingsButton.disabled = searching;
-}
+export const POPUP = getElement("popup", HTMLDialogElement);
+export const WAY_INFO = getElement("way-info", HTMLDivElement);
+export const WAY_INFO_ID = getElement("wayid", HTMLHeadingElement);
+export const WAY_INFO_TAGS = getElement("tags", HTMLTableElement);
 
 type PopupReason = "share" | "settings" | "advanced" | "help" | "about" | "welcome";
+
 export async function togglePopup(reason?: PopupReason) {
-	if (popup.open) {
-		popup.setAttribute("closing", "");
-		popup.addEventListener(
+	if (POPUP.open) {
+		POPUP.setAttribute("closing", "");
+		POPUP.addEventListener(
 			"animationend",
 			() => {
-				popup.removeAttribute("closing");
-				popup.close();
+				POPUP.removeAttribute("closing");
+				POPUP.close();
 			},
 			{ once: true }
 		);
 		return;
 	}
 
-	while (popup.lastChild) popup.lastChild.remove();
+	while (POPUP.lastChild) POPUP.lastChild.remove();
 
-	if (reason != "welcome") popup.append(new ElementBuilder("h2").text(reason ?? "").build());
+	if (reason != "welcome") POPUP.append(new ElementBuilder("h2").text(reason ?? "").build());
 
 	switch (reason) {
 		case "share": {
@@ -208,7 +72,7 @@ export async function togglePopup(reason?: PopupReason) {
 				.children(iDButton, josmButton)
 				.build();
 
-			popup.append(container, openWithContainer);
+			POPUP.append(container, openWithContainer);
 
 			copyButton.addEventListener("click", () => {
 				navigator.clipboard.writeText(shareText).then(() => {
@@ -270,13 +134,13 @@ export async function togglePopup(reason?: PopupReason) {
 				list.append(outerDiv);
 			}
 
-			popup.append(list);
+			POPUP.append(list);
 
 			break;
 		}
 		case "help": {
 			const help = new ElementBuilder("p").text("Coming soon. Stay Tuned.").build();
-			popup.append(help);
+			POPUP.append(help);
 			break;
 		}
 		case "about": {
@@ -291,12 +155,12 @@ export async function togglePopup(reason?: PopupReason) {
 				.icon(new FontAwesomeIcon("brands", "github"))
 				.build();
 
-			popup.append(description, chip);
+			POPUP.append(description, chip);
 			break;
 		}
 		case "advanced": {
 			const advanced = new ElementBuilder("p").text("Coming soon. Stay Tuned.").build();
-			popup.append(advanced);
+			POPUP.append(advanced);
 			break;
 		}
 		case "welcome": {
@@ -310,7 +174,7 @@ export async function togglePopup(reason?: PopupReason) {
 				)
 				.build();
 
-			popup.append(img, heading, description);
+			POPUP.append(img, heading, description);
 			break;
 		}
 	}
@@ -324,17 +188,17 @@ export async function togglePopup(reason?: PopupReason) {
 		.event("click", () => togglePopup())
 		.build();
 
-	popup.append(closeButton);
+	POPUP.append(closeButton);
 
 	// setHTMLSizes();
-	popup.showModal();
+	POPUP.showModal();
 }
 
 export function displayPopup(element: { wayId: number; path: Path2D }, way: OverpassWay) {
-	wayInfoId.innerHTML = `Way <a href="https://www.openstreetmap.org/way/${element.wayId}" target="_blank">${element.wayId}</a>`;
+	WAY_INFO_ID.innerHTML = `Way <a href="https://www.openstreetmap.org/way/${element.wayId}" target="_blank">${element.wayId}</a>`;
 
 	// purge all children before adding new ones
-	while (wayInfoTags.lastChild) wayInfoTags.removeChild(wayInfoTags.lastChild);
+	while (WAY_INFO_TAGS.lastChild) WAY_INFO_TAGS.removeChild(WAY_INFO_TAGS.lastChild);
 
 	// create heading row
 	const tagHeading = new ElementBuilder("th").text("Tag").build();
@@ -342,7 +206,7 @@ export function displayPopup(element: { wayId: number; path: Path2D }, way: Over
 
 	const row = new ElementBuilder("tr").children(tagHeading, valueHeading).build();
 
-	wayInfoTags.append(row);
+	WAY_INFO_TAGS.append(row);
 
 	// content rows
 	Object.entries(way.tags ?? {}).forEach(([tag, value]) => {
@@ -350,10 +214,10 @@ export function displayPopup(element: { wayId: number; path: Path2D }, way: Over
 		const valueCell = new ElementBuilder("td").text(value.toString()).build();
 		const tagRow = new ElementBuilder("tr").children(tagCell, valueCell).build();
 
-		wayInfoTags.append(tagRow);
+		WAY_INFO_TAGS.append(tagRow);
 	});
 
-	wayInfo.removeAttribute("hidden");
+	WAY_INFO.removeAttribute("hidden");
 	State.selectedWay.set(way.id);
 }
 

@@ -1,5 +1,3 @@
-import { Err, Ok } from "./errors.js";
-
 export interface OverpassResponse {
 	version: number;
 	generator: string;
@@ -75,21 +73,3 @@ export interface WayData {
 }
 
 export type ImportedData = Map<number, WayData>;
-
-export interface Setting<T> {
-	name: string;
-	description: string;
-	inputType: "string" | "boolean";
-	value: T;
-	setLocalStorage: boolean;
-	inSettings: boolean;
-}
-
-export type SettingType = string | boolean;
-
-export interface CachedQuery {
-	request: string;
-	value: string;
-}
-
-export type Result<T, E> = Ok<T> | Err<E>;

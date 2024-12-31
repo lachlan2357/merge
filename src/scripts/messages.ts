@@ -1,4 +1,4 @@
-import { getElement } from "./dom.js";
+import { getElement } from "./dom/elements.js";
 import { ElementBuilder } from "./elements.js";
 
 const appMsgMap = {
@@ -15,7 +15,7 @@ const appMsgMap = {
 export type AppMsg = keyof typeof appMsgMap;
 
 export class Message {
-	static readonly element: HTMLDivElement = getElement("messages");
+	static readonly element = getElement("messages", HTMLDivElement);
 
 	static display(key: AppMsg) {
 		const message = appMsgMap[key];

@@ -1,6 +1,6 @@
-import { Canvas } from "./canvas.js";
+import { CANVAS } from "./map/canvas.js";
 import { metresToPixels } from "./conversions.js";
-import { WorldCoordinate } from "./coordinates.js";
+import { WorldCoordinate } from "./types/coordinate.js";
 
 export const roadColours = {
 	asphalt: "#222233",
@@ -50,8 +50,7 @@ export class Draw {
 		const path = new Path2D();
 
 		path.moveTo(...start.get());
-		for (let i = 1; i < coords.length; i++)
-			path.lineTo(...coords[i].get());
+		for (let i = 1; i < coords.length; i++) path.lineTo(...coords[i].get());
 
 		path.closePath();
 		this.applyStyle(context, settings, path);
@@ -175,7 +174,7 @@ export class Draw {
 	}
 
 	static setStyle(settings: DrawingSettings) {
-		const context = Canvas.getContext();
+		const context = CANVAS.getContext();
 
 		context.strokeStyle = settings.colour || "black";
 		context.lineWidth = settings.thickness || 1;

@@ -1,6 +1,5 @@
-import { Canvas } from "./canvas.js";
+import { CANVAS } from "./map/canvas.js";
 import { Database } from "./database.js";
-import { setSearching } from "./dom.js";
 import { AppMsg, Message, MessageBoxError } from "./messages.js";
 import { Settings } from "./settings.js";
 import { State } from "./state.js";
@@ -12,38 +11,34 @@ import {
 	OverpassResponse,
 	OverpassWay,
 	WayData
-} from "./types.js";
+} from "./types/overpass.js";
 
 export class Overpass {
-	static async search(name: string) {
-		const propagateError = (e: AppMsg) => {
-			Message.display(e);
-			setSearching(false);
-		};
+	/**
+	 * Request the Overpass API for the required search.
+	 *
+	 * @param searchTerm The user's search term.
+	 * @throws {OverpassError} If the search was unsuccessful.
+	 */
+	static async search(searchTerm: string) {
+		// transform search term into query mode
+		const roadName = searchTerm;
+		const roadNumber = Number(searchTerm);
 
-		setSearching();
-		const roadName = name;
-		const roadNumber = Number(name);
-
-		if (roadName.length === 0) return propagateError("noSearchTerm");
-
-		if (roadName.includes('"')) return propagateError("malformedSearchTerm");
+		if (roadName.length === 0) throw OverpassError.MALFORMED_SEARCH;
+		if (roadName.includes('"')) throw OverpassError.ILLEGAL_CHARACTER;
 
 		const searchMode = isNaN(roadNumber)
 			? `<has-kv k="name" v="${roadName}"/>`
 			: `<id-query type="relation" ref="${roadName}"/>`;
 
-		let query: OverpassResponse;
-		try {
-			query = await this.query(searchMode);
-		} catch (error) {
-			if (error instanceof MessageBoxError) error.display();
-			return propagateError("overpassError");
-		}
+		// query the Overpass API
+		const query = await this.query(searchMode);
 
-		const relations = new Array<OverpassRelation>();
-		const ways = new Map<number, OverpassWay>();
+		// sort response into nodes, ways and relations
 		const nodes = new Map<number, OverpassNode>();
+		const ways = new Map<number, OverpassWay>();
+		const relations = new Array<OverpassRelation>();
 
 		for (let i = 0, n = query.elements.length; i < n; i++) {
 			const element = query.elements[i];
@@ -61,10 +56,10 @@ export class Overpass {
 			}
 		}
 
-		if (relations.length > 1) return propagateError("multipleRelations");
+		if (relations.length > 1) throw OverpassError.MULTIPLE_RELATIONS;
 		const relation = relations[0];
 
-		if (!relation) return propagateError("noResult");
+		if (!relation) throw OverpassError.NO_RESULT;
 		State.currentRelationId.set(relation.id);
 
 		const wayIdsInRelation = new Array<number>();
@@ -81,10 +76,10 @@ export class Overpass {
 			}
 		});
 
+		// set map data
 		this.process(ways, nodes);
-		Canvas.centre();
+		CANVAS.centre();
 		State.allWays.set(ways);
-		setSearching(false);
 	}
 
 	/**
@@ -111,6 +106,7 @@ export class Overpass {
 			}
 		} catch (error) {
 			if (error instanceof MessageBoxError) error.display();
+			else console.error(error);
 		} finally {
 			if (database_result !== null) return database_result;
 			else return await this.fetch(query);
@@ -271,5 +267,15 @@ export class Overpass {
 }
 
 export class OverpassError extends MessageBoxError {
+	static readonly MALFORMED_SEARCH = new OverpassError("Invalid search term.");
+	static readonly ILLEGAL_CHARACTER = new OverpassError(
+		"Currently, double quotes in search terms are not supported."
+	);
+
+	static readonly MULTIPLE_RELATIONS = new OverpassError(
+		"Multiple relations share that name. Use relation id."
+	);
+	static readonly NO_RESULT = new OverpassError("Search returned no results.");
+
 	static readonly REQUEST_ERROR = new OverpassError("Overpass request failed.");
 }
