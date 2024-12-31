@@ -1,12 +1,12 @@
 import { laneLength, metresToPixels } from "../conversions.js";
+import { getElement } from "../dom/elements.js";
+import { WAY_INFO, displayPopup } from "../dom/popup.js";
 import { Draw } from "../drawing.js";
 import { roadColours } from "../drawing.js";
 import { Settings } from "../settings.js";
 import { State } from "../state.js";
 import { zoomIncrement } from "../supplement.js";
 import { ScreenCoordinate, WorldCoordinate } from "../types/coordinate.js";
-import { getElement } from "../dom/elements.js";
-import { displayPopup, WAY_INFO } from "../dom/popup.js";
 import "./buttons.js";
 
 export type MultiplierData = {

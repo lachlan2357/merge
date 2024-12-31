@@ -1,19 +1,4 @@
 {
-	"cSpell.words": [
-		"behavior",
-		"camelcase",
-		"chipseal",
-		"codepaths",
-		"darkmode",
-		"latlon",
-		"Lats",
-		"Lons",
-		"maxspeed",
-		"nodenext",
-		"stylelint",
-		"tsbuildinfo",
-		"wayid"
-	],
 	"css.validate": false,
 	"scss.validate": false,
 	"stylelint.validate": ["scss"],

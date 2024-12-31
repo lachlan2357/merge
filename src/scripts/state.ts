@@ -1,5 +1,5 @@
-import { CANVAS, MultiplierData } from "./map/canvas.js";
 import { DrawnElement } from "./drawing.js";
+import { CANVAS, MultiplierData } from "./map/canvas.js";
 import { ScreenCoordinate } from "./types/coordinate.js";
 import { ImportedData, OverpassWay } from "./types/overpass.js";
 

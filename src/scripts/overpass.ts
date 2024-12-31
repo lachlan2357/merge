@@ -1,5 +1,5 @@
-import { CANVAS } from "./map/canvas.js";
 import { Database } from "./database.js";
+import { CANVAS } from "./map/canvas.js";
 import { AppMsg, Message, MessageBoxError } from "./messages.js";
 import { Settings } from "./settings.js";
 import { State } from "./state.js";

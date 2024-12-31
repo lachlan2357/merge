@@ -1,5 +1,5 @@
-import { CANVAS } from "./map/canvas.js";
 import { metresToPixels } from "./conversions.js";
+import { CANVAS } from "./map/canvas.js";
 import { WorldCoordinate } from "./types/coordinate.js";
 
 export const roadColours = {

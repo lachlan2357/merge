@@ -1,7 +1,7 @@
 import { togglePopup } from "./dom/popup.js";
+import { loadSearchBox } from "./map/search.js";
 import { Message } from "./messages.js";
 import { Settings } from "./settings.js";
-import { loadSearchBox } from "./map/search.js";
 
 // display a message on the message popup when a JS error occurs
 window.addEventListener("error", () => Message.display("error"));
