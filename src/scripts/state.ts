@@ -251,9 +251,13 @@ export class State {
 		return { minLat, maxLat, minLon, maxLon, multiplier };
 	}, [this.data, this.canvasDimensions]);
 
-	static readonly totalMultiplier = new Computed(() => {
-		return (this.multiplier.get().multiplier + this.zoom.get()) ** 2;
+	static readonly totalMultiplierRaw = new Computed(() => {
+		return this.multiplier.get().multiplier + this.zoom.get();
 	}, [this.multiplier, this.zoom]);
+
+	static readonly totalMultiplier = new Computed(() => {
+		return this.totalMultiplierRaw.get() ** 2;
+	}, [this.totalMultiplierRaw]);
 
 	static readonly offset = new Computed(() => {
 		const totalMultiplierCache = this.totalMultiplier.get();

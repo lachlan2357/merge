@@ -28,6 +28,12 @@ class Canvas {
 	 */
 	private readonly container: HTMLDivElement;
 
+	/**
+	 * Attach a canvas controller to a {@link HTMLCanvasElement}.
+	 *
+	 * @param id The ID of the {@link HTMLCanvasElement} to attach to.
+	 * @param containerId The ID of the canvas container to attach to.
+	 */
 	constructor(id: string, containerId: string) {
 		// fetch elements
 		this.element = getElement(id, HTMLCanvasElement);
@@ -38,8 +44,8 @@ class Canvas {
 			e.preventDefault();
 			if (!State.data.get()) return;
 
-			const [x, y] = [e.clientX, e.clientY];
-			const pos = new ScreenCoordinate(x, y).subtract(State.mouseOffset.get());
+			const posRaw = ScreenCoordinate.fromMouseEvent(e);
+			const pos = posRaw.subtract(State.mouseOffset.get());
 			State.mouseDownPos.set(pos);
 			State.mouseDown.set(true);
 			State.mouseMoved.set(false);
@@ -62,14 +68,12 @@ class Canvas {
 			e.preventDefault();
 			if (!State.data.get()) return;
 
-			const [x, y] = [e.clientX, e.clientY];
-			State.mousePos.set(new ScreenCoordinate(x, y));
+			const pos = ScreenCoordinate.fromMouseEvent(e);
+			State.mousePos.set(pos);
 			State.mouseMoved.set(true);
 
 			if (State.mouseDown.get())
-				State.mouseOffset.set(
-					new ScreenCoordinate(x, y).subtract(State.mouseDownPos.get())
-				);
+				State.mouseOffset.set(pos.subtract(State.mouseDownPos.get()));
 
 			this.element.style.cursor = this.checkHover(false) ? "pointer" : "move";
 		});
@@ -103,25 +107,29 @@ class Canvas {
 	 * @param source The source of the zoom, either from the mouse scroll wheel or the zoom buttons.
 	 */
 	zoom(inOut: "in" | "out", source: "mouse" | "button") {
-		const totalMultiplierRaw = Math.sqrt(State.totalMultiplier.get());
+		const totalMultiplierRaw = State.totalMultiplierRaw.get();
 
-		const mousePosition =
+		const zoomPosition =
 			source == "mouse"
 				? State.mousePos.get().subtract(State.canvasOffset.get())
 				: State.canvasDimensions.get().divide(2);
 
-		const mouseCoord = mousePosition.toWorld();
+		const zoomCoord = zoomPosition.toWorld();
 
 		if (inOut === "in") State.zoom.setDynamic(old => old + zoomIncrement);
 		else if (totalMultiplierRaw - zoomIncrement > 0)
 			State.zoom.setDynamic(old => old - zoomIncrement);
+		else return;
 
-		const newCoord = mouseCoord.toScreen();
-		const diff = mousePosition.subtract(newCoord);
+		const newCoord = zoomCoord.toScreen();
+		const diff = zoomPosition.subtract(newCoord);
 
 		State.zoomOffset.setDynamic(old => old.add(diff));
 	}
 
+	/**
+	 * Toggle whether the map should be displayed in fullscreen.
+	 */
 	toggleFullscreen() {
 		this.container.toggleAttribute("fullscreen");
 	}
@@ -350,6 +358,9 @@ class Canvas {
 		});
 	}
 
+	/**
+	 * Resize the canvas to fit it's container.
+	 */
 	resize() {
 		const dimensions = new ScreenCoordinate(
 			this.container.clientWidth,

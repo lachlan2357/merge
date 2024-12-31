@@ -247,6 +247,10 @@ export class ScreenCoordinate extends Coordinate implements CoordinateMath<Scree
 			-(this.y - offsetCache.y) / totalMultiplierCache
 		);
 	}
+
+	static fromMouseEvent(event: MouseEvent) {
+		return new ScreenCoordinate(event.clientX, event.clientY);
+	}
 }
 
 export class WorldCoordinate extends Coordinate implements CoordinateMath<WorldCoordinate> {
