@@ -4,7 +4,8 @@ import { Draw } from "./drawing.js";
 import { roadColours } from "./drawing.js";
 import { Settings } from "./settings.js";
 import { State } from "./state.js";
-import { Coordinate, zoomIncrement } from "./supplement.js";
+import { zoomIncrement } from "./supplement.js";
+import { ScreenCoordinate, WorldCoordinate } from "./coordinates.js"
 
 export type MultiplierData = {
 	minLat: number;
@@ -18,8 +19,8 @@ export class Canvas {
 	private static canvas: HTMLCanvasElement = getElement("canvas");
 
 	static centre() {
-		State.mouseOffset.set(new Coordinate());
-		State.zoomOffset.set(new Coordinate());
+		State.mouseOffset.set(new ScreenCoordinate());
+		State.zoomOffset.set(new ScreenCoordinate());
 		State.zoom.set(0);
 	}
 
@@ -71,8 +72,8 @@ export class Canvas {
 				const x2 = nextNode.lon;
 				const y2 = nextNode.lat;
 
-				const thisPos = new Coordinate(x1, y1);
-				const nextPos = new Coordinate(x2, y2);
+				const thisPos = new WorldCoordinate(x1, y1);
+				const nextPos = new WorldCoordinate(x2, y2);
 
 				// angles are the atan of the gradient, however gradients
 				// don't tell direction. the condition checks if the
@@ -83,13 +84,13 @@ export class Canvas {
 						? Math.atan(gradient) + Math.PI
 						: Math.atan(gradient);
 				const adjacentAngle = angle + Math.PI / 2;
-				const trigCoord = new Coordinate(Math.cos(adjacentAngle), Math.sin(adjacentAngle));
+				const trigCoord = new WorldCoordinate(Math.cos(adjacentAngle), Math.sin(adjacentAngle));
 
 				// define the four corners of the box around the way
 				const coefficient = (laneLength * lanes) / 2;
 				const sinCoefficient = Math.sin(adjacentAngle) * coefficient;
 				const cosCoefficient = Math.cos(adjacentAngle) * coefficient;
-				const coordCoefficient = new Coordinate(cosCoefficient, sinCoefficient);
+				const coordCoefficient = new WorldCoordinate(cosCoefficient, sinCoefficient);
 
 				const thisTopCornerPos = thisPos.add(coordCoefficient);
 				const thisBtmCornerPos = thisPos.subtract(coordCoefficient);
@@ -123,8 +124,8 @@ export class Canvas {
 
 				// check to see if any of the box is visible on screen
 				for (let i = 0; i < 6; i++) {
-					const xPos = new Coordinate(allPos[0][i], 0).toScreen().x;
-					const yPos = new Coordinate(0, allPos[1][i]).toScreen().y;
+					const xPos = new WorldCoordinate(allPos[0][i], 0).toScreen().x;
+					const yPos = new WorldCoordinate(0, allPos[1][i]).toScreen().y;
 
 					if (xPos < 0) allOffScreen[0][i] = "above";
 					else if (xPos > dimensions.x) allOffScreen[0][i] = "below";
@@ -199,8 +200,8 @@ export class Canvas {
 					const allX = [thisSrtCoord.x, thisEndCoord.x, nextSrtCoord.x, nextEndCoord.x];
 					const allY = [thisSrtCoord.y, thisEndCoord.y, nextSrtCoord.y, nextEndCoord.y];
 
-					const maxCoord = new Coordinate(Math.max(...allX), Math.max(...allY));
-					const minCoord = new Coordinate(Math.min(...allX), Math.min(...allY));
+					const maxCoord = new WorldCoordinate(Math.max(...allX), Math.max(...allY));
+					const minCoord = new WorldCoordinate(Math.min(...allX), Math.min(...allY));
 
 					// find the length and width, adjusting to be negative if it is
 					// a "backwards" lanes

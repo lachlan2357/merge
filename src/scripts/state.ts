@@ -1,6 +1,6 @@
 import { Canvas, MultiplierData } from "./canvas.js";
 import { DrawnElement } from "./drawing.js";
-import { Coordinate } from "./supplement.js";
+import { ScreenCoordinate } from "./coordinates.js";
 import { ImportedData, OverpassWay } from "./types.js";
 
 /**
@@ -205,12 +205,12 @@ export class State {
 	static readonly drawnElements: Atomic<Record<number, DrawnElement>> = new Atomic({});
 	static readonly selectedWay: Atomic<number> = new Atomic(-1);
 	static readonly allWays: Atomic<Map<number, OverpassWay>> = new Atomic(new Map());
-	static readonly canvasDimensions: Atomic<Coordinate> = new Atomic(new Coordinate());
-	static readonly canvasOffset: Atomic<Coordinate> = new Atomic(new Coordinate());
-	static readonly mousePos: Atomic<Coordinate> = new Atomic(new Coordinate());
-	static readonly mouseDownPos: Atomic<Coordinate> = new Atomic(new Coordinate());
-	static readonly mouseOffset: Atomic<Coordinate> = new Atomic(new Coordinate());
-	static readonly zoomOffset: Atomic<Coordinate> = new Atomic(new Coordinate());
+	static readonly canvasDimensions: Atomic<ScreenCoordinate> = new Atomic(new ScreenCoordinate());
+	static readonly canvasOffset: Atomic<ScreenCoordinate> = new Atomic(new ScreenCoordinate());
+	static readonly mousePos: Atomic<ScreenCoordinate> = new Atomic(new ScreenCoordinate());
+	static readonly mouseDownPos: Atomic<ScreenCoordinate> = new Atomic(new ScreenCoordinate());
+	static readonly mouseOffset: Atomic<ScreenCoordinate> = new Atomic(new ScreenCoordinate());
+	static readonly zoomOffset: Atomic<ScreenCoordinate> = new Atomic(new ScreenCoordinate());
 	static readonly mouseDown: Atomic<boolean> = new Atomic(false);
 	static readonly mouseMoved: Atomic<boolean> = new Atomic(false);
 	static readonly zoom: Atomic<number> = new Atomic(0);
@@ -242,7 +242,7 @@ export class State {
 		maxLon = Math.max(...allLons);
 		minLon = Math.min(...allLons);
 
-		const diff = new Coordinate(maxLon - minLon, maxLat - minLat);
+		const diff = new ScreenCoordinate(maxLon - minLon, maxLat - minLat);
 		const diffScale = canvasCache.divide(diff);
 		const minDiff = Math.min(diffScale.x, diffScale.y);
 
@@ -260,7 +260,7 @@ export class State {
 		const { minLon, maxLon, minLat, maxLat } = this.multiplier.get();
 		const canvasCache = this.canvasDimensions.get();
 
-		return new Coordinate(
+		return new ScreenCoordinate(
 			canvasCache.x / 2 -
 				(minLon + (maxLon - minLon) / 2) * totalMultiplierCache +
 				this.mouseOffset.get().x +

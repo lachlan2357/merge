@@ -1,7 +1,6 @@
 import { Canvas } from "./canvas.js";
 import { metresToPixels } from "./conversions.js";
-import { State } from "./state.js";
-import { Coordinate } from "./supplement.js";
+import { WorldCoordinate } from "./coordinates.js";
 
 export const roadColours = {
 	asphalt: "#222233",
@@ -26,45 +25,33 @@ type DrawingSettings = {
 };
 
 export class Draw {
-	static line(coordStart: Coordinate, coordEnd: Coordinate, settings: DrawingSettings) {
-		const totalMultiplierCache = State.totalMultiplier.get();
-		const offsetCache = State.offset.get();
-
+	static line(coordStart: WorldCoordinate, coordEnd: WorldCoordinate, settings: DrawingSettings) {
 		const context = this.setStyle(settings);
+
+		// convert to screen coordinates
+		const start = coordStart.toScreen();
+		const end = coordEnd.toScreen();
 
 		// draw
 		context.beginPath();
-		context.moveTo(
-			offsetCache.x + coordStart.x * totalMultiplierCache,
-			offsetCache.y - coordStart.y * totalMultiplierCache
-		);
-		context.lineTo(
-			offsetCache.x + coordEnd.x * totalMultiplierCache,
-			offsetCache.y - coordEnd.y * totalMultiplierCache
-		);
-
+		context.moveTo(...start.get());
+		context.lineTo(...end.get());
 		this.applyStyle(context, settings);
 	}
 
-	static polygon(coordinates: Array<Coordinate>, settings: DrawingSettings) {
-		const totalMultiplierCache = State.totalMultiplier.get();
-		const offsetCache = State.offset.get();
-
+	static polygon(coordinates: Array<WorldCoordinate>, settings: DrawingSettings) {
 		const context = this.setStyle(settings);
+
+		// convert to screen coordinates
+		const coords = coordinates.map(world => world.toScreen());
+		const start = coords[0];
 
 		// draw
 		const path = new Path2D();
 
-		path.moveTo(
-			offsetCache.x + coordinates[0].x * totalMultiplierCache,
-			offsetCache.y - coordinates[0].y * totalMultiplierCache
-		);
-		for (let i = 1; i < coordinates.length; i++) {
-			path.lineTo(
-				offsetCache.x + coordinates[i].x * totalMultiplierCache,
-				offsetCache.y - coordinates[i].y * totalMultiplierCache
-			);
-		}
+		path.moveTo(...start.get());
+		for (let i = 1; i < coords.length; i++)
+			path.lineTo(...coords[i].get());
 
 		path.closePath();
 		this.applyStyle(context, settings, path);
@@ -76,7 +63,7 @@ export class Draw {
 		type: "left" | "right" | "through",
 		width: number,
 		length: number,
-		centre: Coordinate,
+		centre: WorldCoordinate,
 		angle: number
 	) {
 		const arrowBaseLength = width * 0.35;
@@ -95,11 +82,11 @@ export class Draw {
 		};
 
 		if (type == "through") {
-			const lineStart = new Coordinate(
+			const lineStart = new WorldCoordinate(
 				centre.x - ((Math.cos(angle) * length) / 2) * 0.9,
 				centre.y - ((Math.sin(angle) * length) / 2) * 0.9
 			);
-			const lineEnd = new Coordinate(
+			const lineEnd = new WorldCoordinate(
 				centre.x + ((Math.cos(angle) * length) / 2) * 0.9,
 				centre.y + ((Math.sin(angle) * length) / 2) * 0.9
 			);
@@ -107,11 +94,11 @@ export class Draw {
 			const arrowArmAngle = angle + (Math.PI * 1) / 6;
 			const arrowBaseAngle = arrowArmAngle - (Math.PI * 2) / 3;
 
-			const arrowStart = new Coordinate(
+			const arrowStart = new WorldCoordinate(
 				lineEnd.x - (Math.cos(arrowArmAngle) * arrowArmLength) / 2,
 				lineEnd.y - (Math.sin(arrowArmAngle) * arrowArmLength) / 2
 			);
-			const arrowEnd = new Coordinate(
+			const arrowEnd = new WorldCoordinate(
 				arrowStart.x - Math.cos(arrowBaseAngle) * arrowBaseLength,
 				arrowStart.y - Math.sin(arrowBaseAngle) * arrowBaseLength
 			);
@@ -119,15 +106,15 @@ export class Draw {
 			this.line(lineStart, lineEnd, lineStyle);
 			this.polygon([lineEnd, arrowStart, arrowEnd], backgroundStyle);
 		} else if (type == "left") {
-			const lineStart = new Coordinate(
+			const lineStart = new WorldCoordinate(
 				centre.x - ((Math.cos(angle) * length) / 2) * 0.9,
 				centre.y - ((Math.sin(angle) * length) / 2) * 0.9
 			);
-			const lineEnd = new Coordinate(
+			const lineEnd = new WorldCoordinate(
 				centre.x + ((Math.cos(angle) * length) / 2) * 0,
 				centre.y + ((Math.sin(angle) * length) / 2) * 0
 			);
-			const arrowLineEnd = new Coordinate(
+			const arrowLineEnd = new WorldCoordinate(
 				lineEnd.x + Math.cos(angle + Math.PI / 2) * width * 0.075,
 				lineEnd.y + Math.sin(angle + Math.PI / 2) * width * 0.075
 			);
@@ -135,15 +122,15 @@ export class Draw {
 			const arrowArmAngle = angle - (Math.PI * 1) / 3;
 			const arrowBaseAngle = arrowArmAngle + (Math.PI * 2) / 3;
 
-			const arrowStart = new Coordinate(
+			const arrowStart = new WorldCoordinate(
 				arrowLineEnd.x + (Math.cos(angle) * arrowBaseLength) / 2,
 				arrowLineEnd.y + (Math.sin(angle) * arrowBaseLength) / 2
 			);
-			const arrowMid = new Coordinate(
+			const arrowMid = new WorldCoordinate(
 				arrowStart.x - (Math.cos(arrowArmAngle) * arrowArmLength) / 2,
 				arrowStart.y - (Math.sin(arrowArmAngle) * arrowArmLength) / 2
 			);
-			const arrowEnd = new Coordinate(
+			const arrowEnd = new WorldCoordinate(
 				arrowMid.x - (Math.cos(arrowBaseAngle) * arrowArmLength) / 2,
 				arrowMid.y - (Math.sin(arrowBaseAngle) * arrowArmLength) / 2
 			);
@@ -152,15 +139,15 @@ export class Draw {
 			this.line(lineEnd, arrowLineEnd, lineStyle);
 			this.polygon([arrowStart, arrowMid, arrowEnd], backgroundStyle);
 		} else if (type == "right") {
-			const lineStart = new Coordinate(
+			const lineStart = new WorldCoordinate(
 				centre.x - ((Math.cos(angle) * length) / 2) * 0.9,
 				centre.y - ((Math.sin(angle) * length) / 2) * 0.9
 			);
-			const lineEnd = new Coordinate(
+			const lineEnd = new WorldCoordinate(
 				centre.x + ((Math.cos(angle) * length) / 2) * 0,
 				centre.y + ((Math.sin(angle) * length) / 2) * 0
 			);
-			const arrowLineEnd = new Coordinate(
+			const arrowLineEnd = new WorldCoordinate(
 				lineEnd.x + Math.cos(angle - Math.PI / 2) * width * 0.075,
 				lineEnd.y + Math.sin(angle - Math.PI / 2) * width * 0.075
 			);
@@ -168,15 +155,15 @@ export class Draw {
 			const arrowArmAngle = angle + (Math.PI * 1) / 3;
 			const arrowBaseAngle = arrowArmAngle + (Math.PI * 1) / 3;
 
-			const arrowStart = new Coordinate(
+			const arrowStart = new WorldCoordinate(
 				arrowLineEnd.x + (Math.cos(angle) * arrowBaseLength) / 2,
 				arrowLineEnd.y + (Math.sin(angle) * arrowBaseLength) / 2
 			);
-			const arrowMid = new Coordinate(
+			const arrowMid = new WorldCoordinate(
 				arrowStart.x - (Math.cos(arrowArmAngle) * arrowArmLength) / 2,
 				arrowStart.y - (Math.sin(arrowArmAngle) * arrowArmLength) / 2
 			);
-			const arrowEnd = new Coordinate(
+			const arrowEnd = new WorldCoordinate(
 				arrowMid.x + (Math.cos(arrowBaseAngle) * arrowArmLength) / 2,
 				arrowMid.y + (Math.sin(arrowBaseAngle) * arrowArmLength) / 2
 			);

@@ -3,7 +3,7 @@ import { ElementBuilder, FontAwesomeIcon, LinkChip } from "./elements.js";
 import { Overpass } from "./overpass.js";
 import { Settings, SettingsObject } from "./settings.js";
 import { State } from "./state.js";
-import { Coordinate } from "./supplement.js";
+import { ScreenCoordinate } from "./coordinates.js";
 import { OverpassWay } from "./types.js";
 
 export function getElement<K>(id: string) {
@@ -60,7 +60,7 @@ canvas.addEventListener("mousedown", e => {
 	if (!State.data.get()) return;
 
 	const [x, y] = [e.clientX, e.clientY];
-	const pos = new Coordinate(x, y).subtract(State.mouseOffset.get());
+	const pos = new ScreenCoordinate(x, y).subtract(State.mouseOffset.get());
 	State.mouseDownPos.set(pos);
 	State.mouseDown.set(true);
 	State.mouseMoved.set(false);
@@ -84,26 +84,26 @@ canvas.addEventListener("mousemove", e => {
 	if (!State.data.get()) return;
 
 	const [x, y] = [e.clientX, e.clientY];
-	State.mousePos.set(new Coordinate(x, y));
+	State.mousePos.set(new ScreenCoordinate(x, y));
 	State.mouseMoved.set(true);
 
 	if (State.mouseDown.get())
-		State.mouseOffset.set(new Coordinate(x, y).subtract(State.mouseDownPos.get()));
+		State.mouseOffset.set(new ScreenCoordinate(x, y).subtract(State.mouseDownPos.get()));
 
 	canvas.style.cursor = Canvas.checkHover(false) ? "pointer" : "move";
 });
 
 function updateCanvasSize() {
-	const dimensions = new Coordinate(canvasContainer.clientWidth, canvasContainer.clientHeight);
+	const dimensions = new ScreenCoordinate(canvasContainer.clientWidth, canvasContainer.clientHeight);
 
 	const offsetParent = canvasContainer.offsetParent as HTMLElement | undefined;
 
-	const parentOffset = new Coordinate(
+	const parentOffset = new ScreenCoordinate(
 		offsetParent?.offsetLeft || 0,
 		offsetParent?.offsetTop || 0
 	);
 
-	const localOffset = new Coordinate(canvasContainer.offsetLeft, canvasContainer.offsetTop);
+	const localOffset = new ScreenCoordinate(canvasContainer.offsetLeft, canvasContainer.offsetTop);
 
 	const offset = parentOffset.add(localOffset);
 
