@@ -202,7 +202,7 @@ export class State {
 	// atomics
 	static readonly data: Atomic<ImportedData | undefined> = new Atomic(undefined);
 	static readonly currentRelationId: Atomic<number | undefined> = new Atomic(undefined);
-	static readonly drawnElements: Atomic<Record<number, DrawnElement>> = new Atomic({});
+	static readonly drawnElements: Atomic<Array<DrawnElement>> = new Atomic(new Array());
 	static readonly selectedWay: Atomic<number> = new Atomic(-1);
 	static readonly allWays: Atomic<Map<number, OverpassWay>> = new Atomic(new Map());
 	static readonly canvasDimensions: Atomic<ScreenCoordinate> = new Atomic(new ScreenCoordinate());

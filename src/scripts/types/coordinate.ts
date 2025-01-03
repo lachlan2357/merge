@@ -1,4 +1,5 @@
 import { State } from "../state.js";
+import { OverpassNode } from "./overpass.js";
 
 /**
  * Allow a coordinate to perform math functions with another type of coordinate.
@@ -251,6 +252,14 @@ export class ScreenCoordinate extends Coordinate implements CoordinateMath<Scree
 	static fromMouseEvent(event: MouseEvent) {
 		return new ScreenCoordinate(event.clientX, event.clientY);
 	}
+
+	static ofElementDimensions(element: Element) {
+		return new ScreenCoordinate(element.clientWidth, element.clientHeight);
+	}
+
+	static ofElementOffset(element: HTMLElement) {
+		return new ScreenCoordinate(element.offsetLeft, element.offsetTop);
+	}
 }
 
 export class WorldCoordinate extends Coordinate implements CoordinateMath<WorldCoordinate> {
@@ -286,5 +295,9 @@ export class WorldCoordinate extends Coordinate implements CoordinateMath<WorldC
 			offsetCache.x + this.x * totalMultiplierCache,
 			offsetCache.y - this.y * totalMultiplierCache
 		);
+	}
+
+	static fromOverpassNode(node: OverpassNode) {
+		return new WorldCoordinate(node.lon, node.lat);
 	}
 }

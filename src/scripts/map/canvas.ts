@@ -1,8 +1,7 @@
 import { laneLength, metresToPixels } from "../conversions.js";
 import { getElement } from "../dom/elements.js";
 import { WAY_INFO, displayPopup } from "../dom/popup.js";
-import { Draw } from "../drawing.js";
-import { roadColours } from "../drawing.js";
+import { DrawnElement, drawArrow, drawLine, drawPolygon, getSurfaceColour } from "../drawing.js";
 import { Settings } from "../settings.js";
 import { State } from "../state.js";
 import { zoomIncrement } from "../supplement.js";
@@ -29,15 +28,21 @@ class Canvas {
 	private readonly container: HTMLDivElement;
 
 	/**
+	 * Reference to the parent element of the {@link container}.
+	 */
+	private readonly containerParent: HTMLElement;
+
+	/**
 	 * Attach a canvas controller to a {@link HTMLCanvasElement}.
 	 *
 	 * @param id The ID of the {@link HTMLCanvasElement} to attach to.
 	 * @param containerId The ID of the canvas container to attach to.
 	 */
-	constructor(id: string, containerId: string) {
+	constructor(id: string, containerId: string, containerParentId: string) {
 		// fetch elements
 		this.element = getElement(id, HTMLCanvasElement);
 		this.container = getElement(containerId, HTMLDivElement);
+		this.containerParent = getElement(containerParentId, HTMLElement);
 
 		// setup event listeners
 		this.element.addEventListener("mousedown", e => {
@@ -46,6 +51,7 @@ class Canvas {
 
 			const posRaw = ScreenCoordinate.fromMouseEvent(e);
 			const pos = posRaw.subtract(State.mouseOffset.get());
+
 			State.mouseDownPos.set(pos);
 			State.mouseDown.set(true);
 			State.mouseMoved.set(false);
@@ -88,7 +94,6 @@ class Canvas {
 
 		// setup resize triggers
 		new ResizeObserver(() => this.resize()).observe(this.container);
-		window.addEventListener("resize", () => this.resize());
 	}
 
 	/**
@@ -143,16 +148,18 @@ class Canvas {
 		const context = this.getContext();
 		const dataCache = State.data.get();
 
-		if (!dataCache || !context) return;
+		if (!dataCache) return;
 		else document.getElementById("empty-message")?.remove();
 
+		// clear any previously-drawn elements
 		context.clearRect(0, 0, dimensions.x, dimensions.y);
-		State.drawnElements.set({});
+		State.drawnElements.set(new Array());
 
+		const drawnElementsCache = new Array<DrawnElement>();
 		dataCache.forEach((way, wayId) => {
 			const lanes = way.tags.lanes || 2;
 
-			for (let i = 0, n = way.orderedNodes.length; i < n; i++) {
+			for (let i = 0; i < way.orderedNodes.length; i++) {
 				const thisNodeId = way.orderedNodes[i];
 				const nextNodeId = way.orderedNodes[i + 1];
 				const thisNode = way.nodes.get(thisNodeId);
@@ -165,8 +172,8 @@ class Canvas {
 				const x2 = nextNode.lon;
 				const y2 = nextNode.lat;
 
-				const thisPos = new WorldCoordinate(x1, y1);
-				const nextPos = new WorldCoordinate(x2, y2);
+				const thisPos = WorldCoordinate.fromOverpassNode(thisNode);
+				const nextPos = WorldCoordinate.fromOverpassNode(nextNode);
 
 				// angles are the atan of the gradient, however gradients
 				// don't tell direction. the condition checks if the
@@ -212,13 +219,13 @@ class Canvas {
 					]
 				];
 
+				// check to see if any of the box is visible on screen
 				type Position = "above" | "in" | "below" | "unknown";
 				const allOffScreen = new Array(
 					new Array<Position>().fill("unknown", 0, 6),
 					new Array<Position>().fill("unknown", 0, 6)
 				);
 
-				// check to see if any of the box is visible on screen
 				for (let i = 0; i < 6; i++) {
 					const xPos = new WorldCoordinate(allPos[0][i], 0).toScreen().x;
 					const yPos = new WorldCoordinate(0, allPos[1][i]).toScreen().y;
@@ -254,12 +261,7 @@ class Canvas {
 				const directionality = leftTraffic ? 1 : -1;
 
 				for (let i = 0; i < lanes; i++) {
-					const roadColour =
-						roadColours[
-							Object.keys(roadColours).includes(way.tags.surface || "unknown")
-								? way.tags.surface || "unknown"
-								: "unknown"
-						];
+					const roadColour = getSurfaceColour(way.tags.surface);
 
 					const thisCoefficient = trigCoord.multiply(laneLength).multiply(i);
 					const nextCoefficient = trigCoord.multiply(laneLength).multiply(i + 1);
@@ -269,7 +271,7 @@ class Canvas {
 					const nextSrtCoord = thisTopCornerPos.subtract(nextCoefficient);
 					const nextEndCoord = nextTopCornerPos.subtract(nextCoefficient);
 
-					Draw.polygon([thisSrtCoord, thisEndCoord, nextEndCoord, nextSrtCoord], {
+					drawPolygon([thisSrtCoord, thisEndCoord, nextEndCoord, nextSrtCoord], {
 						thickness: metresToPixels(0.15),
 						colour: "#dddddd",
 						fill: roadColour
@@ -314,15 +316,15 @@ class Canvas {
 						) * (i < lanesForward ? directionality : -directionality);
 
 					if (markings.includes("through")) {
-						Draw.arrow("through", width, length, centre, angle);
+						drawArrow("through", width, length, centre, angle);
 					}
 
 					if (markings.includes("left")) {
-						Draw.arrow("left", width, length, centre, angle);
+						drawArrow("left", width, length, centre, angle);
 					}
 
 					if (markings.includes("right")) {
-						Draw.arrow("right", width, length, centre, angle);
+						drawArrow("right", width, length, centre, angle);
 					}
 				}
 
@@ -332,14 +334,14 @@ class Canvas {
 				const centreEndCoord = nextTopCornerPos.subtract(trigCoefficient);
 
 				if (!way.tags.oneway)
-					Draw.line(centreStartCoord, centreEndCoord, {
+					drawLine(centreStartCoord, centreEndCoord, {
 						thickness: metresToPixels(0.5),
 						colour: "white"
 					});
 
 				// draw select outline if selected
 				const outlined = State.selectedWay.get() == wayId;
-				const path = Draw.polygon(
+				const path = drawPolygon(
 					[thisBtmCornerPos, thisTopCornerPos, nextTopCornerPos, nextBtmCornerPos],
 					{
 						thickness: outlined ? 5 : 1,
@@ -347,39 +349,24 @@ class Canvas {
 					}
 				);
 
-				State.drawnElements.setDynamic(old => {
-					const key = Object.keys(old).length;
-					return {
-						...old,
-						[key]: { wayId, path }
-					};
-				});
+				// cache element to be updated later
+				drawnElementsCache.push({ wayId, path });
 			}
 		});
+
+		// update the list of drawn elements
+		State.drawnElements.set(drawnElementsCache);
 	}
 
 	/**
 	 * Resize the canvas to fit it's container.
 	 */
 	resize() {
-		const dimensions = new ScreenCoordinate(
-			this.container.clientWidth,
-			this.container.clientHeight
-		);
+		const dimensions = ScreenCoordinate.ofElementDimensions(this.container);
+		const localOffset = ScreenCoordinate.ofElementOffset(this.container);
+		const containerOffset = ScreenCoordinate.ofElementOffset(this.containerParent);
 
-		const offsetParent = this.container.offsetParent as HTMLElement | undefined;
-
-		const parentOffset = new ScreenCoordinate(
-			offsetParent?.offsetLeft || 0,
-			offsetParent?.offsetTop || 0
-		);
-
-		const localOffset = new ScreenCoordinate(
-			this.container.offsetLeft,
-			this.container.offsetTop
-		);
-
-		const offset = parentOffset.add(localOffset);
+		const offset = containerOffset.add(localOffset);
 
 		this.element.setAttribute("width", dimensions.x.toString());
 		this.element.setAttribute("height", dimensions.y.toString());
@@ -396,32 +383,30 @@ class Canvas {
 	 */
 	checkHover(clicked = true) {
 		const context = this.getContext();
-		if (!State.data.get() || !context) return false;
+		if (!State.data.get()) return false;
 
 		const drawnCache = State.drawnElements.get();
 		const canvasOffsetCache = State.canvasOffset.get();
-		const results = Object.keys(drawnCache).map(id => {
-			const element: { wayId: number; path: Path2D } = drawnCache[id];
-			const way = State.allWays.get().get(element.wayId);
+
+		const mousePos = State.mousePos.get().subtract(canvasOffsetCache);
+		let anyHovered = false;
+
+		// check whether any paths are hovered over
+		for (let i = 0; i < drawnCache.length; i++) {
+			// see if path is hovered over
+			const element = drawnCache[i];
 			const path = element.path;
+			const isHovered = context.isPointInPath(path, ...mousePos.get());
+			if (!isHovered) continue;
+			anyHovered = true;
 
-			if (!way) return false;
+			// display popup if element is clicked
+			const way = State.allWays.get().get(element.wayId);
+			if (way === undefined) continue;
+			if (clicked) displayPopup(element, way);
+		}
 
-			if (
-				context.isPointInPath(
-					path,
-					State.mousePos.get().x - canvasOffsetCache.x,
-					State.mousePos.get().y - canvasOffsetCache.y
-				)
-			) {
-				if (clicked) displayPopup(element, way);
-				return true;
-			}
-
-			return false;
-		});
-
-		return results.includes(true);
+		return anyHovered;
 	}
 
 	/**
@@ -436,4 +421,4 @@ class Canvas {
 	}
 }
 
-export const CANVAS = new Canvas("canvas", "canvas-container");
+export const CANVAS = new Canvas("canvas", "canvas-container", "main");

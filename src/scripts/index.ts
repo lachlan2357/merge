@@ -1,10 +1,10 @@
 import { togglePopup } from "./dom/popup.js";
 import { loadSearchBox } from "./map/search.js";
-import { Message } from "./messages.js";
+import { displayMessage } from "./messages.js";
 import { Settings } from "./settings.js";
 
 // display a message on the message popup when a JS error occurs
-window.addEventListener("error", () => Message.display("error"));
+window.addEventListener("error", () => displayMessage("error"));
 
 // permalinks
 const hash = window.location.hash;

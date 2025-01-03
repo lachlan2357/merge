@@ -57,6 +57,10 @@ const defaultSettings: SettingsObject = {
 type SettingType<K extends keyof SettingsObject> =
 	SettingsObject[K] extends Setting<infer T> ? T : never;
 
+function isSettingKey(key: string): key is keyof SettingsObject {
+	return Object.keys(defaultSettings).includes(key);
+}
+
 /** Interface directly with Local Storage for settings */
 export class Settings {
 	private static settings = this.reload();
@@ -93,8 +97,9 @@ export class Settings {
 		const settings = structuredClone(defaultSettings);
 
 		for (const key in settings) {
-			const value = window.localStorage.getItem(key);
+			if (!isSettingKey(key)) continue;
 
+			const value = window.localStorage.getItem(key);
 			if (value === null) continue;
 
 			if (typeof settings[key].value === "string") settings[key].value = value;

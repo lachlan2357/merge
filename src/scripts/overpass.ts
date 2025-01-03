@@ -1,6 +1,6 @@
 import { Database } from "./database.js";
 import { CANVAS } from "./map/canvas.js";
-import { AppMsg, Message, MessageBoxError } from "./messages.js";
+import { MESSAGE_BOX, MessageBoxError } from "./messages.js";
 import { Settings } from "./settings.js";
 import { State } from "./state.js";
 import { nullish } from "./supplement.js";
@@ -121,7 +121,7 @@ export class Overpass {
 	 * @returns The response from this query.
 	 */
 	static async fetch(query: string) {
-		Message.display("overpassDownload");
+		MESSAGE_BOX.display("overpassDownload");
 
 		const req = await fetch(Settings.get("endpoint"), {
 			method: "POST",
