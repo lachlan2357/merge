@@ -3,7 +3,7 @@ import { CANVAS } from "./map/canvas.js";
 import { MESSAGE_BOX, MessageBoxError } from "./messages.js";
 import { Settings } from "./settings.js";
 import { State } from "./state.js";
-import { nullish } from "./supplement.js";
+import { nullish } from "./supplement/index.js";
 import {
 	ImportedData,
 	OverpassNode,

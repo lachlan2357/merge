@@ -1,5 +1,5 @@
-import { getElement } from "./dom/elements.js";
 import { ElementBuilder } from "./elements.js";
+import { getElement } from "./supplement/elements.js";
 
 const appMsgMap = {
 	emptyShare: "Map is empty. Nothing to share.",

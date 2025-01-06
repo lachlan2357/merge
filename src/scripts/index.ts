@@ -1,6 +1,6 @@
-import { togglePopup } from "./dom/popup.js";
 import { loadSearchBox } from "./map/search.js";
 import { displayMessage } from "./messages.js";
+import { WELCOME_POPUP, WelcomePopup } from "./popup/welcome.js";
 import { Settings } from "./settings.js";
 
 // display a message on the message popup when a JS error occurs
@@ -13,6 +13,6 @@ if (hash.length > 0 && !isNaN(id)) await loadSearchBox(id.toString());
 
 // first time popup
 if (Settings.get("firstLaunch")) {
-	togglePopup("welcome");
+	WELCOME_POPUP.display();
 	Settings.set("firstLaunch", false);
 }

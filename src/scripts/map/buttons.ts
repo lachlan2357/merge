@@ -1,5 +1,9 @@
-import { getElement } from "../dom/elements.js";
-import { togglePopup } from "../dom/popup.js";
+import { ABOUT_POPUP } from "../popup/about.js";
+import { ADVANCED_POPUP } from "../popup/advanced.js";
+import { HELP_POPUP } from "../popup/help.js";
+import { SETTINGS_POPUP } from "../popup/settings.js";
+import { SHARE_POPUP } from "../popup/share.js";
+import { getElement } from "../supplement/elements.js";
 import { CANVAS } from "./canvas.js";
 
 class MapButton {
@@ -31,11 +35,11 @@ export const FULLSCREEN_BUTTON = new MapButton("fullscreen").setAction("click", 
 
 // popup toggles
 export const ADVANCED_BUTTON = new MapButton("advanced").setAction("click", () =>
-	togglePopup("advanced")
+	ADVANCED_POPUP.display()
 );
 export const SETTINGS_BUTTON = new MapButton("settings").setAction("click", () =>
-	togglePopup("settings")
+	SETTINGS_POPUP.display()
 );
-export const SHARE_BUTTON = new MapButton("share").setAction("click", () => togglePopup("share"));
-export const HELP_BUTTON = new MapButton("help").setAction("click", () => togglePopup("help"));
-export const ABOUT_BUTTON = new MapButton("about").setAction("click", () => togglePopup("about"));
+export const SHARE_BUTTON = new MapButton("share").setAction("click", () => SHARE_POPUP.display());
+export const HELP_BUTTON = new MapButton("help").setAction("click", () => HELP_POPUP.display());
+export const ABOUT_BUTTON = new MapButton("about").setAction("click", () => ABOUT_POPUP.display());

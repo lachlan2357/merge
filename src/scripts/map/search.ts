@@ -1,6 +1,6 @@
-import { getElement } from "../dom/elements.js";
 import { MessageBoxError } from "../messages.js";
 import { Overpass } from "../overpass.js";
+import { getElement } from "../supplement/elements.js";
 
 const SEARCH_FORM = getElement("search-form", HTMLFormElement);
 const SEARCH_BOX = getElement("relation-name", HTMLInputElement);
