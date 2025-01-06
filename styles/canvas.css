@@ -1,0 +1,223 @@
+#open-with-container {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5em;
+  align-items: center;
+  justify-content: center;
+}
+#open-with-container button {
+  background-color: var(--open-with);
+  aspect-ratio: 1;
+  padding: 1em;
+}
+#open-with-container button:hover {
+  background-color: var(--open-with-hover);
+}
+#open-with-container button:active {
+  background-color: var(--open-with-active);
+}
+
+#settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
+
+.setting-container {
+  align-items: center;
+  background-color: var(--accent);
+  border-radius: 5px;
+  display: flex;
+  gap: 1em;
+  justify-content: space-between;
+  padding: 1em;
+}
+.setting-container h3 {
+  font-size: 1em;
+}
+.setting-container input {
+  flex-shrink: 1;
+  overflow: hidden;
+}
+
+canvas {
+  background-color: var(--canvas);
+  border-radius: var(--radius);
+}
+
+#canvas-container {
+  background-color: var(--canvas);
+  border-radius: var(--radius);
+  height: 100%;
+  position: relative;
+  width: 100%;
+}
+#canvas-container[fullscreen] {
+  height: 100dvh;
+  inset: 0;
+  position: fixed;
+  width: 100dvw;
+}
+#canvas-container[fullscreen] canvas {
+  border-radius: 0;
+}
+
+#copy-container {
+  background-color: var(--accent);
+  border-radius: var(--radius);
+  height: 40px;
+}
+#copy-container span {
+  padding: 0.5em;
+}
+#copy-container button {
+  background-color: var(--copy);
+  aspect-ratio: 1;
+  height: 100%;
+}
+#copy-container button:hover {
+  background-color: var(--copy-hover);
+}
+#copy-container button:active {
+  background-color: var(--copy-active);
+}
+
+#canvas-overlay {
+  display: grid;
+  gap: 0.25em;
+  grid-template-columns: max-content max-content auto max-content;
+  grid-template-rows: min-content min-content min-content auto min-content;
+  inset: 0.5em;
+  overflow: visible;
+  pointer-events: none;
+  position: absolute;
+}
+#canvas-overlay * {
+  pointer-events: initial;
+}
+#canvas-overlay input,
+#canvas-overlay button {
+  border-radius: 100vw;
+  height: 2.5em;
+  padding-inline: 0.875em;
+}
+#canvas-overlay button {
+  display: flex;
+  flex-direction: row;
+  gap: 0.25em;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  overflow: hidden;
+}
+#canvas-overlay #search-form {
+  display: flex;
+  flex-direction: row;
+  gap: 0.25em;
+  grid-column: 1/3;
+  grid-row: 1;
+}
+#canvas-overlay #left-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25em;
+  grid-column: 1;
+  grid-row: 2;
+}
+#canvas-overlay #way-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+  background-color: var(--foreground-colour);
+  border-radius: var(--radius);
+  box-shadow: var(--box-shadow);
+  grid-column: 4;
+  grid-row: 1/5;
+  max-height: calc(var(--height) - 2em);
+  overflow-y: auto;
+  padding: 2em 1em;
+}
+#canvas-overlay #way-info[hidden] {
+  display: none;
+}
+#canvas-overlay #way-info #edit-in {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5em;
+}
+#canvas-overlay #way-info #edit-in button {
+  background-color: var(--open-with);
+  border-radius: var(--radius);
+}
+#canvas-overlay #way-info #edit-in button:hover {
+  background-color: var(--open-with-hover);
+}
+#canvas-overlay #way-info #edit-in button:active {
+  background-color: var(--open-with-active);
+}
+#canvas-overlay #way-info h3,
+#canvas-overlay #way-info a {
+  font-weight: 700;
+}
+#canvas-overlay #way-info table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: white;
+}
+#canvas-overlay #way-info table tr * {
+  padding: 0.5em 1em;
+}
+#canvas-overlay #way-info table tr th {
+  background-color: var(--background-colour);
+}
+#canvas-overlay #way-info table tr:nth-child(2n-1) td {
+  background-color: var(--foreground-colour);
+}
+#canvas-overlay #way-info table tr:nth-child(2n) td {
+  background-color: var(--accent);
+}
+#canvas-overlay #messages {
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+  grid-column: 3;
+  grid-row: 1/-1;
+  overflow-y: hidden;
+  pointer-events: none;
+}
+#canvas-overlay #messages .message-box {
+  background-color: var(--foreground-colour);
+  border-radius: var(--radius);
+  display: none;
+  padding: 1em;
+  text-align: center;
+  width: 100%;
+}
+#canvas-overlay #messages .message-box[visible] {
+  animation: fade-in 0.25s;
+  display: revert;
+}
+#canvas-overlay #messages .message-box[closing] {
+  animation: fade-out-and-shrink 0.25s;
+  overflow: hidden;
+}
+#canvas-overlay #copyright {
+  background-color: var(--foreground-colour);
+  border-radius: var(--radius);
+  font-size: 0.75em;
+  grid-column: 1/-1;
+  grid-row: 5;
+  margin-inline-start: auto;
+  padding: 0.5em;
+  text-align: right;
+  width: fit-content;
+}
+
+#empty-message {
+  left: 50%;
+  position: absolute;
+  text-align: center;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
