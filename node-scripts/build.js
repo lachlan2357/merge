@@ -7,7 +7,7 @@ try {
 	cpSync("src/pages", "dist", { recursive: true });
 	cpSync("assets", "dist", { recursive: true });
 	execSync("tsc");
-	execSync("sass src/styles:dist --no-source-map");
+	execSync("sass src/styles:dist/styles --no-source-map");
 } catch (e) {
 	throw e.stdout.toString();
 }

@@ -1,6 +1,23 @@
 {
+	// html
+	"[html]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+
+	// css/scss
 	"css.validate": false,
 	"scss.validate": false,
 	"stylelint.validate": ["scss"],
-	"typescript.tsdk": "node_modules\\typescript\\lib"
+	"[css]": {
+		"editor.defaultFormatter": "stylelint.vscode-stylelint"
+	},
+	"[scss]": {
+		"editor.defaultFormatter": "stylelint.vscode-stylelint"
+	},
+
+	// js/ts
+	"typescript.tsdk": "node_modules\\typescript\\lib",
+	"[typescript]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	}
 }

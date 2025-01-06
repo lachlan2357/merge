@@ -9,7 +9,7 @@
 		"allowJs": false,
 
 		/* Build Options */
-		"outDir": "./dist",
+		"outDir": "./dist/scripts",
 		"esModuleInterop": true,
 
 		/* Strictness */
