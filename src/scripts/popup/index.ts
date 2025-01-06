@@ -1,5 +1,4 @@
-import { ElementBuilder, FontAwesomeIcon, LinkChip } from "../elements.js";
-import { Settings, SettingsObject } from "../settings.js";
+import { ElementBuilder, FontAwesomeIcon } from "../elements.js";
 import { State } from "../state.js";
 import { getElement } from "../supplement/elements.js";
 import { OverpassWay } from "../types/overpass.js";

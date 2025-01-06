@@ -51,7 +51,7 @@ export class Database {
 	 * @returns
 	 */
 	static async connect() {
-		const database = await new Promise<IDBDatabase>((resolve, _) => {
+		const database = await new Promise<IDBDatabase>(resolve => {
 			const req = window.indexedDB.open(Database.DB_NAME);
 
 			// failed connection
@@ -98,7 +98,7 @@ export class Database {
 		fn: (
 			store: IDBObjectStore,
 			resolve: (data: R) => void,
-			reject: (error: any) => void
+			reject: (error: unknown) => void
 		) => void
 	): Promise<R> {
 		// open transaction
@@ -120,7 +120,7 @@ export class Database {
 	 * @throws {DatabaseError} If the data could not be retrieved.
 	 */
 	async get(key: string) {
-		return this.transact<OverpassResponse | null>("readonly", (store, resolve, _) => {
+		return this.transact<OverpassResponse | null>("readonly", (store, resolve) => {
 			const req = store.get(key);
 
 			req.onerror = () => {
@@ -144,7 +144,7 @@ export class Database {
 	 * @throws {DatabaseError} If the data could not be cached.
 	 */
 	async set(data: CachedQuery) {
-		return this.transact<void>("readwrite", (store, resolve, _) => {
+		return this.transact<void>("readwrite", (store, resolve) => {
 			const req = store.put(data);
 
 			req.onerror = () => {

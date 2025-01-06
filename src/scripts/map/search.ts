@@ -4,7 +4,6 @@ import { getElement } from "../supplement/elements.js";
 
 const SEARCH_FORM = getElement("search-form", HTMLFormElement);
 const SEARCH_BOX = getElement("relation-name", HTMLInputElement);
-const SEARCH_BUTTON = getElement("search", HTMLButtonElement);
 const SEARCH_ICON = getElement("search-icon", HTMLElement);
 
 export async function loadSearchBox(searchTerm: string) {

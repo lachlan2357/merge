@@ -108,9 +108,10 @@ export class Overpass {
 			if (error instanceof MessageBoxError) error.display();
 			else console.error(error);
 		} finally {
-			if (database_result !== null) return database_result;
-			else return await this.fetch(query);
+			if (database_result === null) database_result = await this.fetch(query);
 		}
+
+		return database_result;
 	}
 
 	/**
