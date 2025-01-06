@@ -1,0 +1,226 @@
+@use "mixins";
+
+#open-with-container {
+	@include mixins.flexbox($gap: 0.5em);
+	@include mixins.flexbox-align(center, center);
+
+	button {
+		@include mixins.button-color("open-with");
+		aspect-ratio: 1;
+		padding: 1em;
+	}
+}
+
+#settings-list {
+	display: flex;
+	flex-direction: column;
+	gap: 1em;
+}
+
+.setting-container {
+	align-items: center;
+	background-color: var(--accent);
+	border-radius: 5px;
+	display: flex;
+	gap: 1em;
+	justify-content: space-between;
+	padding: 1em;
+
+	h3 {
+		font-size: 1em;
+	}
+
+	input {
+		flex-shrink: 1;
+		overflow: hidden;
+	}
+}
+
+canvas {
+	background-color: var(--canvas);
+	border-radius: var(--radius);
+}
+
+#canvas-container {
+	background-color: var(--canvas);
+	border-radius: var(--radius);
+	height: 100%;
+	position: relative;
+	width: 100%;
+
+	&[fullscreen] {
+		height: 100dvh;
+		inset: 0;
+		position: fixed;
+		width: 100dvw;
+
+		canvas {
+			border-radius: 0;
+		}
+	}
+}
+
+#copy-container {
+	// todo - change this to have the button outside the text
+	background-color: var(--accent);
+	border-radius: var(--radius);
+	height: 40px;
+
+	span {
+		padding: 0.5em;
+	}
+
+	button {
+		@include mixins.button-color("copy");
+		aspect-ratio: 1;
+		height: 100%;
+	}
+}
+
+#canvas-overlay {
+	display: grid;
+	gap: 0.25em;
+	grid-template-columns: max-content max-content auto max-content;
+	grid-template-rows: min-content min-content min-content auto min-content;
+
+	inset: 0.5em;
+	// might need these?
+	// height: var(--height);
+	// width: var(--width);
+	overflow: visible;
+	pointer-events: none;
+	position: absolute;
+
+	* {
+		pointer-events: initial;
+	}
+
+	input,
+	button {
+		border-radius: 100vw;
+		height: 2.5em;
+		padding-inline: 0.875em;
+	}
+
+	button {
+		@include mixins.flexbox($gap: 0.25em);
+		@include mixins.flexbox-align(center, center);
+		aspect-ratio: 1;
+		overflow: hidden;
+	}
+
+	#search-form {
+		@include mixins.flexbox($gap: 0.25em);
+		grid-column: 1 / 3;
+		grid-row: 1;
+	}
+
+	#left-buttons {
+		// subgrid
+		@include mixins.flexbox(column, 0.25em);
+		grid-column: 1;
+		grid-row: 2;
+	}
+
+	#way-info {
+		@include mixins.flexbox(column);
+		background-color: var(--foreground-colour);
+		border-radius: var(--radius);
+		box-shadow: var(--box-shadow);
+		grid-column: 4;
+		grid-row: 1 / 5;
+		max-height: calc(var(--height) - 2em);
+		overflow-y: auto;
+		padding: 2em 1em;
+
+		&[hidden] {
+			display: none;
+		}
+
+		#edit-in {
+			@include mixins.flexbox($gap: 0.5em);
+
+			button {
+				@include mixins.button-color("open-with");
+				border-radius: var(--radius);
+			}
+		}
+
+		h3,
+		a {
+			font-weight: 700;
+		}
+
+		table {
+			border: none;
+			border-collapse: collapse;
+			border-spacing: 0;
+			color: white;
+
+			tr {
+				* {
+					padding: 0.5em 1em;
+				}
+
+				th {
+					background-color: var(--background-colour);
+				}
+
+				&:nth-child(2n - 1) td {
+					background-color: var(--foreground-colour);
+				}
+
+				&:nth-child(2n) td {
+					background-color: var(--accent);
+				}
+			}
+		}
+	}
+
+	#messages {
+		@include mixins.flexbox(column);
+		grid-column: 3;
+		grid-row: 1 / -1;
+		overflow-y: hidden;
+		pointer-events: none;
+
+		.message-box {
+			background-color: var(--foreground-colour);
+			border-radius: var(--radius);
+			display: none;
+			padding: 1em;
+			text-align: center;
+			width: 100%;
+
+			&[visible] {
+				animation: fade-in 0.25s;
+				display: revert;
+			}
+
+			&[closing] {
+				animation: fade-out-and-shrink 0.25s;
+				overflow: hidden;
+			}
+		}
+	}
+
+	#copyright {
+		background-color: var(--foreground-colour);
+		border-radius: var(--radius);
+		font-size: 0.75em;
+		grid-column: 1 / -1;
+		grid-row: 5;
+		margin-inline-start: auto;
+		padding: 0.5em;
+		text-align: right;
+		width: fit-content;
+	}
+}
+
+#empty-message {
+	left: 50%;
+	position: absolute;
+	text-align: center;
+	top: 50%;
+	transform: translate(-50%, -50%);
+}

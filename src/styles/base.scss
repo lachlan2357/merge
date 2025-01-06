@@ -1,0 +1,206 @@
+@use "mixins";
+@use "overrides";
+@use "animations";
+
+* {
+	box-sizing: border-box;
+	color: var(--text);
+	font-family: Roboto, sans-serif;
+	font-weight: 300;
+	margin: 0;
+	padding: 0;
+	scrollbar-width: thin;
+}
+
+:root {
+	// canvas
+	--canvas-width: 100%;
+	--canvas-height: 750px;
+
+	// styles
+	--box-shadow: 0 0 10px var(--shadow);
+	--radius: 5px;
+
+	// colours
+	--copy: darkgreen;
+	--copy-hover: green;
+	--copy-active: lightgreen;
+
+	--open-with: darkcyan;
+	--open-with-hover: lightseagreen;
+	--open-with-active: lightblue;
+
+	--background-colour: #111;
+	--foreground-colour: #222;
+	--accent: #333;
+	--canvas: #666;
+	--shadow: #000;
+	--text: #fff;
+	--link: lightblue;
+	color-scheme: dark;
+
+	&[darkmode="false"] {
+		--background-colour: #ddd;
+		--foreground-colour: #eee;
+		--accent: #fff;
+		--canvas: #fff;
+		--shadow: #ccc;
+		--text: #000;
+		--link: darkblue;
+		color-scheme: light;
+	}
+}
+
+body {
+	@include mixins.flexbox(column, 0);
+	background-color: var(--background-colour);
+	height: 100dvh;
+	overflow: hidden;
+	width: 100dvw;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	font-family: Montserrat, sans-serif;
+	font-weight: 700;
+}
+
+header {
+	@include mixins.flexbox($gap: 1.25em);
+	@include mixins.flexbox-align(center, center);
+
+	background-color: var(--foreground-colour);
+	box-shadow: var(--box-shadow);
+	padding-block: 3em;
+	padding-inline: max(10%, 1.5em);
+
+	img {
+		aspect-ratio: 1;
+		border-radius: 50%;
+		height: 6.25em;
+	}
+
+	div {
+		@include mixins.flexbox(column, 0.5em);
+	}
+}
+
+main {
+	height: 100%;
+	overflow: hidden;
+	padding: 1em;
+	position: relative;
+	width: 100%;
+
+	&[error] {
+		@include mixins.flexbox(column);
+		@include mixins.flexbox-align(center, center);
+
+		#canvas-container {
+			display: none;
+		}
+	}
+}
+
+a.link-chip {
+	@include mixins.flexbox();
+	background-color: var(--background-colour);
+	border-radius: 10px;
+	color: var(--text);
+	padding: 10px;
+	text-decoration: none;
+	width: fit-content;
+
+	&:hover {
+		background-color: var(--accent);
+		cursor: pointer;
+	}
+
+	&:active {
+		background-color: var(--canvas);
+	}
+}
+
+button,
+input {
+	background-color: var(--foreground-colour);
+	border: none;
+	border-radius: var(--radius);
+	transition: background-color 0.1s;
+}
+
+a {
+	color: var(--link);
+}
+
+a,
+button {
+	cursor: pointer;
+	transition: background-color 0.25s;
+}
+
+a:active {
+	color: var(--link);
+}
+
+a:has(i:only-child),
+button:has(i:only-child) {
+	@include mixins.icon-button();
+}
+
+#popup {
+	@include mixins.flexbox(column);
+	background-color: var(--background-colour);
+	border: none;
+	border-radius: var(--radius);
+	box-shadow: var(--box-shadow);
+	margin: auto;
+	max-block-size: calc(100svh - 2rem);
+	padding: 1em;
+	width: min(95vw, 80ch);
+	z-index: 100;
+
+	&[open] {
+		animation: fade-in 0.25s;
+	}
+
+	&:not([open]) {
+		display: none;
+	}
+
+	&[closing] {
+		animation: fade-out 0.25s;
+	}
+
+	h2 {
+		text-transform: capitalize;
+	}
+
+	#popup-close {
+		position: absolute;
+		right: 1em;
+		top: 1em;
+	}
+
+	input[type="text"] {
+		background-color: var(--foreground-colour);
+		border: none;
+		border-radius: 5px;
+		height: 2.5em;
+		padding-inline: 10px;
+	}
+}
+
+#welcome-img {
+	height: 6em;
+	margin-inline: auto;
+	width: 6em;
+}
+
+#welcome-heading {
+	text-align: center;
+}

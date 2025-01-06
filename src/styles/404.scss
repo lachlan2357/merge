@@ -1,0 +1,15 @@
+@use "mixins";
+
+#not-found {
+	@include mixins.flexbox(column);
+	@include mixins.flexbox-align(center, center);
+	height: 100vh;
+	position: absolute;
+	text-align: center;
+	width: 100vw;
+
+	img {
+		height: 6em;
+		width: 6em;
+	}
+}

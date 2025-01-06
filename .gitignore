@@ -18,3 +18,5 @@ cache
 node_modules
 dist
 merge
+todo.md
+yarn-error.*

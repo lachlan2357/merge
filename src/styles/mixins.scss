@@ -1,0 +1,28 @@
+@mixin flexbox($direction: row, $gap: 1em) {
+	display: flex;
+	flex-direction: $direction;
+	gap: $gap;
+}
+
+@mixin flexbox-align($justify: flex-start, $align: flex-start) {
+	align-items: $align;
+	justify-content: $justify;
+}
+
+@mixin button-color($color) {
+	background-color: var(--#{$color});
+
+	&:hover {
+		background-color: var(--#{$color}-hover);
+	}
+
+	&:active {
+		background-color: var(--#{$color}-active);
+	}
+}
+
+@mixin icon-button() {
+	@include flexbox($gap: 0.5em);
+	@include flexbox-align(center, center);
+	padding: 1em;
+}
