@@ -57,19 +57,26 @@ export interface WayData {
 	nodes: Map<number, OverpassNode>;
 	originalWay: OverpassWay;
 	orderedNodes: Array<number>;
-	tags: {
-		junction?: string;
-		oneway?: boolean;
-		lanes?: number;
-		lanesForward?: number;
-		lanesBackward?: number;
-		turnLanes?: Array<Array<string>>;
-		turnLanesForward?: Array<Array<string>>;
-		turnLanesBackward?: Array<Array<string>>;
-		surface?: string;
-	};
+	tags: WayDataTags;
 	warnings: Array<number>;
 	inferences: Set<keyof WayData["tags"]>;
 }
+
+export interface WayDataTagsHelper {
+	turnLanes: Array<Array<string>>;
+}
+
+export interface WayDataTags {
+	junction: string;
+	oneway: boolean;
+	lanes: number;
+	lanesForward: number;
+	lanesBackward: number;
+	turnLanesForward: Array<Array<string>>;
+	turnLanesBackward: Array<Array<string>>;
+	surface: string;
+}
+
+export type WayDataTagsIn = Partial<WayDataTags> & Partial<WayDataTagsHelper>;
 
 export type ImportedData = Map<number, WayData>;
