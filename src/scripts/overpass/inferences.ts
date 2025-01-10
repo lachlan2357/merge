@@ -1,22 +1,22 @@
 import { Atomic } from "../state.js";
-import { WayDataTagsIn } from "../types/overpass.js";
+import { MergeWayTagsIn } from "../types/processed.js";
 import { isNullish, toArray, toDoubleArray } from "./process.js";
 
-export function inferOneway(tags: WayDataTagsIn, changed: Atomic<boolean>) {
+export function inferOneway(tags: MergeWayTagsIn, changed: Atomic<boolean>) {
 	if (!isNullish(tags.oneway)) return;
 
 	tags.oneway = false;
 	changed.set(true);
 }
 
-export function inferJunction(tags: WayDataTagsIn, changed: Atomic<boolean>) {
+export function inferJunction(tags: MergeWayTagsIn, changed: Atomic<boolean>) {
 	if (!isNullish(tags.junction)) return;
 
 	tags.junction = "none";
 	changed.set(true);
 }
 
-export function inferLanes(tags: WayDataTagsIn, changed: Atomic<boolean>) {
+export function inferLanes(tags: MergeWayTagsIn, changed: Atomic<boolean>) {
 	if (!isNullish(tags.lanes)) return;
 
 	// oneway === true && lanes:forward set
@@ -38,7 +38,7 @@ export function inferLanes(tags: WayDataTagsIn, changed: Atomic<boolean>) {
 	}
 }
 
-export function inferLanesForward(tags: WayDataTagsIn, changed: Atomic<boolean>) {
+export function inferLanesForward(tags: MergeWayTagsIn, changed: Atomic<boolean>) {
 	if (!isNullish(tags.lanesForward)) return;
 
 	// oneway === true
@@ -60,7 +60,7 @@ export function inferLanesForward(tags: WayDataTagsIn, changed: Atomic<boolean>)
 	}
 }
 
-export function inferLanesBackward(tags: WayDataTagsIn, changed: Atomic<boolean>) {
+export function inferLanesBackward(tags: MergeWayTagsIn, changed: Atomic<boolean>) {
 	if (!isNullish(tags.lanesBackward)) return;
 
 	// oneway === true
@@ -82,7 +82,7 @@ export function inferLanesBackward(tags: WayDataTagsIn, changed: Atomic<boolean>
 	}
 }
 
-export function inferTurnLanesForward(tags: WayDataTagsIn, changed: Atomic<boolean>) {
+export function inferTurnLanesForward(tags: MergeWayTagsIn, changed: Atomic<boolean>) {
 	if (!isNullish(tags.turnLanesForward)) return;
 
 	// oneway === true && turn:lanes set
@@ -105,7 +105,7 @@ export function inferTurnLanesForward(tags: WayDataTagsIn, changed: Atomic<boole
 	}
 }
 
-export function inferTurnLanesBackward(tags: WayDataTagsIn, changed: Atomic<boolean>) {
+export function inferTurnLanesBackward(tags: MergeWayTagsIn, changed: Atomic<boolean>) {
 	if (!isNullish(tags.turnLanesBackward)) return;
 
 	// lanes:backward set

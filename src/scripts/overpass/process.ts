@@ -1,13 +1,7 @@
 import { MessageBoxError } from "../messages.js";
 import { Atomic } from "../state.js";
-import {
-	ImportedData,
-	OverpassNode,
-	OverpassWay,
-	WayData,
-	WayDataTags,
-	WayDataTagsIn
-} from "../types/overpass.js";
+import { OverpassNode, OverpassWay } from "../types/overpass.js";
+import { MergeData, MergeWay, MergeWayTags, MergeWayTagsIn } from "../types/processed.js";
 import {
 	inferJunction,
 	inferLanes,
@@ -24,15 +18,15 @@ import {
  *
  * @param allNodes All {@link OverpassNode OverpassNodes} to process.
  * @param allWays All {@link OverpassWay OverpassWays} to process.
- * @returns The processed {@link ImportedData}.
+ * @returns The processed {@link MergeData}.
  */
 export function process(allNodes: Map<number, OverpassNode>, allWays: Map<number, OverpassWay>) {
-	const data: ImportedData = new Map();
+	const data: MergeData = new Map();
 
 	for (const [id, way] of allWays) {
 		// initial compilation of tag data, to be inferred
 		const tagsRaw = way.tags;
-		const tags: WayDataTagsIn = {
+		const tags: MergeWayTagsIn = {
 			oneway: toBoolean(tagsRaw?.oneway),
 			junction: tagsRaw?.junction,
 			lanes: toNumber(tagsRaw?.lanes),
@@ -63,7 +57,7 @@ export function process(allNodes: Map<number, OverpassNode>, allWays: Map<number
 		}
 
 		// compile tags into way data
-		const wayData: WayData = {
+		const wayData: MergeWay = {
 			nodes: allNodes,
 			originalWay: way,
 			orderedNodes: way.nodes,
@@ -89,8 +83,8 @@ export function process(allNodes: Map<number, OverpassNode>, allWays: Map<number
 	return data;
 }
 
-function compile<Tag extends keyof WayDataTags, Value extends WayDataTags[Tag]>(
-	tags: Partial<WayDataTags>,
+function compile<Tag extends keyof MergeWayTags, Value extends MergeWayTags[Tag]>(
+	tags: Partial<MergeWayTags>,
 	tag: Tag
 ): Value {
 	const value = tags[tag];

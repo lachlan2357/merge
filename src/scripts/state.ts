@@ -1,7 +1,8 @@
 import { DrawnElement } from "./drawing.js";
 import { CANVAS, MultiplierData } from "./map/canvas.js";
 import { ScreenCoordinate } from "./types/coordinate.js";
-import { ImportedData, OverpassWay } from "./types/overpass.js";
+import { OverpassWay } from "./types/overpass.js";
+import { MergeData } from "./types/processed.js";
 
 /**
  * Ability to perform calculations when dependent information changes.
@@ -200,7 +201,7 @@ export class Effect implements Compute {
  */
 export class State {
 	// atomics
-	static readonly data: Atomic<ImportedData | undefined> = new Atomic(undefined);
+	static readonly data: Atomic<MergeData | undefined> = new Atomic(undefined);
 	static readonly currentRelationId: Atomic<number | undefined> = new Atomic(undefined);
 	static readonly drawnElements: Atomic<Array<DrawnElement>> = new Atomic(new Array());
 	static readonly selectedWay: Atomic<number> = new Atomic(-1);
