@@ -2,20 +2,47 @@ import { Atomic } from "../state.js";
 import { MergeWayTagsIn } from "../types/processed.js";
 import { isNullish, toArray, toDoubleArray } from "./process.js";
 
+/**
+ * Infer whether a way should be marked as one-way.
+ *
+ * @param tags The current state of the tags.
+ * @param changed State to change when a change has been made.
+ */
 export function inferOneway(tags: MergeWayTagsIn, changed: Atomic<boolean>) {
 	if (!isNullish(tags.oneway)) return;
+
+	// lanes:backward === 0
+	if (tags.lanesBackward === 0) {
+		tags.oneway = true;
+		return changed.set(true);
+	}
 
 	tags.oneway = false;
 	changed.set(true);
 }
 
+/**
+ * Infer whether a junction is present.
+ *
+ * Note: there is no way to infer the value of `junction` to be anything other than `no`. Thus, if
+ * the `junction` tag is missing, it will be defaulted to `no`.
+ *
+ * @param tags The current state of the tags.
+ * @param changed State to change when a change has been made.
+ */
 export function inferJunction(tags: MergeWayTagsIn, changed: Atomic<boolean>) {
 	if (!isNullish(tags.junction)) return;
 
-	tags.junction = "none";
+	tags.junction = "no";
 	changed.set(true);
 }
 
+/**
+ * Infer the total number of lanes.
+ *
+ * @param tags The current state of the tags.
+ * @param changed State to change when a change has been made.
+ */
 export function inferLanes(tags: MergeWayTagsIn, changed: Atomic<boolean>) {
 	if (!isNullish(tags.lanes)) return;
 
@@ -38,6 +65,12 @@ export function inferLanes(tags: MergeWayTagsIn, changed: Atomic<boolean>) {
 	}
 }
 
+/**
+ * Infer the number of forward-lanes.
+ *
+ * @param tags The current state of the tags.
+ * @param changed State to change when a change has been made.
+ */
 export function inferLanesForward(tags: MergeWayTagsIn, changed: Atomic<boolean>) {
 	if (!isNullish(tags.lanesForward)) return;
 
@@ -60,6 +93,12 @@ export function inferLanesForward(tags: MergeWayTagsIn, changed: Atomic<boolean>
 	}
 }
 
+/**
+ * Infer the number of backward lanes.
+ *
+ * @param tags The current state of the tags.
+ * @param changed State to change when a change has been made.
+ */
 export function inferLanesBackward(tags: MergeWayTagsIn, changed: Atomic<boolean>) {
 	if (!isNullish(tags.lanesBackward)) return;
 
@@ -82,6 +121,12 @@ export function inferLanesBackward(tags: MergeWayTagsIn, changed: Atomic<boolean
 	}
 }
 
+/**
+ * Infer which forward lanes should have which turn lane road markings.
+ *
+ * @param tags The current state of the tags.
+ * @param changed State to change when a change has been made.
+ */
 export function inferTurnLanesForward(tags: MergeWayTagsIn, changed: Atomic<boolean>) {
 	if (!isNullish(tags.turnLanesForward)) return;
 
@@ -105,6 +150,12 @@ export function inferTurnLanesForward(tags: MergeWayTagsIn, changed: Atomic<bool
 	}
 }
 
+/**
+ * Infer which backward lanes should have which turn lane road markings.
+ *
+ * @param tags The current state of the tags.
+ * @param changed State to change when a change has been made.
+ */
 export function inferTurnLanesBackward(tags: MergeWayTagsIn, changed: Atomic<boolean>) {
 	if (!isNullish(tags.turnLanesBackward)) return;
 

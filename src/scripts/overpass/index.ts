@@ -96,8 +96,8 @@ function transform(response: OverpassResponse) {
 
 	// ensure only 1 relation was returned
 	const relation = relations[0];
-	if (relations.length > 1) throw OverpassError.MULTIPLE_RELATIONS;
 	if (relation === undefined) throw OverpassError.NO_RESULT;
+	if (relations.length > 1) throw OverpassError.MULTIPLE_RELATIONS;
 
 	// remove all ways that aren't part to the relation
 	const keepWayIds = relation.members.map(member => member.ref);
@@ -116,14 +116,17 @@ function transform(response: OverpassResponse) {
 async function fetchFromApi(queryString: string) {
 	MESSAGE_BOX.display("overpassDownload");
 
+	// perform api request
 	const req = await fetch(Settings.get("endpoint"), {
 		method: "POST",
 		body: queryString
 	});
 
+	// retrieve json body
 	const json: OverpassResponse | undefined = await req.json();
 	if (json === undefined) throw OverpassError.REQUEST_ERROR;
 
+	// cache response data
 	const database = await Database.connect();
 	if (json.elements.length > 0)
 		await database.set({ request: queryString, value: JSON.stringify(json) });
@@ -138,10 +141,10 @@ export class OverpassError extends MessageBoxError {
 		"Currently, double quotes in search terms are not supported."
 	);
 
+	static readonly NO_RESULT = new OverpassError("Search returned no results.");
 	static readonly MULTIPLE_RELATIONS = new OverpassError(
 		"Multiple relations share that name. Use relation id."
 	);
-	static readonly NO_RESULT = new OverpassError("Search returned no results.");
 
 	static readonly REQUEST_ERROR = new OverpassError("Overpass request failed.");
 }
