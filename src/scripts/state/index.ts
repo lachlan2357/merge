@@ -2,7 +2,7 @@ import { DrawnElement } from "../drawing.js";
 import { CANVAS, MultiplierData } from "../map/canvas.js";
 import { ScreenCoordinate } from "../types/coordinate.js";
 import { ImportedData, OverpassWay } from "../types/overpass.js";
-import { deregisterDependency, registerDependency } from "./graph.js";
+import { GraphItem } from "./graph.js";
 
 /**
  * Ability to perform calculations when dependent information changes.
@@ -23,28 +23,20 @@ export interface Compute {
  * This container crucially does not have the ability to modify it's data, only be initialised with
  * some data and have that data retrievable.
  */
-export class Store<T> {
-	readonly name: string;
-
+export class Store<T> extends GraphItem {
 	/**
 	 * The underlying data in this container.
 	 */
 	protected data: T;
 
 	/**
-	 * All {@link Compute} containers which are dependent on this container.
-	 */
-	protected dependents: Set<Compute>;
-
-	/**
 	 * Initialise this state container with an initial value.
 	 *
 	 * @param initial The value to initialise this container with.
 	 */
-	constructor(name: string, initial: T) {
-		this.name = name;
+	constructor(initial: T) {
+		super();
 		this.data = initial;
-		this.dependents = new Set();
 	}
 
 	/**
@@ -63,43 +55,10 @@ export class Store<T> {
 	}
 
 	/**
-	 * Register a {@link Compute} container as being dependent on this container.
-	 *
-	 * Registering a container here will result in any changes made to this container causing the
-	 * dependent container to be recalculated. Currently, this performs more calculations than
-	 * required in cases where a chain of recalculations would compute a new value multiple times,
-	 * instead of waiting until all changes have been made before recalculating. While this method
-	 * ensures nothing misses a recalculation, is can be expensive.
-	 *
-	 * @param dependents The {@link Compute} containers dependent on this container.
-	 */
-	addDependents(...dependents: Array<Compute>) {
-		for (let i = 0; i < dependents.length; i++) {
-			const dependent = dependents[i];
-			this.dependents.add(dependent);
-			registerDependency(dependent, this);
-		}
-	}
-
-	/**
-	 * Trim an unnecessary dependency.
-	 *
-	 * Warning: this method is designed to be solely used by the dependency graph and should not be
-	 * called by consumers. Doing so will almost certainly cause unexpected and buggy behaviour.
-	 *
-	 * @param dependent The dependent to trim.
-	 */
-	trimDependent(dependent: Compute) {
-		this.dependents.delete(dependent);
-		const deleted = deregisterDependency(dependent, this);
-		if (!deleted) console.warn("Tried to delete a non-existant graph edge.");
-	}
-
-	/**
 	 * Notify all dependent {@link Compute} containers that changes have been made to this value.
 	 */
 	protected notifyDependents() {
-		this.dependents.forEach(compute => compute.compute());
+		GraphItem.recalculateComputes(this);
 	}
 }
 
@@ -174,10 +133,11 @@ export class Computed<T> extends Store<T> implements Compute {
 	 * @param computeFn The function that will be used to compute new values.
 	 * @param dependencies All dependencies of this computation.
 	 */
-	constructor(name: string, computeFn: () => T, dependencies: Array<Store<unknown>>) {
-		super(name, computeFn());
+	constructor(computeFn: () => T, dependencies: Array<Store<unknown>>) {
+		super(computeFn());
 		this.computeFn = computeFn;
-		dependencies.forEach(dependency => dependency.addDependents(this));
+
+		for (const dependency of dependencies) GraphItem.registerDependency(this, dependency);
 	}
 
 	compute() {
@@ -192,9 +152,7 @@ export class Computed<T> extends Store<T> implements Compute {
  * In cases where data also needs to be computed each time dependencies change, it is preferred to
  * use an {@link Computed} container instead.
  */
-export class Effect implements Compute {
-	readonly name: string;
-
+export class Effect extends GraphItem implements Compute {
 	/**
 	 * The function to perform effects for this container.
 	 */
@@ -206,10 +164,11 @@ export class Effect implements Compute {
 	 * @param effectFn The function that will be used to perform effects.
 	 * @param dependencies All dependencies of this computation.
 	 */
-	constructor(name: string, effectFn: () => void, dependencies: Array<Store<unknown>>) {
-		this.name = name;
+	constructor(effectFn: () => void, dependencies: Array<Store<unknown>>) {
+		super();
 		this.effectFn = effectFn;
-		dependencies.forEach(dependency => dependency.addDependents(this));
+
+		for (const dependency of dependencies) GraphItem.registerDependency(this, dependency);
 	}
 
 	compute() {
@@ -222,143 +181,105 @@ export class Effect implements Compute {
  */
 export class State {
 	// atomics
-	static readonly data: Atomic<ImportedData | undefined> = new Atomic("data", undefined);
-	static readonly currentRelationId: Atomic<number | undefined> = new Atomic(
-		"currentRelationId",
-		undefined
-	);
-	static readonly drawnElements: Atomic<Array<DrawnElement>> = new Atomic(
-		"drawnElements",
-		new Array()
-	);
-	static readonly selectedWay: Atomic<number> = new Atomic("selectedWay", -1);
-	static readonly allWays: Atomic<Map<number, OverpassWay>> = new Atomic("allWays", new Map());
-	static readonly canvasDimensions: Atomic<ScreenCoordinate> = new Atomic(
-		"canvasDimensions",
-		new ScreenCoordinate()
-	);
-	static readonly canvasOffset: Atomic<ScreenCoordinate> = new Atomic(
-		"canvasOffset",
-		new ScreenCoordinate()
-	);
-	static readonly mousePos: Atomic<ScreenCoordinate> = new Atomic(
-		"mousePos",
-		new ScreenCoordinate()
-	);
-	static readonly mouseDownPos: Atomic<ScreenCoordinate> = new Atomic(
-		"mouseDownPos",
-		new ScreenCoordinate()
-	);
-	static readonly mouseOffset: Atomic<ScreenCoordinate> = new Atomic(
-		"mouseOffset",
-		new ScreenCoordinate()
-	);
-	static readonly zoomOffset: Atomic<ScreenCoordinate> = new Atomic(
-		"zoomOffset",
-		new ScreenCoordinate()
-	);
-	static readonly mouseDown: Atomic<boolean> = new Atomic("mouseDown", false);
-	static readonly mouseMoved: Atomic<boolean> = new Atomic("mouseMoved", false);
-	static readonly zoom: Atomic<number> = new Atomic("zoom", 0);
+	static readonly data: Atomic<ImportedData | undefined> = new Atomic(undefined);
+	static readonly currentRelationId: Atomic<number | undefined> = new Atomic(undefined);
+	static readonly drawnElements: Atomic<Array<DrawnElement>> = new Atomic(new Array());
+	static readonly selectedWay: Atomic<number> = new Atomic(-1);
+	static readonly allWays: Atomic<Map<number, OverpassWay>> = new Atomic(new Map());
+	static readonly canvasDimensions: Atomic<ScreenCoordinate> = new Atomic(new ScreenCoordinate());
+	static readonly canvasOffset: Atomic<ScreenCoordinate> = new Atomic(new ScreenCoordinate());
+	static readonly mousePos: Atomic<ScreenCoordinate> = new Atomic(new ScreenCoordinate());
+	static readonly mouseDownPos: Atomic<ScreenCoordinate> = new Atomic(new ScreenCoordinate());
+	static readonly mouseOffset: Atomic<ScreenCoordinate> = new Atomic(new ScreenCoordinate());
+	static readonly zoomOffset: Atomic<ScreenCoordinate> = new Atomic(new ScreenCoordinate());
+	static readonly mouseDown: Atomic<boolean> = new Atomic(false);
+	static readonly mouseMoved: Atomic<boolean> = new Atomic(false);
+	static readonly zoom: Atomic<number> = new Atomic(0);
 
 	// computed
-	static readonly multiplier: Computed<MultiplierData> = new Computed(
-		"multiplier",
-		(): MultiplierData => {
-			let maxLat = 0,
-				minLat = 0,
-				maxLon = 0,
-				minLon = 0,
-				multiplier = 0;
+	static readonly multiplier: Computed<MultiplierData> = new Computed((): MultiplierData => {
+		let maxLat = 0,
+			minLat = 0,
+			maxLon = 0,
+			minLon = 0,
+			multiplier = 0;
 
-			const dataCache = this.data.get();
-			const canvasCache = this.canvasDimensions.get();
-			if (dataCache === undefined) return { minLat, maxLat, minLon, maxLon, multiplier };
+		const dataCache = this.data.get();
+		const canvasCache = this.canvasDimensions.get();
+		if (dataCache === undefined) return { minLat, maxLat, minLon, maxLon, multiplier };
 
-			const allLats = new Array<number>();
-			const allLons = new Array<number>();
+		const allLats = new Array<number>();
+		const allLons = new Array<number>();
 
-			dataCache.forEach(way => {
-				way.nodes.forEach(({ lat, lon }) => {
-					allLats.push(lat);
-					allLons.push(lon);
-				});
+		dataCache.forEach(way => {
+			way.nodes.forEach(({ lat, lon }) => {
+				allLats.push(lat);
+				allLons.push(lon);
 			});
+		});
 
-			maxLat = Math.max(...allLats);
-			minLat = Math.min(...allLats);
-			maxLon = Math.max(...allLons);
-			minLon = Math.min(...allLons);
+		maxLat = Math.max(...allLats);
+		minLat = Math.min(...allLats);
+		maxLon = Math.max(...allLons);
+		minLon = Math.min(...allLons);
 
-			const diff = new ScreenCoordinate(maxLon - minLon, maxLat - minLat);
-			const diffScale = canvasCache.divide(diff);
-			const minDiff = Math.min(diffScale.x, diffScale.y);
+		const diff = new ScreenCoordinate(maxLon - minLon, maxLat - minLat);
+		const diffScale = canvasCache.divide(diff);
+		const minDiff = Math.min(diffScale.x, diffScale.y);
 
-			multiplier = Math.sqrt(minDiff);
+		multiplier = Math.sqrt(minDiff);
 
-			return { minLat, maxLat, minLon, maxLon, multiplier };
-		},
-		[this.data, this.canvasDimensions]
-	);
+		return { minLat, maxLat, minLon, maxLon, multiplier };
+	}, [this.data, this.canvasDimensions]);
 
-	static readonly totalMultiplierRaw = new Computed(
-		"totalMultiplierRaw",
-		() => {
-			return this.multiplier.get().multiplier + this.zoom.get();
-		},
-		[this.multiplier, this.zoom]
-	);
+	static readonly totalMultiplierRaw = new Computed(() => {
+		return this.multiplier.get().multiplier + this.zoom.get();
+	}, [this.multiplier, this.zoom]);
 
-	static readonly totalMultiplier = new Computed(
-		"totalMultiplier",
-		() => {
-			return this.totalMultiplierRaw.get() ** 2;
-		},
-		[this.totalMultiplierRaw]
-	);
+	static readonly totalMultiplier = new Computed(() => {
+		return this.totalMultiplierRaw.get() ** 2;
+	}, [this.totalMultiplierRaw]);
 
-	static readonly offset = new Computed(
-		"offset",
-		() => {
-			const totalMultiplierCache = this.totalMultiplier.get();
-			const { minLon, maxLon, minLat, maxLat } = this.multiplier.get();
-			const canvasCache = this.canvasDimensions.get();
+	static readonly offset = new Computed(() => {
+		const totalMultiplierCache = this.totalMultiplier.get();
+		const { minLon, maxLon, minLat, maxLat } = this.multiplier.get();
+		const canvasCache = this.canvasDimensions.get();
 
-			return new ScreenCoordinate(
-				canvasCache.x / 2 -
-					(minLon + (maxLon - minLon) / 2) * totalMultiplierCache +
-					this.mouseOffset.get().x +
-					this.zoomOffset.get().x,
-				canvasCache.y / 2 +
-					(minLat + (maxLat - minLat) / 2) * totalMultiplierCache +
-					this.mouseOffset.get().y +
-					this.zoomOffset.get().y
-			);
-		},
+		return new ScreenCoordinate(
+			canvasCache.x / 2 -
+				(minLon + (maxLon - minLon) / 2) * totalMultiplierCache +
+				this.mouseOffset.get().x +
+				this.zoomOffset.get().x,
+			canvasCache.y / 2 +
+				(minLat + (maxLat - minLat) / 2) * totalMultiplierCache +
+				this.mouseOffset.get().y +
+				this.zoomOffset.get().y
+		);
+	}, [
+		this.totalMultiplier,
+		this.multiplier,
+		this.canvasDimensions,
+		this.mouseOffset,
+		this.zoomOffset
+	]);
+
+	// effects
+	static readonly redraw = new Effect(
+		() => CANVAS.draw(),
 		[
-			this.totalMultiplier,
-			this.multiplier,
+			this.data,
 			this.canvasDimensions,
+			this.mousePos,
+			this.mouseDownPos,
 			this.mouseOffset,
-			this.zoomOffset
+			this.zoomOffset,
+			this.mouseDown,
+			this.mouseMoved,
+			this.zoom
 		]
 	);
 
-	// effects
-	static readonly redraw = new Effect("redraw", () => CANVAS.draw(), [
-		this.data,
-		this.canvasDimensions,
-		this.mousePos,
-		this.mouseDownPos,
-		this.mouseOffset,
-		this.zoomOffset,
-		this.mouseDown,
-		this.mouseMoved,
-		this.zoom
-	]);
-
 	static readonly permalink = new Effect(
-		"permalink",
 		() => (window.location.hash = `#${this.currentRelationId.get()}`),
 		[this.currentRelationId]
 	);

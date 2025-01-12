@@ -1,111 +1,130 @@
-import { Compute, Effect, Store } from "./index.js";
+import { Compute, Store } from "./index.js";
+import { GraphNodeSet } from "./node.js";
+
+type Dependency = Store<unknown>;
 
 /**
- * All {@link Compute} objects that have a registered dependency.
+ * A item that requires hooking into the dependency graph.
  */
-const allComputes = new Set<Compute>();
+export class GraphItem {
+	/**
+	 * All {@link Compute} values which have been registered under the
+	 * {@link GraphItem.dependencyGraph}.
+	 */
+	private static readonly allComputes = new Set<Compute>();
 
-/**
- * The dependency graph that maps each dependency as ({@link Compute}, {@link Store}).
- *
- * This graph is the backbone for trimming unnecessary dependencies. See
- * {@link trimDependencies} for more information.
- */
-const graph = new Set<[Compute, Store<unknown>]>();
+	/**
+	 * The original dependency graph which maintains a record for the desired dependency
+	 * relationships for all {@link Compute} values.
+	 */
+	private static readonly dependencyGraph = new GraphNodeSet<Compute, Dependency>();
 
-/**
- * Register a dependency to the graph.
- *
- * @param dependent The dependent {@link Compute} value.
- * @param dependency The {@link Store} the {@link dependent} depends on.
- */
-export function registerDependency(dependent: Compute, dependency: Store<unknown>) {
-	allComputes.add(dependent);
-	graph.add([dependent, dependency]);
-	trimDependencies();
-}
+	/**
+	 * The trimmed dependency graph which aims to optimise the {@link GraphItem.dependencyGraph} to
+	 * reduce the number of times an unnecessary recalculation occurs.
+	 */
+	private static readonly trimmedGraph = new GraphNodeSet<Compute, Dependency>();
 
-/**
- * Deregister a dependency from the graph.
- *
- * @param dependent The dependent {@link Compute} value
- * @param dependency The {@link Store} the {@link dependent} no longer should depend on.
- * @returns Whether the dependency entry actually existed before removal.
- */
-export function deregisterDependency(dependent: Compute, dependency: Store<unknown>) {
-	for (const item of graph)
-		if (item[0] === dependent && item[1] === dependency) return graph.delete(item);
+	/**
+	 * Register a {@link Compute}-{@link Dependency} relationship to the graph.
+	 *
+	 * @param compute The {@link Compute} object with the dependency.
+	 * @param dependency The {@link Store} which {@link compute} is dependent on.
+	 */
+	protected static registerDependency(compute: Compute, dependency: Dependency) {
+		// add dependency
+		GraphItem.dependencyGraph.add(compute, dependency);
 
-	return false;
-}
+		// recalculate
+		GraphItem.recalculateAllComputes();
+		GraphItem.recalculateTrimmedGraph();
+	}
 
-/**
- * Trim all the dependency relationships in the graph.
- */
-function trimDependencies() {
-	for (const compute of allComputes) {
-		const { direct, indirect } = getAllDependencies(compute, compute, new Set(), new Set());
+	/**
+	 * Recalculate the {@link GraphItem.trimmedGraph} to take into consideration new dependency
+	 * relationships.
+	 */
+	private static recalculateTrimmedGraph() {
+		GraphItem.trimmedGraph.clear();
 
-		// remove unnecessary direct dependencies
-		for (const dependency of direct) {
-			if (!indirect.has(dependency)) continue;
-			dependency.trimDependent(compute);
+		for (const compute of GraphItem.allComputes) {
+			// calculate direct and indirect dependencies
+			const { direct, indirect } = GraphItem.discoverAllDependencies(compute, compute);
 
-			// log removal
-			const dependencyName = dependency.name;
-			let computeName = "<unknown>";
-			if (compute instanceof Store) computeName = compute.name;
-			if (compute instanceof Effect) computeName = compute.name;
-
-			console.debug(
-				`Removed dependency '${dependencyName}' from '${computeName}' due to nested duplication.`
-			);
+			// only keep direct dependencies that aren't also indirect dependencies
+			const trimmedDirect = direct.difference(indirect);
+			for (const dependency of trimmedDirect) GraphItem.trimmedGraph.add(compute, dependency);
 		}
 	}
-}
 
-/**
- * Find all dependencies for a {@link Compute}.
- *
- * Dependencies can either be direct (in cases where the {@link Compute} directly specifies a
- * dependency) or indirect (in cases for dependencies of dependencies).
- *
- * @param compute The current {@link Compute} value to find all dependencies for.
- * @param rootCompute The root {@link Compute} value which was originally requested.
- * @param direct All currently discovered direct dependencies.
- * @param indirect All currently discovered indirect dependencies.
- * @returns All direct and indirect dependences of {@link rootCompute}.
- */
-function getAllDependencies(
-	compute: Compute,
-	rootCompute: Compute,
-	direct: Set<Store<unknown>>,
-	indirect: Set<Store<unknown>>
-) {
-	for (const [dependent, dependency] of graph) {
+	/**
+	 * Find all dependencies for a {@link Compute}.
+	 *
+	 * Dependencies can either be direct (in cases where the {@link Compute} directly specifies a
+	 * dependency) or indirect (in cases for dependencies of dependencies).
+	 *
+	 * @param compute The current {@link Compute} value to find all dependencies for.
+	 * @param rootCompute The root {@link Compute} value which was originally requested.
+	 * @param direct All currently discovered direct dependencies.
+	 * @param indirect All currently discovered indirect dependencies.
+	 * @returns All direct and indirect dependences of {@link rootCompute}.
+	 */
+	private static discoverAllDependencies(
+		currentCompute: Compute,
+		rootCompute: Compute,
+		direct?: Set<Dependency>,
+		indirect?: Set<Dependency>
+	) {
+		direct ??= new Set();
+		indirect ??= new Set();
+
 		// find all relevant dependencies
-		if (dependent !== compute) continue;
+		for (const [compute, dependency] of GraphItem.dependencyGraph) {
+			if (compute !== currentCompute) continue;
 
-		if (compute === rootCompute) direct.add(dependency);
-		else {
-			if (indirect.has(dependency)) continue;
-			indirect.add(dependency);
+			if (currentCompute === rootCompute) {
+				direct.add(dependency);
+			} else {
+				if (indirect.has(dependency)) continue;
+				indirect.add(dependency);
+			}
+
+			// check for any nested dependencies
+			if (GraphItem.isRegisteredCompute(dependency))
+				GraphItem.discoverAllDependencies(dependency, rootCompute, direct, indirect);
 		}
 
-		// check for any nested dependencies
-		if (isRegisteredCompute(dependency))
-			getAllDependencies(dependency, rootCompute, direct, indirect);
+		return { direct, indirect };
 	}
 
-	return { direct, indirect };
-}
+	/**
+	 * Recalculate the set of all {@link Compute} items.
+	 */
+	private static recalculateAllComputes() {
+		GraphItem.allComputes.clear();
+		for (const [compute] of GraphItem.dependencyGraph) GraphItem.allComputes.add(compute);
+	}
 
-/**
- * Determine whether a {@link Store} has been registered as a {@link Compute}.
- *
- * @param store The store to check.
- * @returns Whether {@link store} is a registered {@link Compute}.
- */
-function isRegisteredCompute(store: Store<unknown>): store is Store<unknown> & Compute {
-	return allComputes.has(store as unknown as Compute);
+	/**
+	 * Determine whether a {@link Store} has been registered as a {@link Compute}.
+	 *
+	 * @param store The store to check.
+	 * @returns Whether {@link store} is a registered {@link Compute}.
+	 */
+	private static isRegisteredCompute(store: Dependency): store is Dependency & Compute {
+		for (const [compute] of GraphItem.dependencyGraph)
+			if (compute === (store as unknown)) return true;
+
+		return false;
+	}
+
+	/**
+	 * Recalculate all {@link Compute} values which depend on a {@link dependency}.
+	 *
+	 * @param dependency The dependency which triggered the recalculations.
+	 */
+	protected static recalculateComputes(dependency: Dependency) {
+		const toNotify = this.trimmedGraph.getFirstsForSecond(dependency);
+		for (const compute of toNotify) compute.compute();
+	}
 }
