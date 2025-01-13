@@ -249,13 +249,8 @@ class Canvas {
 				)
 					continue;
 
-				const lanesForward = way.tags.lanesForward ?? (way.tags.oneway ? lanes : lanes / 2);
-				const lanesBackward = way.tags.lanesBackward ?? (way.tags.oneway ? 0 : lanes / 2);
-				const turnLanesForward =
-					((way.tags.turnLanesForward ?? way.tags.oneway)
-						? way.tags.turnLanes
-						: undefined) ?? new Array<Array<string>>();
-				const turnLanesBackward = way.tags.turnLanesBackward ?? new Array<Array<string>>();
+				const { lanesForward, lanesBackward, turnLanesForward, turnLanesBackward } =
+					way.tags;
 
 				const leftTraffic = Settings.get("leftHandTraffic");
 				const directionality = leftTraffic ? 1 : -1;

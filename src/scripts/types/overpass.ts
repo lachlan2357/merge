@@ -1,3 +1,10 @@
+/**
+ * JSON response object from an Overpass API request.
+ *
+ * A successful request to the Overpass API will always yield a result in this format, however an
+ * unsuccessful request will be returned as XML instead of JSON, so if a response cannot be parsed
+ * as JSON into this structure, the request has not been successful.
+ */
 export interface OverpassResponse {
 	version: number;
 	generator: string;
@@ -8,6 +15,9 @@ export interface OverpassResponse {
 	elements: Array<OverpassElement>;
 }
 
+/**
+ * How OSM relations are represented in an Overpass API response.
+ */
 export interface OverpassRelation {
 	id: number;
 	members: Array<{ ref: number; role: string; type: string }>;
@@ -15,23 +25,26 @@ export interface OverpassRelation {
 	type: "relation";
 }
 
+/**
+ * How OSM ways are represented in an Overpass API response.
+ */
 export interface OverpassWay {
 	changeset: number;
 	id: number;
 	nodes: Array<number>;
-	tags?: {
-		"highway"?: string;
-		"lanes"?: string;
-		"maxspeed"?: string;
-		"oneway"?: string;
-		"junction"?: string;
-		"lanes:forward"?: string;
-		"lanes:backward"?: string;
-		"turn:lanes"?: string;
-		"turn:lanes:forward"?: string;
-		"turn:lanes:backward"?: string;
-		"surface"?: string;
-	};
+	tags?: Partial<{
+		"highway": string;
+		"lanes": string;
+		"maxspeed": string;
+		"oneway": string;
+		"junction": string;
+		"lanes:forward": string;
+		"lanes:backward": string;
+		"turn:lanes": string;
+		"turn:lanes:forward": string;
+		"turn:lanes:backward": string;
+		"surface": string;
+	}>;
 	timestamp: string;
 	type: "way";
 	uid: number;
@@ -39,6 +52,9 @@ export interface OverpassWay {
 	version: number;
 }
 
+/**
+ * How OSM nodes are represented in an Overpass API response.
+ */
 export interface OverpassNode {
 	changeset: number;
 	id: number;
@@ -51,25 +67,7 @@ export interface OverpassNode {
 	version: number;
 }
 
+/**
+ * All possible elements as represented in an Overpass API response.
+ */
 export type OverpassElement = OverpassRelation | OverpassWay | OverpassNode;
-
-export interface WayData {
-	nodes: Map<number, OverpassNode>;
-	originalWay: OverpassWay;
-	orderedNodes: Array<number>;
-	tags: {
-		junction?: string;
-		oneway?: boolean;
-		lanes?: number;
-		lanesForward?: number;
-		lanesBackward?: number;
-		turnLanes?: Array<Array<string>>;
-		turnLanesForward?: Array<Array<string>>;
-		turnLanesBackward?: Array<Array<string>>;
-		surface?: string;
-	};
-	warnings: Array<number>;
-	inferences: Set<keyof WayData["tags"]>;
-}
-
-export type ImportedData = Map<number, WayData>;
