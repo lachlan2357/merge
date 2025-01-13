@@ -1,4 +1,4 @@
-import { Atomic } from "../state.js";
+import { Atomic } from "../state/index.js";
 import { MergeWayTagsIn } from "../types/processed.js";
 import { toDoubleArray } from "./conversions.js";
 import { isNullish } from "./process.js";

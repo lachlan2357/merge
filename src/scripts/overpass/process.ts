@@ -1,5 +1,5 @@
 import { MessageBoxError } from "../messages.js";
-import { Atomic } from "../state.js";
+import { Atomic } from "../state/index.js";
 import { OverpassNode, OverpassWay } from "../types/overpass.js";
 import { MergeData, MergeWay, MergeWayTags, MergeWayTagsIn } from "../types/processed.js";
 import { toBoolean, toDoubleArray, toNumber } from "./conversions.js";
