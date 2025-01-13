@@ -200,12 +200,7 @@ class Canvas {
                 if ((allXEqual && allOffScreen[0][0] != "in") ||
                     (allYEqual && allOffScreen[1][0] != "in"))
                     continue;
-                const lanesForward = way.tags.lanesForward ?? (way.tags.oneway ? lanes : lanes / 2);
-                const lanesBackward = way.tags.lanesBackward ?? (way.tags.oneway ? 0 : lanes / 2);
-                const turnLanesForward = ((way.tags.turnLanesForward ?? way.tags.oneway)
-                    ? way.tags.turnLanes
-                    : undefined) ?? new Array();
-                const turnLanesBackward = way.tags.turnLanesBackward ?? new Array();
+                const { lanesForward, lanesBackward, turnLanesForward, turnLanesBackward } = way.tags;
                 const leftTraffic = Settings.get("leftHandTraffic");
                 const directionality = leftTraffic ? 1 : -1;
                 for (let i = 0; i < lanes; i++) {

@@ -1,5 +1,5 @@
 import { MessageBoxError } from "../messages.js";
-import { Overpass } from "../overpass.js";
+import { overpassSearch } from "../overpass/index.js";
 import { getElement } from "../supplement/elements.js";
 const SEARCH_FORM = getElement("search-form", HTMLFormElement);
 const SEARCH_BOX = getElement("relation-name", HTMLInputElement);
@@ -43,7 +43,7 @@ async function search(searchTerm) {
     // set searching state
     setSearching(true);
     try {
-        await Overpass.search(searchTerm);
+        await overpassSearch(searchTerm);
     }
     catch (error) {
         if (error instanceof MessageBoxError)
