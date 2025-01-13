@@ -1,6 +1,7 @@
 import { Atomic } from "../state.js";
 import { MergeWayTagsIn } from "../types/processed.js";
-import { isNullish, toArray, toDoubleArray } from "./process.js";
+import { toDoubleArray } from "./conversions.js";
+import { isNullish } from "./process.js";
 
 /**
  * Infer whether a way should be marked as one-way.
@@ -133,7 +134,6 @@ export function inferTurnLanesForward(tags: MergeWayTagsIn, changed: Atomic<bool
 	// oneway === true && turn:lanes set
 	if (tags.oneway === true && !isNullish(tags.turnLanes)) {
 		tags.turnLanesForward = tags.turnLanes;
-		console.debug("set to", tags.turnLanesForward, "using first");
 		return changed.set(true);
 	}
 
@@ -145,7 +145,7 @@ export function inferTurnLanesForward(tags: MergeWayTagsIn, changed: Atomic<bool
 		}
 
 		const turnLanesForwardString = "|".repeat(tags.lanesForward - 1);
-		tags.turnLanesForward = toDoubleArray(toArray(turnLanesForwardString));
+		tags.turnLanesForward = toDoubleArray(turnLanesForwardString);
 		return changed.set(true);
 	}
 }
@@ -167,7 +167,23 @@ export function inferTurnLanesBackward(tags: MergeWayTagsIn, changed: Atomic<boo
 		}
 
 		const turnLanesBackwardString = "|".repeat(tags.lanesBackward - 1);
-		tags.turnLanesBackward = toDoubleArray(toArray(turnLanesBackwardString));
+		tags.turnLanesBackward = toDoubleArray(turnLanesBackwardString);
 		return changed.set(true);
 	}
+}
+
+/**
+ * Infer whether a surface is present.
+ *
+ * Note: there is no way to infer the value of `surface` to be anything other than its initial
+ * value or `unknown`. Thus, if the `surface` tag is missing, it will be defaulted to `unknown`.
+ *
+ * @param tags The current state of the tags.
+ * @param changed State to change when a change has been made.
+ */
+export function inferSurface(tags: MergeWayTagsIn, changed: Atomic<boolean>) {
+	if (!isNullish(tags.surface)) return;
+
+	tags.surface = "unknown";
+	changed.set(true);
 }

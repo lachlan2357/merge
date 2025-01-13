@@ -18,12 +18,12 @@ export interface MergeWay {
 export interface MergeWayTags {
 	junction: string;
 	oneway: boolean;
+	surface: string;
 	lanes: number;
 	lanesForward: number;
 	lanesBackward: number;
 	turnLanesForward: Array<Array<string>>;
 	turnLanesBackward: Array<Array<string>>;
-	surface: string;
 }
 
 /**

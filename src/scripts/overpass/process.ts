@@ -2,12 +2,14 @@ import { MessageBoxError } from "../messages.js";
 import { Atomic } from "../state.js";
 import { OverpassNode, OverpassWay } from "../types/overpass.js";
 import { MergeData, MergeWay, MergeWayTags, MergeWayTagsIn } from "../types/processed.js";
+import { toBoolean, toDoubleArray, toNumber } from "./conversions.js";
 import {
 	inferJunction,
 	inferLanes,
 	inferLanesBackward,
 	inferLanesForward,
 	inferOneway,
+	inferSurface,
 	inferTurnLanesBackward,
 	inferTurnLanesForward
 } from "./inferences.js";
@@ -29,16 +31,14 @@ export function process(allNodes: Map<number, OverpassNode>, allWays: Map<number
 		const tags: MergeWayTagsIn = {
 			oneway: toBoolean(tagsRaw?.oneway),
 			junction: tagsRaw?.junction,
+			surface: tagsRaw?.surface,
 			lanes: toNumber(tagsRaw?.lanes),
 			lanesForward: toNumber(tagsRaw?.["lanes:forward"]),
 			lanesBackward: toNumber(tagsRaw?.["lanes:backward"]),
-			turnLanes: toDoubleArray(toArray(tagsRaw?.["turn:lanes"])),
-			turnLanesForward: toDoubleArray(toArray(tagsRaw?.["turn:lanes:forward"])),
-			turnLanesBackward: toDoubleArray(toArray(tagsRaw?.["turn:lanes:backward"])),
-			surface: tagsRaw?.surface
+			turnLanes: toDoubleArray(tagsRaw?.["turn:lanes"]),
+			turnLanesForward: toDoubleArray(tagsRaw?.["turn:lanes:forward"]),
+			turnLanesBackward: toDoubleArray(tagsRaw?.["turn:lanes:backward"])
 		};
-
-		if (way.id === 160292854) console.debug(tags);
 
 		// infer data
 		const changed = new Atomic(true);
@@ -47,6 +47,7 @@ export function process(allNodes: Map<number, OverpassNode>, allWays: Map<number
 
 			inferOneway(tags, changed);
 			inferJunction(tags, changed);
+			inferSurface(tags, changed);
 
 			inferLanes(tags, changed);
 			inferLanesForward(tags, changed);
@@ -75,23 +76,26 @@ export function process(allNodes: Map<number, OverpassNode>, allWays: Map<number
 			inferences: new Set()
 		};
 
-		if (way.id === 160292854) console.debug(tags);
-
 		data.set(id, wayData);
 	}
 
 	return data;
 }
 
+/**
+ * Attempt to compile a key to a {@link MergeWayTags} from a {@link Partial} representation.
+ *
+ * @param tags The object containing the {@link Partial} tags.
+ * @param tag The specific tag to compile.
+ * @throws {TagError} If the tag could not be compiled.
+ * @returns The compiled tag.
+ */
 function compile<Tag extends keyof MergeWayTags, Value extends MergeWayTags[Tag]>(
 	tags: Partial<MergeWayTags>,
 	tag: Tag
 ): Value {
 	const value = tags[tag];
-	if (isNullish(value)) {
-		console.debug(tags);
-		throw new TagError(tag);
-	}
+	if (isNullish(value)) throw TagError.missingTag(tag);
 	return value as Value;
 }
 
@@ -107,65 +111,12 @@ export function isNullish(value: unknown): value is null | undefined {
 	return value === null || value === undefined;
 }
 
-// export function isValue(value: unknown): value is not
-
-/**
- * Convert an OSM boolean string to a boolean.
- *
- * @param value The OSM string to convert.
- * @param fallback The value to set if {@link value} is `undefined`.
- * @returns The converted boolean.
- */
-export function toBoolean(value?: string, fallback?: boolean) {
-	switch (value) {
-		case "yes":
-			return true;
-		case "no":
-			return false;
-		case undefined:
-			return fallback;
+export class TagError extends MessageBoxError {
+	static missingTag(tag: string) {
+		return new TagError(`Tag '${tag}' is missing and could not be inferred`);
 	}
-}
 
-/**
- * Convert an OSM number string to a number.
- *
- * @param value The OSM string to convert.
- * @param fallback The value to set if {@link value} is `undefined`.
- * @returns The converted number.
- */
-export function toNumber(value?: string, fallback?: number) {
-	const number = Number(value);
-	const isNumber = !isNaN(number);
-
-	if (isNumber) return number;
-	if (fallback !== undefined) return fallback;
-}
-
-/**
- * Convert an OSM array string to an array.
- *
- * @param value The OSM string to convert.
- * @param delimiter The OSM string delimiter to mark element boundaries.
- * @returns The converted array.
- */
-export function toArray(value?: string, delimiter = "|") {
-	return value?.split(delimiter).map(value => value || "none");
-}
-
-/**
- * Convert an OSM double-array to a double-array.
- *
- * @param array The double-array to convert.
- * @param delimiter The OSM string delimiter to mark element boundaries.
- * @returns The converted double-array.
- */
-export function toDoubleArray(array?: Array<string>, delimiter = ";") {
-	return array?.map(value => value.split(delimiter).map(value => value || "none"));
-}
-
-class TagError extends MessageBoxError {
-	constructor(tag: string) {
-		super(`Tag '${tag}' is missing and could not be inferred`);
+	static invalidTagValue(type: string, value: string) {
+		return new TagError(`Value '${value}' is not valid for type '${type}'`);
 	}
 }
