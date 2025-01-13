@@ -1,5 +1,5 @@
 import { ElementBuilder, FontAwesomeIcon } from "../elements.js";
-import { State } from "../state.js";
+import { State } from "../state/index.js";
 import { Popup, openID, openJOSM } from "./index.js";
 
 export class SharePopup extends Popup {

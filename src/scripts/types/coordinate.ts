@@ -1,4 +1,4 @@
-import { State } from "../state.js";
+import { State } from "../state/index.js";
 import { OverpassNode } from "./overpass.js";
 
 /**

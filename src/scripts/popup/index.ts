@@ -1,5 +1,5 @@
 import { ElementBuilder, FontAwesomeIcon } from "../elements.js";
-import { State } from "../state.js";
+import { State } from "../state/index.js";
 import { getElement } from "../supplement/elements.js";
 import { OverpassWay } from "../types/overpass.js";
 

@@ -2,7 +2,7 @@ import { laneLength, metresToPixels } from "../conversions.js";
 import { DrawnElement, drawArrow, drawLine, drawPolygon, getSurfaceColour } from "../drawing.js";
 import { WAY_INFO, displayPopup } from "../popup/index.js";
 import { Settings } from "../settings.js";
-import { State } from "../state.js";
+import { State } from "../state/index.js";
 import { getElement } from "../supplement/elements.js";
 import { zoomIncrement } from "../supplement/index.js";
 import { ScreenCoordinate, WorldCoordinate } from "../types/coordinate.js";
