@@ -1,5 +1,5 @@
 import { ElementBuilder, FontAwesomeIcon } from "../elements.js";
-import { State } from "../state.js";
+import { State } from "../state/index.js";
 import { getElement } from "../supplement/elements.js";
 export const POPUP = getElement("popup", HTMLDialogElement);
 export const WAY_INFO = getElement("way-info", HTMLDivElement);

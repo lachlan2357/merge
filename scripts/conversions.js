@@ -1,4 +1,4 @@
-import { State } from "./state.js";
+import { State } from "./state/index.js";
 const earthRadius = 6371000;
 const earthCircumference = 2 * Math.PI * earthRadius;
 const degreesRange = earthCircumference / 2;

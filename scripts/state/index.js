@@ -1,28 +1,25 @@
-import { CANVAS } from "./map/canvas.js";
-import { ScreenCoordinate } from "./types/coordinate.js";
+import { CANVAS } from "../map/canvas.js";
+import { ScreenCoordinate } from "../types/coordinate.js";
+import { GraphItem } from "./graph.js";
 /**
  * A state container that can only store data.
  *
  * This container crucially does not have the ability to modify it's data, only be initialised with
  * some data and have that data retrievable.
  */
-export class Store {
+export class Store extends GraphItem {
     /**
      * The underlying data in this container.
      */
     data;
-    /**
-     * All {@link Compute} containers which are dependent on this container.
-     */
-    dependents;
     /**
      * Initialise this state container with an initial value.
      *
      * @param initial The value to initialise this container with.
      */
     constructor(initial) {
+        super();
         this.data = initial;
-        this.dependents = new Set();
     }
     /**
      * Retrieve the currently-stored value in this container.
@@ -37,29 +34,6 @@ export class Store {
      */
     get() {
         return this.data;
-    }
-    /**
-     * Register a {@link Compute} container as being dependent on this container.
-     *
-     * Registering a container here will result in any changes made to this container causing the
-     * dependent container to be recalculated. Currently, this performs more calculations than
-     * required in cases where a chain of recalculations would compute a new value multiple times,
-     * instead of waiting until all changes have been made before recalculating. While this method
-     * ensures nothing misses a recalculation, is can be expensive.
-     *
-     * @param dependents The {@link Compute} containers dependent on this container.
-     */
-    addDependents(...dependents) {
-        for (let i = 0; i < dependents.length; i++) {
-            const dependent = dependents[i];
-            this.dependents.add(dependent);
-        }
-    }
-    /**
-     * Notify all dependent {@link Compute} containers that changes have been made to this value.
-     */
-    notifyDependents() {
-        this.dependents.forEach(compute => compute.compute());
     }
 }
 /**
@@ -133,7 +107,8 @@ export class Computed extends Store {
     constructor(computeFn, dependencies) {
         super(computeFn());
         this.computeFn = computeFn;
-        dependencies.forEach(dependency => dependency.addDependents(this));
+        for (const dependency of dependencies)
+            this.registerDependency(dependency);
     }
     compute() {
         this.data = this.computeFn();
@@ -146,7 +121,7 @@ export class Computed extends Store {
  * In cases where data also needs to be computed each time dependencies change, it is preferred to
  * use an {@link Computed} container instead.
  */
-export class Effect {
+export class Effect extends GraphItem {
     /**
      * The function to perform effects for this container.
      */
@@ -158,8 +133,10 @@ export class Effect {
      * @param dependencies All dependencies of this computation.
      */
     constructor(effectFn, dependencies) {
+        super();
         this.effectFn = effectFn;
-        dependencies.forEach(dependency => dependency.addDependents(this));
+        for (const dependency of dependencies)
+            this.registerDependency(dependency);
     }
     compute() {
         this.effectFn();

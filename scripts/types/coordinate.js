@@ -1,4 +1,4 @@
-import { State } from "../state.js";
+import { State } from "../state/index.js";
 /**
  * Generic implementation of adding two {@link Coordinate Coordinates} together.
  *
