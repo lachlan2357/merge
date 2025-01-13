@@ -53,13 +53,6 @@ export class Store<T> extends GraphItem {
 	get() {
 		return this.data;
 	}
-
-	/**
-	 * Notify all dependent {@link Compute} containers that changes have been made to this value.
-	 */
-	protected notifyDependents() {
-		GraphItem.recalculateComputes(this);
-	}
 }
 
 /**
@@ -137,7 +130,7 @@ export class Computed<T> extends Store<T> implements Compute {
 		super(computeFn());
 		this.computeFn = computeFn;
 
-		for (const dependency of dependencies) GraphItem.registerDependency(this, dependency);
+		for (const dependency of dependencies) this.registerDependency(dependency);
 	}
 
 	compute() {
@@ -168,7 +161,7 @@ export class Effect extends GraphItem implements Compute {
 		super();
 		this.effectFn = effectFn;
 
-		for (const dependency of dependencies) GraphItem.registerDependency(this, dependency);
+		for (const dependency of dependencies) this.registerDependency(dependency);
 	}
 
 	compute() {

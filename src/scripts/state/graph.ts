@@ -1,12 +1,23 @@
 import { Compute, Store } from "./index.js";
 import { GraphNodeSet } from "./node.js";
 
+/**
+ * The type that this graph recognises as a dependency.
+ *
+ * For all relationships, the dependency in question must be a subclass of this type, however it is
+ * not possible to restrict which elements derive {@link GraphItem}, thus this acts as a word of
+ * warning rather than any meaningful restriction.
+ */
 type Dependency = Store<unknown>;
 
 /**
- * A item that requires hooking into the dependency graph.
+ * Backend implementations for items needing to hook into the dependency graph.
+ *
+ * This dependency graph only supports {@link Compute}-{@link Store} relationships, so derived
+ * classes should ideally implement/extend one of these otherwise it becomes difficult to properly
+ * integrate required behaviours.
  */
-export class GraphItem {
+export abstract class GraphItem {
 	/**
 	 * All {@link Compute} values which have been registered under the
 	 * {@link GraphItem.dependencyGraph}.
@@ -26,18 +37,49 @@ export class GraphItem {
 	private static readonly trimmedGraph = new GraphNodeSet<Compute, Dependency>();
 
 	/**
-	 * Register a {@link Compute}-{@link Dependency} relationship to the graph.
+	 * Register a dependency of this {@link Compute} object.
 	 *
-	 * @param compute The {@link Compute} object with the dependency.
+	 * Note: this method requires the calling object to implement {@link Compute}.
+	 *
+	 * @param this The {@link Compute} object with the dependency.
 	 * @param dependency The {@link Store} which {@link compute} is dependent on.
 	 */
-	protected static registerDependency(compute: Compute, dependency: Dependency) {
+	protected registerDependency(this: Compute, dependency: Dependency) {
 		// add dependency
-		GraphItem.dependencyGraph.add(compute, dependency);
+		GraphItem.allComputes.add(this);
+		GraphItem.dependencyGraph.add(this, dependency);
 
 		// recalculate
-		GraphItem.recalculateAllComputes();
 		GraphItem.recalculateTrimmedGraph();
+	}
+
+	/**
+	 * Recalculate all {@link Compute} values which depend on a {@link dependency}.
+	 *
+	 * Note: this method requires the calling object to extend {@link Store}.
+	 *
+	 * @param this This item to recalculate the dependency of.
+	 */
+	protected notifyDependents(this: Dependency) {
+		const toNotify = GraphItem.trimmedGraph.getFirstsForSecond(this);
+		for (const compute of toNotify) compute.compute();
+	}
+
+	/**
+	 * Determine whether a {@link Store} has been registered as a {@link Compute}.
+	 *
+	 * While calling method does not require {@link this} to implement {@link Compute}, if it
+	 * doesn't, there is no chance it being found as a registered {@link Compute}. However, if it
+	 * is found, it's type with also be narrowed to include the fact it does implement
+	 * {@link Compute}.
+	 *
+	 * Note: this method requires the calling object to extend {@link Store}.
+	 *
+	 * @param this The store to check.
+	 * @returns Whether {@link store} is also a registered {@link Compute}.
+	 */
+	private isRegisteredCompute(this: Dependency): this is Compute {
+		return GraphItem.allComputes.has(this as unknown as Compute);
 	}
 
 	/**
@@ -82,49 +124,16 @@ export class GraphItem {
 		for (const [compute, dependency] of GraphItem.dependencyGraph) {
 			if (compute !== currentCompute) continue;
 
-			if (currentCompute === rootCompute) {
-				direct.add(dependency);
-			} else {
-				if (indirect.has(dependency)) continue;
-				indirect.add(dependency);
-			}
+			// record direct or indirect dependency, skipping it if it's already been registered
+			if (currentCompute === rootCompute) direct.add(dependency);
+			else if (!indirect.has(dependency)) indirect.add(dependency);
+			else continue;
 
 			// check for any nested dependencies
-			if (GraphItem.isRegisteredCompute(dependency))
+			if (dependency.isRegisteredCompute())
 				GraphItem.discoverAllDependencies(dependency, rootCompute, direct, indirect);
 		}
 
 		return { direct, indirect };
-	}
-
-	/**
-	 * Recalculate the set of all {@link Compute} items.
-	 */
-	private static recalculateAllComputes() {
-		GraphItem.allComputes.clear();
-		for (const [compute] of GraphItem.dependencyGraph) GraphItem.allComputes.add(compute);
-	}
-
-	/**
-	 * Determine whether a {@link Store} has been registered as a {@link Compute}.
-	 *
-	 * @param store The store to check.
-	 * @returns Whether {@link store} is a registered {@link Compute}.
-	 */
-	private static isRegisteredCompute(store: Dependency): store is Dependency & Compute {
-		for (const [compute] of GraphItem.dependencyGraph)
-			if (compute === (store as unknown)) return true;
-
-		return false;
-	}
-
-	/**
-	 * Recalculate all {@link Compute} values which depend on a {@link dependency}.
-	 *
-	 * @param dependency The dependency which triggered the recalculations.
-	 */
-	protected static recalculateComputes(dependency: Dependency) {
-		const toNotify = this.trimmedGraph.getFirstsForSecond(dependency);
-		for (const compute of toNotify) compute.compute();
 	}
 }

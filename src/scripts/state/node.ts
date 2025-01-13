@@ -31,22 +31,6 @@ export class GraphNodeSet<N1, N2> {
 	}
 
 	/**
-	 * Retrieve all {@link N2} values which have a relationship with a certain {@link N1} value.
-	 *
-	 * @param value The {@link N1} value to check a relationship with.
-	 * @returns All {@link N2} values with a relationship.
-	 */
-	getSecondsForFirst(value: N1): Set<N2> {
-		const set = new Set<N2>();
-
-		for (const [first, second] of this.inner) {
-			if (first === value) set.add(second);
-		}
-
-		return set;
-	}
-
-	/**
 	 * Retrieve all {@link N1} values which have a relationship with a certain {@link N2} value.
 	 *
 	 * @param value The {@link N2} value to check a relationship with.
