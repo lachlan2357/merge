@@ -9,8 +9,10 @@ export interface MergeWay {
 	orderedNodes: Array<number>;
 	tags: MergeWayTags;
 	warnings: Array<number>;
-	inferences: Set<keyof MergeWay["tags"]>;
+	inferences: InferencesMade;
 }
+
+export type InferencesMade = Set<keyof MergeWayTags>;
 
 /**
  * Required tags for each {@link MergeWay}.

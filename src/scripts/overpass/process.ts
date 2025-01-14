@@ -41,20 +41,21 @@ export function process(allNodes: Map<number, OverpassNode>, allWays: Map<number
 		};
 
 		// infer data
-		const changed = new Atomic(true);
-		while (changed.get() === true) {
-			changed.set(false);
+		const hasChanged = new Atomic(true);
+		const inferredTags = new Set<keyof MergeWayTags>();
+		while (hasChanged.get() === true) {
+			hasChanged.set(false);
 
-			inferOneway(tags, changed);
-			inferJunction(tags, changed);
-			inferSurface(tags, changed);
+			inferOneway(tags, hasChanged, inferredTags);
+			inferJunction(tags, hasChanged, inferredTags);
+			inferSurface(tags, hasChanged, inferredTags);
 
-			inferLanes(tags, changed);
-			inferLanesForward(tags, changed);
-			inferLanesBackward(tags, changed);
+			inferLanes(tags, hasChanged, inferredTags);
+			inferLanesForward(tags, hasChanged, inferredTags);
+			inferLanesBackward(tags, hasChanged, inferredTags);
 
-			inferTurnLanesForward(tags, changed);
-			inferTurnLanesBackward(tags, changed);
+			inferTurnLanesForward(tags, hasChanged, inferredTags);
+			inferTurnLanesBackward(tags, hasChanged, inferredTags);
 		}
 
 		// compile tags into way data
@@ -73,7 +74,7 @@ export function process(allNodes: Map<number, OverpassNode>, allWays: Map<number
 				surface: compile(tags, "surface")
 			},
 			warnings: new Array(),
-			inferences: new Set()
+			inferences: inferredTags
 		};
 
 		data.set(id, wayData);
