@@ -12,7 +12,10 @@ export interface MergeWay {
 	inferences: InferencesMade;
 }
 
-export type InferencesMade = Set<keyof MergeWayTags>;
+/**
+ * Collection of {@link MergeWayTags} which have had their value inferred rather than specified.
+ */
+export type InferencesMade = Set<MergeWayTag>;
 
 /**
  * Required tags for each {@link MergeWay}.
@@ -27,6 +30,11 @@ export interface MergeWayTags {
 	turnLanesForward: Array<Array<string>>;
 	turnLanesBackward: Array<Array<string>>;
 }
+
+/**
+ * All currently recognised tags for a {@link OverpassWay}.
+ */
+export type MergeWayTag = keyof MergeWayTags;
 
 /**
  * Tags not required for each {@link MergeWay}, but are required for inferring other tags.

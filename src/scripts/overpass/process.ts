@@ -1,18 +1,14 @@
 import { MessageBoxError } from "../messages.js";
-import { Atomic } from "../state/index.js";
 import { OverpassNode, OverpassWay } from "../types/overpass.js";
-import { MergeData, MergeWay, MergeWayTags, MergeWayTagsIn } from "../types/processed.js";
-import { toBoolean, toDoubleArray, toNumber } from "./conversions.js";
 import {
-	inferJunction,
-	inferLanes,
-	inferLanesBackward,
-	inferLanesForward,
-	inferOneway,
-	inferSurface,
-	inferTurnLanesBackward,
-	inferTurnLanesForward
-} from "./inferences.js";
+	MergeData,
+	MergeWay,
+	MergeWayTag,
+	MergeWayTags,
+	MergeWayTagsIn
+} from "../types/processed.js";
+import { toBoolean, toDoubleArray, toNumber } from "./conversions.js";
+import { performInferences } from "./inferences.js";
 
 /**
  * Process {@link OverpassNode Nodes}, {@link OverpassWay Ways} and
@@ -41,22 +37,7 @@ export function process(allNodes: Map<number, OverpassNode>, allWays: Map<number
 		};
 
 		// infer data
-		const hasChanged = new Atomic(true);
-		const inferredTags = new Set<keyof MergeWayTags>();
-		while (hasChanged.get() === true) {
-			hasChanged.set(false);
-
-			inferOneway(tags, hasChanged, inferredTags);
-			inferJunction(tags, hasChanged, inferredTags);
-			inferSurface(tags, hasChanged, inferredTags);
-
-			inferLanes(tags, hasChanged, inferredTags);
-			inferLanesForward(tags, hasChanged, inferredTags);
-			inferLanesBackward(tags, hasChanged, inferredTags);
-
-			inferTurnLanesForward(tags, hasChanged, inferredTags);
-			inferTurnLanesBackward(tags, hasChanged, inferredTags);
-		}
+		const inferredTags = performInferences(tags);
 
 		// compile tags into way data
 		const wayData: MergeWay = {
@@ -91,25 +72,25 @@ export function process(allNodes: Map<number, OverpassNode>, allWays: Map<number
  * @throws {TagError} If the tag could not be compiled.
  * @returns The compiled tag.
  */
-function compile<Tag extends keyof MergeWayTags, Value extends MergeWayTags[Tag]>(
+function compile<Tag extends MergeWayTag, Value extends MergeWayTags[Tag]>(
 	tags: Partial<MergeWayTags>,
 	tag: Tag
 ): Value {
 	const value = tags[tag];
-	if (isNullish(value)) throw TagError.missingTag(tag);
+	if (!isSet(value)) throw TagError.missingTag(tag);
 	return value as Value;
 }
 
 /**
- * Determine if a value is null-ish.
+ * Determine whether the value of a tag has been set.
  *
- * A null-ish value is one that is either `null` or `undefined`.
+ * A tag is deemed to be set if its value is neither `null` or `undefined`.
  *
- * @param value The value to test.
- * @returns Whether the value is null-ish.
+ * @param tag The tag to check if set.
+ * @returns Whether the tag has its value set.
  */
-export function isNullish(value: unknown): value is null | undefined {
-	return value === null || value === undefined;
+export function isSet<T>(tag: T | undefined | null): tag is T {
+	return !(tag === null || tag === undefined);
 }
 
 export class TagError extends MessageBoxError {
