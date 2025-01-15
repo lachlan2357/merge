@@ -1,6 +1,13 @@
 import { Atomic } from "../state/index.js";
+import {
+	OsmArray,
+	OsmBoolean,
+	OsmDoubleArray,
+	OsmString,
+	OsmUnsignedInteger
+} from "../types/osm.js";
 import { InferencesMade, MergeWayTag, MergeWayTags, MergeWayTagsIn } from "../types/processed.js";
-import { isSet } from "./process.js";
+import { isEq, isSet } from "./process.js";
 
 /**
  * Function signature for inference definition functions.
@@ -196,10 +203,10 @@ const allInferences = {
 		"oneway",
 		tags => {
 			// lanes:backward === 0
-			if (tags.lanesBackward === 0) return true;
+			if (isEq(tags.lanesBackward, 0)) return OsmBoolean.TRUE;
 		},
 		() => {},
-		false
+		OsmBoolean.FALSE
 	),
 
 	/**
@@ -216,7 +223,7 @@ const allInferences = {
 		"junction",
 		() => {},
 		() => {},
-		"no"
+		new OsmString("no")
 	),
 
 	/**
@@ -233,7 +240,7 @@ const allInferences = {
 		"surface",
 		() => {},
 		() => {},
-		"unknown"
+		new OsmString("unknown")
 	),
 
 	/**
@@ -247,17 +254,17 @@ const allInferences = {
 		"lanes",
 		tags => {
 			// oneway === true && lanes:forward set
-			if (tags.oneway === true && isSet(tags.lanesForward)) return tags.lanesForward;
+			if (isEq(tags.oneway, true) && isSet(tags.lanesForward)) return tags.lanesForward;
 
 			// oneway === false && lanes:forward set && lanes:backward set
-			if (tags.oneway === false && isSet(tags.lanesForward) && isSet(tags.lanesBackward))
-				return tags.lanesForward + tags.lanesBackward;
+			if (isEq(tags.oneway, false) && isSet(tags.lanesForward) && isSet(tags.lanesBackward))
+				return tags.lanesForward.add(tags.lanesBackward);
 		},
 		tags => {
 			// tags.oneway set
-			if (isSet(tags)) return tags.oneway ? 1 : 2;
+			if (isSet(tags)) return new OsmUnsignedInteger(tags.oneway ? 1 : 2);
 		},
-		2
+		new OsmUnsignedInteger(2)
 	),
 
 	/**
@@ -271,18 +278,18 @@ const allInferences = {
 		"lanesForward",
 		tags => {
 			// oneway === true && lanes:forward set
-			if (tags.oneway === true && isSet(tags.lanes)) return tags.lanes;
+			if (isEq(tags.oneway, true) && isSet(tags.lanes)) return tags.lanes;
 
 			// oneway === false && tags.lanes set && tags.lanesBackwardSet
-			if (tags.oneway === false && isSet(tags.lanes) && isSet(tags.lanesBackward))
-				return tags.lanes - tags.lanesBackward;
+			if (isEq(tags.oneway, false) && isSet(tags.lanes) && isSet(tags.lanesBackward))
+				return tags.lanes.subtract(tags.lanesBackward);
 		},
 		tags => {
 			// oneway === false && tags.lanes % 2 === 0
-			if (tags.oneway === false && isSet(tags.lanes) && tags.lanes % 2 === 0)
-				return tags.lanes / 2;
+			if (isEq(tags.oneway, false) && isSet(tags.lanes) && isEq(tags.lanes.mod(2), 0))
+				return tags.lanes?.divide(2);
 		},
-		1
+		new OsmUnsignedInteger(1)
 	),
 
 	/**
@@ -296,18 +303,18 @@ const allInferences = {
 		"lanesBackward",
 		tags => {
 			// oneway === true
-			if (tags.oneway === true) return 0;
+			if (isEq(tags.oneway, true)) return new OsmUnsignedInteger(0);
 
 			// oneway === false && tags.lanes set && tags.lanesForward set
-			if (tags.oneway === false && isSet(tags.lanes) && isSet(tags.lanesForward))
-				return tags.lanes - tags.lanesForward;
+			if (isEq(tags.oneway, false) && isSet(tags.lanes) && isSet(tags.lanesForward))
+				return tags.lanes.subtract(tags.lanesForward);
 		},
 		tags => {
 			// oneway === false && tags.lanes % 2 === 0
-			if (tags.oneway === false && isSet(tags.lanes) && tags.lanes % 2 === 0)
-				return tags.lanes / 2;
+			if (isEq(tags.oneway, false) && isSet(tags.lanes) && isEq(tags.lanes.mod(2), 0))
+				return tags.lanes.divide(2);
 		},
-		1
+		new OsmUnsignedInteger(1)
 	),
 
 	/**
@@ -321,13 +328,13 @@ const allInferences = {
 		"turnLanesForward",
 		tags => {
 			// oneway === true && turn:lanes set
-			if (tags.oneway === true && isSet(tags.turnLanes)) return tags.turnLanes;
+			if (isEq(tags.oneway, true) && isSet(tags.turnLanes)) return tags.turnLanes;
 		},
 		tags => {
 			// lanes:forward set
-			if (isSet(tags.lanesForward)) return new Array(tags.lanesForward).fill(new Array());
+			if (isSet(tags.lanesForward)) return new OsmDoubleArray("", OsmString);
 		},
-		new Array()
+		new OsmDoubleArray("", OsmString)
 	),
 
 	/**
@@ -341,12 +348,16 @@ const allInferences = {
 		"turnLanesBackward",
 		tags => {
 			// oneway === true
-			if (tags.oneway === true) return new Array();
+			if (isEq(tags.oneway, true)) return new OsmDoubleArray("", OsmString);
 		},
 		tags => {
 			// lanes:backward set
-			if (isSet(tags.lanesBackward)) return new Array(tags.lanesBackward).fill(new Array());
+			if (isSet(tags.lanesBackward))
+				return new OsmDoubleArray(
+					new Array(tags.lanesBackward.get()).fill(new OsmArray("", OsmString)),
+					OsmString
+				);
 		},
-		new Array()
+		new OsmDoubleArray(new Array(), OsmString)
 	)
 };

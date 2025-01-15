@@ -1,7 +1,7 @@
 import { ElementBuilder, FontAwesomeIcon } from "../elements.js";
-import { fromArray, fromBoolean, fromDoubleArray, fromNumber } from "../overpass/conversions.js";
 import { State } from "../state/index.js";
 import { getElement } from "../supplement/elements.js";
+import { OsmValue } from "../types/osm.js";
 
 export const POPUP = getElement("popup", HTMLDialogElement);
 export const WAY_INFO = getElement("way-info", HTMLDivElement);
@@ -94,24 +94,7 @@ export function displaySidebar(wayId: number) {
 
 		// format value
 		let valueString = "<unknown>";
-		switch (typeof value) {
-			case "string":
-				valueString = value;
-				break;
-			case "number":
-				valueString = fromNumber(value);
-				break;
-			case "boolean":
-				valueString = fromBoolean(value);
-				break;
-			case "object":
-				if (value instanceof Array) {
-					const firstItem = valueString[0] as unknown;
-					if (firstItem instanceof Array) valueString = fromDoubleArray(value);
-					else if (typeof firstItem === "string") valueString = fromArray(value);
-				}
-				break;
-		}
+		if (value instanceof OsmValue) valueString = value.toString();
 
 		inferredTagMap.set(formattedTag, valueString);
 	});
