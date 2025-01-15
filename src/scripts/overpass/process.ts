@@ -52,7 +52,7 @@ export function process(allNodes: Map<number, OverpassNode>, allWays: Map<number
 		} satisfies Record<string, OsmValue<ToString>>;
 
 		// format compiled tags
-		performTransforms(compiledTags);
+		const warnings = performTransforms(compiledTags);
 
 		// compile tags into way data
 		const wayData: MergeWay = {
@@ -60,7 +60,7 @@ export function process(allNodes: Map<number, OverpassNode>, allWays: Map<number
 			originalWay: way,
 			orderedNodes: way.nodes,
 			tags: compiledTags,
-			warnings: new Array(),
+			warnings: warnings,
 			inferences: inferredTags
 		};
 

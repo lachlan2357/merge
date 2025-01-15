@@ -1,3 +1,4 @@
+import { TagWarning } from "../overpass/warnings.js";
 import { OsmBoolean, OsmDoubleArray, OsmString, OsmUnsignedInteger } from "./osm.js";
 import { OverpassNode, OverpassWay } from "./overpass.js";
 
@@ -9,8 +10,8 @@ export interface MergeWay {
 	originalWay: OverpassWay;
 	orderedNodes: Array<number>;
 	tags: MergeWayTags;
-	warnings: Array<number>;
 	inferences: InferencesMade;
+	warnings: Map<MergeWayTag, Set<TagWarning>>;
 }
 
 /**

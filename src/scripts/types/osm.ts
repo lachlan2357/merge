@@ -64,7 +64,7 @@ export abstract class OsmValue<T extends ToString> {
 
 export class OsmBoolean extends OsmValue<boolean> {
 	static readonly TRUE = new OsmBoolean(true);
-	static readonly FALSE = new OsmBoolean(true);
+	static readonly FALSE = new OsmBoolean(false);
 
 	constructor(value: boolean | string) {
 		if (typeof value === "boolean") super(value);

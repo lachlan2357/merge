@@ -8,14 +8,20 @@ import {
 } from "../types/osm.js";
 import { InferencesMade, MergeWayTag, MergeWayTags, MergeWayTagsIn } from "../types/processed.js";
 import { isEq, isSet } from "./process.js";
+import { TagWarning, WarningMap } from "./warnings.js";
 
 /**
- * Function signature for inference definition functions.
+ * Function signature for inference functions.
  */
 type InferenceFn<Tag extends MergeWayTag> = (tag: MergeWayTagsIn) => MergeWayTags[Tag] | void;
 
 /**
- * Function signature for transform definition functions.
+ * NOP function to be used when there are no inferences available for a tag.
+ */
+function noInference() {}
+
+/**
+ * Function signature for transform functions.
  */
 type TransformFn<Tag extends MergeWayTag> = (
 	tag: Tag,
@@ -23,7 +29,9 @@ type TransformFn<Tag extends MergeWayTag> = (
 	tags: MergeWayTags
 ) => MergeWayTags[Tag];
 
-function noInference() {}
+/**
+ * NOP function to be used when there are no transforms available for a tag.
+ */
 function noTransform<Tag extends MergeWayTag>(
 	_tag: Tag,
 	value: MergeWayTags[Tag]
@@ -32,9 +40,28 @@ function noTransform<Tag extends MergeWayTag>(
 }
 
 /**
+ * Function signature for validation functions.
+ */
+type ValidationFn<Tag extends MergeWayTag> = (
+	value: MergeWayTags[Tag],
+	tags: MergeWayTags,
+	warnings: Set<TagWarning>
+) => void;
+
+/**
+ * NOP function to be used when there are no validations available for a tag.
+ */
+function noValidation() {}
+
+/**
  * Collection of methods to perform inferences on a certain tag.
  */
 export interface InferenceObject {
+	/**
+	 * The {@link MergeWayTag} this inference object is declared for.
+	 */
+	tag: MergeWayTag;
+
 	/**
 	 * Attempt to calculate the value for this tag based on other existing tags.
 	 *
@@ -84,20 +111,28 @@ export interface InferenceObject {
 	/**
 	 * Format the value in this tag to be the most explicit representation of the data.
 	 *
-	 * @param tags The current state of all tags.
+	 * @param tags The final values of all tags.
 	 */
 	formatValue: (tags: MergeWayTags) => void;
+
+	/**
+	 * Validate the current tag to ensure it makes sense in the context of all other tags.
+	 *
+	 * @param tags The final values of all tags.
+	 * @param warnings Set to keep track of warnings for all tags.
+	 */
+	validateValue: (tags: MergeWayTags, warnings: Set<TagWarning>) => void;
 }
 
 /**
  * Define how a certain tag can be inferred.
  *
- * There are four stages to the inference process, where each stage is performed on all the tags
+ * There are five stages to the inference process, where each stage is performed on all the tags
  * until no changes can be made, then the next stage is performed the same way on tags that remain
  * with no value. Finally, for any tags that still do not have a value, their corresponding default
  * value is set.
  *
- * The four stages of inference are:
+ * The five stages of inference are:
  *
  * 1. {@link calculations} are computations that can be made for the value of a tag based on the
  * values of other tags. It is crucial that these inferences, if run on the same tags object, will
@@ -117,8 +152,13 @@ export interface InferenceObject {
  * shortcuts in the way they are written to make it easier for mappers. The goal of format is to
  * reverse these changes to make it clearest what different values are referring to.
  *
- * A tag must, at the very least, specify a default value, however may not specify a calculation or
- * fallback if the tag has no way of being inferred either way.
+ * 5. {@link validate} is used to check that the value makes sense in the context of all the other
+ * tags. This is not the correct place to ensure values are "proper" (i.e., a surface is specified)
+ * as a valid surface, these checks should be made in a class extending from {@link OsmValue},
+ * restricting possible inner values to the "proper" ones.
+ *
+ * A tag must, at the very least, specify a default value, however may not specify a method for any
+ * of the other stages if it is not applicable.
  *
  * Note: since each inference stage is completely separate, checks made in later stages cannot rely
  * on inferences made from earlier ones.
@@ -128,13 +168,15 @@ export interface InferenceObject {
  * @param fallbacks A method containing each fallback available for this tag.
  * @param defaultValue The value to set for this tag as a last resort.
  * @param format A method specifying how to properly format this tag.
+ * @param validate A method specifying validations checks for this tag.
  */
 function inferenceCreator<Tag extends MergeWayTag>(
 	tag: Tag,
 	calculations: InferenceFn<Tag>,
 	fallbacks: InferenceFn<Tag>,
 	defaultValue: MergeWayTags[Tag],
-	format: TransformFn<Tag>
+	format: TransformFn<Tag>,
+	validate: ValidationFn<Tag>
 ): InferenceObject {
 	const tryCalculate = (
 		tags: MergeWayTagsIn,
@@ -187,8 +229,6 @@ function inferenceCreator<Tag extends MergeWayTag>(
 	const formatValue = (tags: MergeWayTags) => {
 		// ensure tag value exists
 		const value = tags[tag];
-		if (!isSet(value))
-			throw new TypeError(`Tried to format '${tag}', but its value was '${value}'.`);
 
 		// format value
 		const formattedValue = format(tag, value, tags);
@@ -196,7 +236,14 @@ function inferenceCreator<Tag extends MergeWayTag>(
 		tags[tag] = formattedValue;
 	};
 
-	return { tryCalculate, tryFallback, setDefault, formatValue };
+	const validateValue = (tags: MergeWayTags, warnings: Set<TagWarning>) => {
+		const value = tags[tag];
+
+		// validate value
+		validate(value, tags, warnings);
+	};
+
+	return { tag, tryCalculate, tryFallback, setDefault, formatValue, validateValue };
 }
 
 /**
@@ -231,11 +278,22 @@ export function performInferences(tags: MergeWayTagsIn) {
 	return inferredTags;
 }
 
-export function performTransforms(tags: MergeWayTags) {
+export function performTransforms(tags: MergeWayTags): WarningMap {
+	const warningMap = new Map<MergeWayTag, Set<TagWarning>>();
 	const inferences = new Set(Object.values(allInferences));
 
 	// format values
 	for (const obj of inferences) obj.formatValue(tags);
+
+	// validate values
+	for (const obj of inferences) {
+		const warnings = new Set<TagWarning>();
+		obj.validateValue(tags, warnings);
+
+		if (warnings.size > 0) warningMap.set(obj.tag, warnings);
+	}
+
+	return warningMap;
 }
 
 /**
@@ -288,7 +346,16 @@ const allInferences = {
 		},
 		noInference,
 		OsmBoolean.FALSE,
-		noTransform<"oneway">
+		noTransform<"oneway">,
+		(oneway, tags, warnings) => {
+			// oneway === true && lanes:backward !== 0
+			if (oneway.eq(true) && !tags.lanesBackward.eq(0))
+				warnings.add(TagWarning.onewayWithBackwardLanes(tags.lanesBackward));
+
+			// oneway === false && lanes:backward === 0
+			if (oneway.eq(false) && tags.lanesBackward.eq(0))
+				warnings.add(TagWarning.notOnewayWithNoBackwardLanes());
+		}
 	),
 
 	/**
@@ -306,7 +373,8 @@ const allInferences = {
 		() => {},
 		() => {},
 		new OsmString("no"),
-		noTransform<"junction">
+		noTransform<"junction">,
+		noValidation
 	),
 
 	/**
@@ -324,7 +392,8 @@ const allInferences = {
 		() => {},
 		() => {},
 		new OsmString("unknown"),
-		noTransform<"surface">
+		noTransform<"surface">,
+		noValidation
 	),
 
 	/**
@@ -349,7 +418,21 @@ const allInferences = {
 			if (isSet(tags)) return new OsmUnsignedInteger(tags.oneway ? 1 : 2);
 		},
 		new OsmUnsignedInteger(2),
-		noTransform<"lanes">
+		noTransform<"lanes">,
+		(lanes, tags, warnings) => {
+			// lanes === 0
+			if (lanes.eq(0)) warnings.add(TagWarning.lanesEqualZero("lanes"));
+
+			// lanes !== lanes:forward + lanes:backward
+			if (!lanes.eq(tags.lanesForward.add(tags.lanesBackward)))
+				warnings.add(
+					TagWarning.lanesUnequalToForwardBackward(
+						lanes,
+						tags.lanesForward,
+						tags.lanesBackward
+					)
+				);
+		}
 	),
 
 	/**
@@ -375,7 +458,11 @@ const allInferences = {
 				return tags.lanes?.divide(2);
 		},
 		new OsmUnsignedInteger(1),
-		noTransform<"lanesForward">
+		noTransform<"lanesForward">,
+		(lanesForward, tags, warnings) => {
+			// lanes:forward === 0
+			if (lanesForward.eq(0)) warnings.add(TagWarning.lanesEqualZero("lanesForward"));
+		}
 	),
 
 	/**
@@ -401,7 +488,16 @@ const allInferences = {
 				return tags.lanes.divide(2);
 		},
 		new OsmUnsignedInteger(1),
-		noTransform<"lanesBackward">
+		noTransform<"lanesBackward">,
+		(lanesBackward, tags, warnings) => {
+			// oneway === true && lanes:backward !== 0
+			if (tags.oneway.eq(true) && !lanesBackward.eq(0))
+				warnings.add(TagWarning.onewayWithBackwardLanes(tags.lanesBackward));
+
+			// oneway === false && lanes:backward === 0
+			if (tags.oneway.eq(false) && lanesBackward.eq(0))
+				warnings.add(TagWarning.notOnewayWithNoBackwardLanes());
+		}
 	),
 
 	/**
@@ -422,7 +518,19 @@ const allInferences = {
 			if (isSet(tags.lanesForward)) return new OsmDoubleArray("", OsmString);
 		},
 		new OsmDoubleArray("", OsmString),
-		formatters.turnLanes
+		formatters.turnLanes,
+		(turnLanesForward, tags, warnings) => {
+			// length turn:lanes:forward !== lanes:forward
+			if (!tags.lanesForward.eq(turnLanesForward.length))
+				warnings.add(
+					TagWarning.turnLanesUnequalToLanes(
+						"turnLanesForward",
+						turnLanesForward.length,
+						"lanesForward",
+						tags.lanesForward
+					)
+				);
+		}
 	),
 
 	/**
@@ -447,6 +555,18 @@ const allInferences = {
 				);
 		},
 		new OsmDoubleArray(new Array(), OsmString),
-		formatters.turnLanes
+		formatters.turnLanes,
+		(turnLanesBackward, tags, warnings) => {
+			// length turn:lanes:backward !== lanes:backward
+			if (!tags.lanesBackward.eq(turnLanesBackward.length))
+				warnings.add(
+					TagWarning.turnLanesUnequalToLanes(
+						"turnLanesBackward",
+						turnLanesBackward.length,
+						"lanesBackward",
+						tags.lanesBackward
+					)
+				);
+		}
 	)
 };
