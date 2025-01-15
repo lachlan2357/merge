@@ -1,6 +1,6 @@
 import { laneLength, metresToPixels } from "../conversions.js";
 import { DrawnElement, drawArrow, drawLine, drawPolygon, getSurfaceColour } from "../drawing.js";
-import { WAY_INFO, displayPopup } from "../popup/index.js";
+import { WAY_INFO, displaySidebar } from "../popup/index.js";
 import { Settings } from "../settings.js";
 import { State } from "../state/index.js";
 import { getElement } from "../supplement/elements.js";
@@ -398,7 +398,7 @@ class Canvas {
 			// display popup if element is clicked
 			const way = State.allWays.get().get(element.wayId);
 			if (way === undefined) continue;
-			if (clicked) displayPopup(element, way);
+			if (clicked) displaySidebar(element.wayId);
 		}
 
 		return anyHovered;

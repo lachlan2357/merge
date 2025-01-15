@@ -19,6 +19,10 @@ export function toBoolean(value?: string) {
 	}
 }
 
+export function fromBoolean(value: boolean) {
+	return value ? "yes" : "no";
+}
+
 /**
  * Convert an OSM number string to a number.
  *
@@ -34,6 +38,10 @@ export function toNumber(value?: string, fallback?: number) {
 	if (fallback !== undefined) return fallback;
 }
 
+export function fromNumber(number: number) {
+	return number.toString();
+}
+
 /**
  * Convert an OSM array string to an array.
  *
@@ -43,6 +51,10 @@ export function toNumber(value?: string, fallback?: number) {
  */
 export function toArray(value?: string, delimiter = "|") {
 	return value?.split(delimiter).map(value => value || "none");
+}
+
+export function fromArray(value: Array<string>, delimiter = "|") {
+	return value.join(delimiter);
 }
 
 /**
@@ -62,4 +74,12 @@ export function toArray(value?: string, delimiter = "|") {
 export function toDoubleArray(value?: string, innerDelimiter = ";", outerDelimiter = "|") {
 	const array = toArray(value, outerDelimiter);
 	return array?.map(value => value.split(innerDelimiter).map(value => value || "none"));
+}
+
+export function fromDoubleArray(
+	value: Array<Array<string>>,
+	innerDelimiter = ";",
+	outerDelimiter = "|"
+) {
+	return value.map(array => array.join(innerDelimiter)).join(outerDelimiter);
 }

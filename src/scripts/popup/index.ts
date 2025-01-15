@@ -1,7 +1,7 @@
 import { ElementBuilder, FontAwesomeIcon } from "../elements.js";
+import { fromArray, fromBoolean, fromDoubleArray, fromNumber } from "../overpass/conversions.js";
 import { State } from "../state/index.js";
 import { getElement } from "../supplement/elements.js";
-import { OverpassWay } from "../types/overpass.js";
 
 export const POPUP = getElement("popup", HTMLDialogElement);
 export const WAY_INFO = getElement("way-info", HTMLDivElement);
@@ -57,31 +57,94 @@ export abstract class Popup {
 	}
 }
 
-export function displayPopup(element: { wayId: number; path: Path2D }, way: OverpassWay) {
-	WAY_INFO_ID.innerHTML = `Way <a href="https://www.openstreetmap.org/way/${element.wayId}" target="_blank">${element.wayId}</a>`;
+export function displaySidebar(wayId: number) {
+	// get data for way
+	const wayData = State.data.get()?.get(wayId);
+	if (wayData === undefined) return;
 
-	// purge all children before adding new ones
+	// update url
+	WAY_INFO_ID.innerHTML = `Way <a href="https://www.openstreetmap.org/way/${wayId}" target="_blank">${wayId}</a>`;
+
+	// purge all tag entries from any previous ways
 	while (WAY_INFO_TAGS.lastChild) WAY_INFO_TAGS.removeChild(WAY_INFO_TAGS.lastChild);
 
 	// create heading row
 	const tagHeading = new ElementBuilder("th").text("Tag").build();
 	const valueHeading = new ElementBuilder("th").text("Value").build();
-
 	const row = new ElementBuilder("tr").children(tagHeading, valueHeading).build();
-
 	WAY_INFO_TAGS.append(row);
 
-	// content rows
-	Object.entries(way.tags ?? {}).forEach(([tag, value]) => {
+	// compile all original tags
+	const originalTags = wayData.originalWay.tags ?? {};
+	const originalTagMap = new Map<string, string>();
+	Object.entries(originalTags).forEach(([tag, value]) => originalTagMap.set(tag, value));
+
+	// compile all inferred tags
+	const inferredTags = wayData.tags;
+	const inferredTagMap = new Map<string, string>();
+	Object.entries(inferredTags).forEach(([tag, value]) => {
+		// format tag
+		const words = Array.from(tag);
+		let formattedTag = "";
+		for (let i = 0; i < words.length; i++) {
+			const letter = words[i];
+			if (letter.toUpperCase() !== letter) formattedTag += letter;
+			else formattedTag += `:${letter.toLowerCase()}`;
+		}
+
+		// format value
+		let valueString = "<unknown>";
+		switch (typeof value) {
+			case "string":
+				valueString = value;
+				break;
+			case "number":
+				valueString = fromNumber(value);
+				break;
+			case "boolean":
+				valueString = fromBoolean(value);
+				break;
+			case "object":
+				if (value instanceof Array) {
+					const firstItem = valueString[0] as unknown;
+					if (firstItem instanceof Array) valueString = fromDoubleArray(value);
+					else if (typeof firstItem === "string") valueString = fromArray(value);
+				}
+				break;
+		}
+
+		inferredTagMap.set(formattedTag, valueString);
+	});
+
+	// get all tags from both maps
+	const allTagsRaw = originalTagMap
+		.keys()
+		.toArray()
+		.concat(inferredTagMap.keys().toArray())
+		.sort();
+	const allTags = new Set(allTagsRaw);
+
+	// create each content row
+	for (const tag of allTags) {
+		const originalValue = originalTagMap.get(tag);
+		const inferredValue = inferredTagMap.get(tag);
+
+		// generate display string
+		let displayString = originalValue;
+		if (displayString === undefined && inferredValue !== undefined)
+			displayString = `${inferredValue} (inferred)`;
+		displayString ??= "<unknown>";
+
+		// build row
 		const tagCell = new ElementBuilder("td").text(tag.toString()).build();
-		const valueCell = new ElementBuilder("td").text(value.toString()).build();
+		const valueCell = new ElementBuilder("td").text(displayString).build();
 		const tagRow = new ElementBuilder("tr").children(tagCell, valueCell).build();
 
 		WAY_INFO_TAGS.append(tagRow);
-	});
+	}
 
 	WAY_INFO.removeAttribute("hidden");
-	State.selectedWay.set(way.id);
+	State.selectedWay.set(wayId);
 }
 
 export function openID() {
