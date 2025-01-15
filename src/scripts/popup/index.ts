@@ -114,8 +114,10 @@ export function displaySidebar(wayId: number) {
 
 		// generate display string
 		let displayString = originalValue;
-		if (displayString === undefined && inferredValue !== undefined)
-			displayString = `${inferredValue} (inferred)`;
+		if (displayString === undefined && inferredValue !== undefined) {
+			if (inferredValue === "") displayString = "<no value>";
+			else displayString = `${inferredValue} (inferred)`;
+		}
 		displayString ??= "<unknown>";
 
 		// build row

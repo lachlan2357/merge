@@ -4,6 +4,12 @@ export interface ToString {
 	toString(): string;
 }
 
+export interface ArrayLike<T extends ToString> {
+	get length(): number;
+
+	push(value: T): void;
+}
+
 export type OsmConstructor<Value extends OsmValue<ToString>> = new (value: string) => Value;
 
 export abstract class OsmValue<T extends ToString> {
@@ -138,14 +144,33 @@ export class OsmString extends OsmValue<string> {
 	}
 }
 
-export class OsmArray<T extends OsmValue<ToString>> extends OsmValue<Array<T>> {
+export class OsmArray<T extends OsmValue<ToString>>
+	extends OsmValue<Array<T>>
+	implements ArrayLike<T>
+{
 	protected readonly delimiter: string;
+
+	get length() {
+		return this.inner.length;
+	}
 
 	constructor(value: Array<T> | string, constructor: OsmConstructor<T>, delimiter: string = ";") {
 		if (value instanceof Array) super(value);
 		else super(OsmArray.process(value, constructor, delimiter));
 
 		this.delimiter = delimiter;
+	}
+
+	push(value: T) {
+		this.inner.push(value);
+	}
+
+	map<Out extends OsmValue<ToString>>(
+		mapFn: (value: T) => Out,
+		constructor: OsmConstructor<Out>
+	): OsmArray<Out> {
+		const array = this.inner.map(mapFn);
+		return new OsmArray(array, constructor, this.delimiter);
 	}
 
 	protected static process<T extends OsmValue<ToString>>(
@@ -162,9 +187,16 @@ export class OsmArray<T extends OsmValue<ToString>> extends OsmValue<Array<T>> {
 	}
 }
 
-export class OsmDoubleArray<T extends OsmValue<ToString>> extends OsmValue<Array<OsmArray<T>>> {
+export class OsmDoubleArray<T extends OsmValue<ToString>>
+	extends OsmValue<Array<OsmArray<T>>>
+	implements ArrayLike<OsmArray<T>>
+{
 	protected readonly innerDelimiter: string;
 	protected readonly outerDelimiter: string;
+
+	get length() {
+		return this.inner.length;
+	}
 
 	constructor(
 		value: Array<OsmArray<T>> | string,
@@ -179,8 +211,20 @@ export class OsmDoubleArray<T extends OsmValue<ToString>> extends OsmValue<Array
 		this.outerDelimiter = outerDelimiter;
 	}
 
-	getBoth<O>(mapFn: (value: T) => O): Array<Array<O>> {
+	getBoth<Out>(mapFn: (value: T) => Out): Array<Array<Out>> {
 		return this.inner.map(value => value.get().map(mapFn));
+	}
+
+	push(value: OsmArray<T>) {
+		this.inner.push(value);
+	}
+
+	map<Out extends OsmValue<ToString>>(
+		mapFn: (value: OsmArray<T>) => OsmArray<Out>,
+		constructor: OsmConstructor<Out>
+	): OsmDoubleArray<Out> {
+		const array = this.inner.map(mapFn);
+		return new OsmDoubleArray(array, constructor, this.innerDelimiter, this.outerDelimiter);
 	}
 
 	protected static process<T extends OsmValue<ToString>>(

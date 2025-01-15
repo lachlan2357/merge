@@ -8,7 +8,7 @@ import {
 	MergeWayTags,
 	MergeWayTagsIn
 } from "../types/processed.js";
-import { performInferences } from "./inferences.js";
+import { performInferences, performTransforms } from "./inferences.js";
 
 /**
  * Process {@link OverpassNode Nodes}, {@link OverpassWay Ways} and
@@ -39,21 +39,27 @@ export function process(allNodes: Map<number, OverpassNode>, allWays: Map<number
 		// infer data
 		const inferredTags = performInferences(tags);
 
+		// compile tags
+		const compiledTags: MergeWayTags = {
+			oneway: compile(tags, "oneway"),
+			junction: compile(tags, "junction"),
+			lanes: compile(tags, "lanes"),
+			lanesForward: compile(tags, "lanesForward"),
+			lanesBackward: compile(tags, "lanesBackward"),
+			turnLanesForward: compile(tags, "turnLanesForward"),
+			turnLanesBackward: compile(tags, "turnLanesBackward"),
+			surface: compile(tags, "surface")
+		} satisfies Record<string, OsmValue<ToString>>;
+
+		// format compiled tags
+		performTransforms(compiledTags);
+
 		// compile tags into way data
 		const wayData: MergeWay = {
 			nodes: allNodes,
 			originalWay: way,
 			orderedNodes: way.nodes,
-			tags: {
-				oneway: compile(tags, "oneway"),
-				junction: compile(tags, "junction"),
-				lanes: compile(tags, "lanes"),
-				lanesForward: compile(tags, "lanesForward"),
-				lanesBackward: compile(tags, "lanesBackward"),
-				turnLanesForward: compile(tags, "turnLanesForward"),
-				turnLanesBackward: compile(tags, "turnLanesBackward"),
-				surface: compile(tags, "surface")
-			} satisfies Record<string, OsmValue<ToString>>,
+			tags: compiledTags,
 			warnings: new Array(),
 			inferences: inferredTags
 		};

@@ -12,7 +12,24 @@ import { isEq, isSet } from "./process.js";
 /**
  * Function signature for inference definition functions.
  */
-type InferenceFn<Tag extends MergeWayTag> = (tags: MergeWayTagsIn) => MergeWayTags[Tag] | void;
+type InferenceFn<Tag extends MergeWayTag> = (tag: MergeWayTagsIn) => MergeWayTags[Tag] | void;
+
+/**
+ * Function signature for transform definition functions.
+ */
+type TransformFn<Tag extends MergeWayTag> = (
+	tag: Tag,
+	value: MergeWayTags[Tag],
+	tags: MergeWayTags
+) => MergeWayTags[Tag];
+
+function noInference() {}
+function noTransform<Tag extends MergeWayTag>(
+	_tag: Tag,
+	value: MergeWayTags[Tag]
+): MergeWayTags[Tag] {
+	return value;
+}
 
 /**
  * Collection of methods to perform inferences on a certain tag.
@@ -63,17 +80,24 @@ export interface InferenceObject {
 	 * @param inferredTags Set to keep track of tags which have had their values inferred.
 	 */
 	setDefault: (tags: MergeWayTagsIn, inferredTags: InferencesMade) => void;
+
+	/**
+	 * Format the value in this tag to be the most explicit representation of the data.
+	 *
+	 * @param tags The current state of all tags.
+	 */
+	formatValue: (tags: MergeWayTags) => void;
 }
 
 /**
  * Define how a certain tag can be inferred.
  *
- * There are three stages to the inference process, where each stage is performed on all the tags
+ * There are four stages to the inference process, where each stage is performed on all the tags
  * until no changes can be made, then the next stage is performed the same way on tags that remain
  * with no value. Finally, for any tags that still do not have a value, their corresponding default
  * value is set.
  *
- * The three stages of inference are:
+ * The four stages of inference are:
  *
  * 1. {@link calculations} are computations that can be made for the value of a tag based on the
  * values of other tags. It is crucial that these inferences, if run on the same tags object, will
@@ -86,7 +110,12 @@ export interface InferenceObject {
  *
  * 3. {@link default} is the final chance for a value to be set, indicating that a tag's value is
  * completely missing with no chance of any reasonably guess to what the value should be. These
- * values are not based on any data, and act as a default value for a tag.
+ * values are not based on any data, acting as a pure default value.
+ *
+ * 4. {@link format} is designed to ensure the final tag's value is the most canonical version of
+ * itself it can be. Sometimes, values for tags, or partial values in the case of arrays, can use
+ * shortcuts in the way they are written to make it easier for mappers. The goal of format is to
+ * reverse these changes to make it clearest what different values are referring to.
  *
  * A tag must, at the very least, specify a default value, however may not specify a calculation or
  * fallback if the tag has no way of being inferred either way.
@@ -98,12 +127,14 @@ export interface InferenceObject {
  * @param calculations A method containing each calculation available for this tag.
  * @param fallbacks A method containing each fallback available for this tag.
  * @param defaultValue The value to set for this tag as a last resort.
+ * @param format A method specifying how to properly format this tag.
  */
 function inferenceCreator<Tag extends MergeWayTag>(
 	tag: Tag,
 	calculations: InferenceFn<Tag>,
 	fallbacks: InferenceFn<Tag>,
-	defaultValue: MergeWayTags[Tag]
+	defaultValue: MergeWayTags[Tag],
+	format: TransformFn<Tag>
 ): InferenceObject {
 	const tryCalculate = (
 		tags: MergeWayTagsIn,
@@ -153,7 +184,19 @@ function inferenceCreator<Tag extends MergeWayTag>(
 		inferredTags.add(tag);
 	};
 
-	return { tryCalculate, tryFallback, setDefault };
+	const formatValue = (tags: MergeWayTags) => {
+		// ensure tag value exists
+		const value = tags[tag];
+		if (!isSet(value))
+			throw new TypeError(`Tried to format '${tag}', but its value was '${value}'.`);
+
+		// format value
+		const formattedValue = format(tag, value, tags);
+		if (formattedValue === undefined) return;
+		tags[tag] = formattedValue;
+	};
+
+	return { tryCalculate, tryFallback, setDefault, formatValue };
 }
 
 /**
@@ -188,6 +231,44 @@ export function performInferences(tags: MergeWayTagsIn) {
 	return inferredTags;
 }
 
+export function performTransforms(tags: MergeWayTags) {
+	const inferences = new Set(Object.values(allInferences));
+
+	// format values
+	for (const obj of inferences) obj.formatValue(tags);
+}
+
+/**
+ * All available formatters to be used by various tags.
+ */
+const formatters = {
+	/**
+	 * Format a `turn:lanes`, `turn:lanes:*` tag value.
+	 *
+	 * @param value The original value of the `turn:lanes` tag.
+	 * @returns The formatted value of the `turn:lanes` tag.
+	 */
+	turnLanes(
+		tag: MergeWayTag,
+		value: OsmDoubleArray<OsmString>,
+		tags: MergeWayTags
+	): OsmDoubleArray<OsmString> {
+		// ensure formatter is applicable to this tag
+		if (!(tag === "turnLanesForward" || tag === "turnLanesBackward")) return value;
+
+		// add missing lanes to turn:lanes
+		const numLanesObj = tag === "turnLanesForward" ? tags.lanesForward : tags.lanesBackward;
+		const numLanes = numLanesObj.get();
+		while (value.length < numLanes) value.push(new OsmArray(new Array(), OsmString));
+
+		// convert implicit nones (empty element) to explicit nones "none"
+		return value.map(array => {
+			if (array.length === 0) array.push(new OsmString(""));
+			return array.map(value => (value.eq("") ? new OsmString("none") : value), OsmString);
+		}, OsmString);
+	}
+};
+
 /**
  * All available inferences to use when compiling tags.
  */
@@ -205,8 +286,9 @@ const allInferences = {
 			// lanes:backward === 0
 			if (isEq(tags.lanesBackward, 0)) return OsmBoolean.TRUE;
 		},
-		() => {},
-		OsmBoolean.FALSE
+		noInference,
+		OsmBoolean.FALSE,
+		noTransform<"oneway">
 	),
 
 	/**
@@ -223,7 +305,8 @@ const allInferences = {
 		"junction",
 		() => {},
 		() => {},
-		new OsmString("no")
+		new OsmString("no"),
+		noTransform<"junction">
 	),
 
 	/**
@@ -240,7 +323,8 @@ const allInferences = {
 		"surface",
 		() => {},
 		() => {},
-		new OsmString("unknown")
+		new OsmString("unknown"),
+		noTransform<"surface">
 	),
 
 	/**
@@ -264,7 +348,8 @@ const allInferences = {
 			// tags.oneway set
 			if (isSet(tags)) return new OsmUnsignedInteger(tags.oneway ? 1 : 2);
 		},
-		new OsmUnsignedInteger(2)
+		new OsmUnsignedInteger(2),
+		noTransform<"lanes">
 	),
 
 	/**
@@ -289,7 +374,8 @@ const allInferences = {
 			if (isEq(tags.oneway, false) && isSet(tags.lanes) && isEq(tags.lanes.mod(2), 0))
 				return tags.lanes?.divide(2);
 		},
-		new OsmUnsignedInteger(1)
+		new OsmUnsignedInteger(1),
+		noTransform<"lanesForward">
 	),
 
 	/**
@@ -314,7 +400,8 @@ const allInferences = {
 			if (isEq(tags.oneway, false) && isSet(tags.lanes) && isEq(tags.lanes.mod(2), 0))
 				return tags.lanes.divide(2);
 		},
-		new OsmUnsignedInteger(1)
+		new OsmUnsignedInteger(1),
+		noTransform<"lanesBackward">
 	),
 
 	/**
@@ -334,7 +421,8 @@ const allInferences = {
 			// lanes:forward set
 			if (isSet(tags.lanesForward)) return new OsmDoubleArray("", OsmString);
 		},
-		new OsmDoubleArray("", OsmString)
+		new OsmDoubleArray("", OsmString),
+		formatters.turnLanes
 	),
 
 	/**
@@ -348,7 +436,7 @@ const allInferences = {
 		"turnLanesBackward",
 		tags => {
 			// oneway === true
-			if (isEq(tags.oneway, true)) return new OsmDoubleArray("", OsmString);
+			if (isEq(tags.oneway, true)) return new OsmDoubleArray(new Array(), OsmString);
 		},
 		tags => {
 			// lanes:backward set
@@ -358,6 +446,7 @@ const allInferences = {
 					OsmString
 				);
 		},
-		new OsmDoubleArray(new Array(), OsmString)
+		new OsmDoubleArray(new Array(), OsmString),
+		formatters.turnLanes
 	)
 };
