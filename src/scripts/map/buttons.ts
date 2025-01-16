@@ -3,6 +3,7 @@ import { ADVANCED_POPUP } from "../popup/advanced.js";
 import { HELP_POPUP } from "../popup/help.js";
 import { SETTINGS_POPUP } from "../popup/settings.js";
 import { SHARE_POPUP } from "../popup/share.js";
+import { WARNINGS_POPUP } from "../popup/warnings.js";
 import { getElement } from "../supplement/elements.js";
 import { CANVAS } from "./canvas.js";
 
@@ -43,3 +44,8 @@ export const SETTINGS_BUTTON = new MapButton("settings").setAction("click", () =
 export const SHARE_BUTTON = new MapButton("share").setAction("click", () => SHARE_POPUP.display());
 export const HELP_BUTTON = new MapButton("help").setAction("click", () => HELP_POPUP.display());
 export const ABOUT_BUTTON = new MapButton("about").setAction("click", () => ABOUT_POPUP.display());
+
+// warnings
+export const WARNINGS_BUTTON = new MapButton("warnings").setAction("click", () =>
+	WARNINGS_POPUP.display()
+);
