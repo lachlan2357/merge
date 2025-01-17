@@ -1,6 +1,7 @@
 import { ElementBuilder, FontAwesomeIcon } from "../elements.js";
 import { State } from "../state/index.js";
 import { getElement } from "../supplement/elements.js";
+import { OsmValue } from "../types/osm.js";
 export const POPUP = getElement("popup", HTMLDialogElement);
 export const WAY_INFO = getElement("way-info", HTMLDivElement);
 export const WAY_INFO_ID = getElement("wayid", HTMLHeadingElement);
@@ -37,9 +38,14 @@ export class Popup {
         }, { once: true });
     }
 }
-export function displayPopup(element, way) {
-    WAY_INFO_ID.innerHTML = `Way <a href="https://www.openstreetmap.org/way/${element.wayId}" target="_blank">${element.wayId}</a>`;
-    // purge all children before adding new ones
+export function displaySidebar(wayId) {
+    // get data for way
+    const wayData = State.data.get()?.get(wayId);
+    if (wayData === undefined)
+        return;
+    // update url
+    WAY_INFO_ID.innerHTML = `Way <a href="https://www.openstreetmap.org/way/${wayId}" target="_blank">${wayId}</a>`;
+    // purge all tag entries from any previous ways
     while (WAY_INFO_TAGS.lastChild)
         WAY_INFO_TAGS.removeChild(WAY_INFO_TAGS.lastChild);
     // create heading row
@@ -47,15 +53,58 @@ export function displayPopup(element, way) {
     const valueHeading = new ElementBuilder("th").text("Value").build();
     const row = new ElementBuilder("tr").children(tagHeading, valueHeading).build();
     WAY_INFO_TAGS.append(row);
-    // content rows
-    Object.entries(way.tags ?? {}).forEach(([tag, value]) => {
+    // compile all original tags
+    const originalTags = wayData.originalWay.tags ?? {};
+    const originalTagMap = new Map();
+    Object.entries(originalTags).forEach(([tag, value]) => originalTagMap.set(tag, value));
+    // compile all inferred tags
+    const inferredTags = wayData.tags;
+    const inferredTagMap = new Map();
+    Object.entries(inferredTags).forEach(([tag, value]) => {
+        // format tag
+        const words = Array.from(tag);
+        let formattedTag = "";
+        for (let i = 0; i < words.length; i++) {
+            const letter = words[i];
+            if (letter.toUpperCase() !== letter)
+                formattedTag += letter;
+            else
+                formattedTag += `:${letter.toLowerCase()}`;
+        }
+        // format value
+        let valueString = "<unknown>";
+        if (value instanceof OsmValue)
+            valueString = value.toString();
+        inferredTagMap.set(formattedTag, valueString);
+    });
+    // get all tags from both maps
+    const allTagsRaw = originalTagMap
+        .keys()
+        .toArray()
+        .concat(inferredTagMap.keys().toArray())
+        .sort();
+    const allTags = new Set(allTagsRaw);
+    // create each content row
+    for (const tag of allTags) {
+        const originalValue = originalTagMap.get(tag);
+        const inferredValue = inferredTagMap.get(tag);
+        // generate display string
+        let displayString = originalValue;
+        if (displayString === undefined && inferredValue !== undefined) {
+            if (inferredValue === "")
+                displayString = "<no value>";
+            else
+                displayString = `${inferredValue} (inferred)`;
+        }
+        displayString ??= "<unknown>";
+        // build row
         const tagCell = new ElementBuilder("td").text(tag.toString()).build();
-        const valueCell = new ElementBuilder("td").text(value.toString()).build();
+        const valueCell = new ElementBuilder("td").text(displayString).build();
         const tagRow = new ElementBuilder("tr").children(tagCell, valueCell).build();
         WAY_INFO_TAGS.append(tagRow);
-    });
+    }
     WAY_INFO.removeAttribute("hidden");
-    State.selectedWay.set(way.id);
+    State.selectedWay.set(wayId);
 }
 export function openID() {
     window.open(`https://www.openstreetmap.org/relation/${State.currentRelationId.get()}`, "_blank", "noreferrer noopener");

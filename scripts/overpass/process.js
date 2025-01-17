@@ -1,7 +1,6 @@
 import { MessageBoxError } from "../messages.js";
-import { Atomic } from "../state/index.js";
-import { toBoolean, toDoubleArray, toNumber } from "./conversions.js";
-import { inferJunction, inferLanes, inferLanesBackward, inferLanesForward, inferOneway, inferSurface, inferTurnLanesBackward, inferTurnLanesForward } from "./inferences.js";
+import { OsmBoolean, OsmString, OsmUnsignedInteger, OsmValue } from "../types/osm.js";
+import { performInferences, performTransforms } from "./inferences.js";
 /**
  * Process {@link OverpassNode Nodes}, {@link OverpassWay Ways} and
  * {@link OverpassRelation Relations} into data the map can use to display.
@@ -16,46 +15,39 @@ export function process(allNodes, allWays) {
         // initial compilation of tag data, to be inferred
         const tagsRaw = way.tags;
         const tags = {
-            oneway: toBoolean(tagsRaw?.oneway),
-            junction: tagsRaw?.junction,
-            surface: tagsRaw?.surface,
-            lanes: toNumber(tagsRaw?.lanes),
-            lanesForward: toNumber(tagsRaw?.["lanes:forward"]),
-            lanesBackward: toNumber(tagsRaw?.["lanes:backward"]),
-            turnLanes: toDoubleArray(tagsRaw?.["turn:lanes"]),
-            turnLanesForward: toDoubleArray(tagsRaw?.["turn:lanes:forward"]),
-            turnLanesBackward: toDoubleArray(tagsRaw?.["turn:lanes:backward"])
+            oneway: OsmValue.from(tagsRaw?.oneway, OsmBoolean),
+            junction: OsmValue.from(tagsRaw?.junction, OsmString),
+            surface: OsmValue.from(tagsRaw?.surface, OsmString),
+            lanes: OsmValue.from(tagsRaw?.lanes, OsmUnsignedInteger),
+            lanesForward: OsmValue.from(tagsRaw?.["lanes:forward"], OsmUnsignedInteger),
+            lanesBackward: OsmValue.from(tagsRaw?.["lanes:backward"], OsmUnsignedInteger),
+            turnLanes: OsmValue.fromDoubleArray(tagsRaw?.["turn:lanes"], OsmString),
+            turnLanesForward: OsmValue.fromDoubleArray(tagsRaw?.["turn:lanes:forward"], OsmString),
+            turnLanesBackward: OsmValue.fromDoubleArray(tagsRaw?.["turn:lanes:backward"], OsmString)
         };
         // infer data
-        const changed = new Atomic(true);
-        while (changed.get() === true) {
-            changed.set(false);
-            inferOneway(tags, changed);
-            inferJunction(tags, changed);
-            inferSurface(tags, changed);
-            inferLanes(tags, changed);
-            inferLanesForward(tags, changed);
-            inferLanesBackward(tags, changed);
-            inferTurnLanesForward(tags, changed);
-            inferTurnLanesBackward(tags, changed);
-        }
+        const inferredTags = performInferences(tags);
+        // compile tags
+        const compiledTags = {
+            oneway: compile(tags, "oneway"),
+            junction: compile(tags, "junction"),
+            lanes: compile(tags, "lanes"),
+            lanesForward: compile(tags, "lanesForward"),
+            lanesBackward: compile(tags, "lanesBackward"),
+            turnLanesForward: compile(tags, "turnLanesForward"),
+            turnLanesBackward: compile(tags, "turnLanesBackward"),
+            surface: compile(tags, "surface")
+        };
+        // format compiled tags
+        const warnings = performTransforms(compiledTags);
         // compile tags into way data
         const wayData = {
             nodes: allNodes,
             originalWay: way,
             orderedNodes: way.nodes,
-            tags: {
-                oneway: compile(tags, "oneway"),
-                junction: compile(tags, "junction"),
-                lanes: compile(tags, "lanes"),
-                lanesForward: compile(tags, "lanesForward"),
-                lanesBackward: compile(tags, "lanesBackward"),
-                turnLanesForward: compile(tags, "turnLanesForward"),
-                turnLanesBackward: compile(tags, "turnLanesBackward"),
-                surface: compile(tags, "surface")
-            },
-            warnings: new Array(),
-            inferences: new Set()
+            tags: compiledTags,
+            warnings: warnings,
+            inferences: inferredTags
         };
         data.set(id, wayData);
     }
@@ -71,26 +63,28 @@ export function process(allNodes, allWays) {
  */
 function compile(tags, tag) {
     const value = tags[tag];
-    if (isNullish(value))
-        throw TagError.missingTag(tag);
+    if (!isSet(value))
+        throw new MissingTagError(tag);
     return value;
 }
 /**
- * Determine if a value is null-ish.
+ * Determine whether the value of a tag has been set.
  *
- * A null-ish value is one that is either `null` or `undefined`.
+ * A tag is deemed to be set if its value is neither `null` or `undefined`.
  *
- * @param value The value to test.
- * @returns Whether the value is null-ish.
+ * @param tag The tag to check if set.
+ * @returns Whether the tag has its value set.
  */
-export function isNullish(value) {
-    return value === null || value === undefined;
+export function isSet(tag) {
+    return !(tag === null || tag === undefined);
 }
-export class TagError extends MessageBoxError {
-    static missingTag(tag) {
-        return new TagError(`Tag '${tag}' is missing and could not be inferred`);
-    }
-    static invalidTagValue(type, value) {
-        return new TagError(`Value '${value}' is not valid for type '${type}'`);
+export function isEq(tag, cmp) {
+    if (!isSet(tag))
+        return false;
+    return tag.eq(cmp);
+}
+class MissingTagError extends MessageBoxError {
+    constructor(tag) {
+        super(`Tag '${tag}' is missing and could not be inferred.`);
     }
 }
