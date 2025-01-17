@@ -1,6 +1,6 @@
 import { laneLength, metresToPixels } from "../conversions.js";
 import { DrawnElement, drawArrow, drawLine, drawPolygon, getSurfaceColour } from "../drawing.js";
-import { WAY_INFO, displayPopup } from "../popup/index.js";
+import { WAY_INFO, displaySidebar } from "../popup/index.js";
 import { Settings } from "../settings.js";
 import { State } from "../state/index.js";
 import { getElement } from "../supplement/elements.js";
@@ -157,7 +157,7 @@ class Canvas {
 
 		const drawnElementsCache = new Array<DrawnElement>();
 		dataCache.forEach((way, wayId) => {
-			const lanes = way.tags.lanes || 2;
+			const lanes = way.tags.lanes.get();
 
 			for (let i = 0; i < way.orderedNodes.length; i++) {
 				const thisNodeId = way.orderedNodes[i];
@@ -249,14 +249,20 @@ class Canvas {
 				)
 					continue;
 
-				const { lanesForward, lanesBackward, turnLanesForward, turnLanesBackward } =
-					way.tags;
+				const lanesForward = way.tags.lanesForward.get();
+				const lanesBackward = way.tags.lanesBackward.get();
+				const turnLanesForward = way.tags.turnLanesForward.getBoth(value =>
+					value.toString()
+				);
+				const turnLanesBackward = way.tags.turnLanesBackward.getBoth(value =>
+					value.toString()
+				);
 
 				const leftTraffic = Settings.get("leftHandTraffic");
 				const directionality = leftTraffic ? 1 : -1;
 
 				for (let i = 0; i < lanes; i++) {
-					const roadColour = getSurfaceColour(way.tags.surface);
+					const roadColour = getSurfaceColour(way.tags.surface.get());
 
 					const thisCoefficient = trigCoord.multiply(laneLength).multiply(i);
 					const nextCoefficient = trigCoord.multiply(laneLength).multiply(i + 1);
@@ -328,7 +334,7 @@ class Canvas {
 				const centreStartCoord = thisTopCornerPos.subtract(trigCoefficient);
 				const centreEndCoord = nextTopCornerPos.subtract(trigCoefficient);
 
-				if (!way.tags.oneway)
+				if (way.tags.oneway.eq(false))
 					drawLine(centreStartCoord, centreEndCoord, {
 						thickness: metresToPixels(0.5),
 						colour: "white"
@@ -398,7 +404,7 @@ class Canvas {
 			// display popup if element is clicked
 			const way = State.allWays.get().get(element.wayId);
 			if (way === undefined) continue;
-			if (clicked) displayPopup(element, way);
+			if (clicked) displaySidebar(element.wayId);
 		}
 
 		return anyHovered;

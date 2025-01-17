@@ -1,18 +1,14 @@
 import { MessageBoxError } from "../messages.js";
-import { Atomic } from "../state/index.js";
+import { OsmBoolean, OsmString, OsmUnsignedInteger, OsmValue, ToString } from "../types/osm.js";
 import { OverpassNode, OverpassWay } from "../types/overpass.js";
-import { MergeData, MergeWay, MergeWayTags, MergeWayTagsIn } from "../types/processed.js";
-import { toBoolean, toDoubleArray, toNumber } from "./conversions.js";
 import {
-	inferJunction,
-	inferLanes,
-	inferLanesBackward,
-	inferLanesForward,
-	inferOneway,
-	inferSurface,
-	inferTurnLanesBackward,
-	inferTurnLanesForward
-} from "./inferences.js";
+	MergeData,
+	MergeWay,
+	MergeWayTag,
+	MergeWayTags,
+	MergeWayTagsIn
+} from "../types/processed.js";
+import { performInferences, performTransforms } from "./inferences.js";
 
 /**
  * Process {@link OverpassNode Nodes}, {@link OverpassWay Ways} and
@@ -29,51 +25,43 @@ export function process(allNodes: Map<number, OverpassNode>, allWays: Map<number
 		// initial compilation of tag data, to be inferred
 		const tagsRaw = way.tags;
 		const tags: MergeWayTagsIn = {
-			oneway: toBoolean(tagsRaw?.oneway),
-			junction: tagsRaw?.junction,
-			surface: tagsRaw?.surface,
-			lanes: toNumber(tagsRaw?.lanes),
-			lanesForward: toNumber(tagsRaw?.["lanes:forward"]),
-			lanesBackward: toNumber(tagsRaw?.["lanes:backward"]),
-			turnLanes: toDoubleArray(tagsRaw?.["turn:lanes"]),
-			turnLanesForward: toDoubleArray(tagsRaw?.["turn:lanes:forward"]),
-			turnLanesBackward: toDoubleArray(tagsRaw?.["turn:lanes:backward"])
+			oneway: OsmValue.from(tagsRaw?.oneway, OsmBoolean),
+			junction: OsmValue.from(tagsRaw?.junction, OsmString),
+			surface: OsmValue.from(tagsRaw?.surface, OsmString),
+			lanes: OsmValue.from(tagsRaw?.lanes, OsmUnsignedInteger),
+			lanesForward: OsmValue.from(tagsRaw?.["lanes:forward"], OsmUnsignedInteger),
+			lanesBackward: OsmValue.from(tagsRaw?.["lanes:backward"], OsmUnsignedInteger),
+			turnLanes: OsmValue.fromDoubleArray(tagsRaw?.["turn:lanes"], OsmString),
+			turnLanesForward: OsmValue.fromDoubleArray(tagsRaw?.["turn:lanes:forward"], OsmString),
+			turnLanesBackward: OsmValue.fromDoubleArray(tagsRaw?.["turn:lanes:backward"], OsmString)
 		};
 
 		// infer data
-		const changed = new Atomic(true);
-		while (changed.get() === true) {
-			changed.set(false);
+		const inferredTags = performInferences(tags);
 
-			inferOneway(tags, changed);
-			inferJunction(tags, changed);
-			inferSurface(tags, changed);
+		// compile tags
+		const compiledTags: MergeWayTags = {
+			oneway: compile(tags, "oneway"),
+			junction: compile(tags, "junction"),
+			lanes: compile(tags, "lanes"),
+			lanesForward: compile(tags, "lanesForward"),
+			lanesBackward: compile(tags, "lanesBackward"),
+			turnLanesForward: compile(tags, "turnLanesForward"),
+			turnLanesBackward: compile(tags, "turnLanesBackward"),
+			surface: compile(tags, "surface")
+		} satisfies Record<string, OsmValue<ToString>>;
 
-			inferLanes(tags, changed);
-			inferLanesForward(tags, changed);
-			inferLanesBackward(tags, changed);
-
-			inferTurnLanesForward(tags, changed);
-			inferTurnLanesBackward(tags, changed);
-		}
+		// format compiled tags
+		const warnings = performTransforms(compiledTags);
 
 		// compile tags into way data
 		const wayData: MergeWay = {
 			nodes: allNodes,
 			originalWay: way,
 			orderedNodes: way.nodes,
-			tags: {
-				oneway: compile(tags, "oneway"),
-				junction: compile(tags, "junction"),
-				lanes: compile(tags, "lanes"),
-				lanesForward: compile(tags, "lanesForward"),
-				lanesBackward: compile(tags, "lanesBackward"),
-				turnLanesForward: compile(tags, "turnLanesForward"),
-				turnLanesBackward: compile(tags, "turnLanesBackward"),
-				surface: compile(tags, "surface")
-			},
-			warnings: new Array(),
-			inferences: new Set()
+			tags: compiledTags,
+			warnings: warnings,
+			inferences: inferredTags
 		};
 
 		data.set(id, wayData);
@@ -90,33 +78,37 @@ export function process(allNodes: Map<number, OverpassNode>, allWays: Map<number
  * @throws {TagError} If the tag could not be compiled.
  * @returns The compiled tag.
  */
-function compile<Tag extends keyof MergeWayTags, Value extends MergeWayTags[Tag]>(
+function compile<Tag extends MergeWayTag, Value extends MergeWayTags[Tag]>(
 	tags: Partial<MergeWayTags>,
 	tag: Tag
 ): Value {
 	const value = tags[tag];
-	if (isNullish(value)) throw TagError.missingTag(tag);
+	if (!isSet(value)) throw new MissingTagError(tag);
 	return value as Value;
 }
 
 /**
- * Determine if a value is null-ish.
+ * Determine whether the value of a tag has been set.
  *
- * A null-ish value is one that is either `null` or `undefined`.
+ * A tag is deemed to be set if its value is neither `null` or `undefined`.
  *
- * @param value The value to test.
- * @returns Whether the value is null-ish.
+ * @param tag The tag to check if set.
+ * @returns Whether the tag has its value set.
  */
-export function isNullish(value: unknown): value is null | undefined {
-	return value === null || value === undefined;
+export function isSet<T>(tag: T | undefined | null): tag is T {
+	return !(tag === null || tag === undefined);
 }
 
-export class TagError extends MessageBoxError {
-	static missingTag(tag: string) {
-		return new TagError(`Tag '${tag}' is missing and could not be inferred`);
-	}
+export function isEq<Value extends OsmValue<T>, T extends ToString>(
+	tag: Value | undefined | null,
+	cmp: Value | T
+): boolean {
+	if (!isSet(tag)) return false;
+	return tag.eq(cmp);
+}
 
-	static invalidTagValue(type: string, value: string) {
-		return new TagError(`Value '${value}' is not valid for type '${type}'`);
+class MissingTagError extends MessageBoxError {
+	constructor(tag: string) {
+		super(`Tag '${tag}' is missing and could not be inferred.`);
 	}
 }
