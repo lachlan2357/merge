@@ -1,5 +1,5 @@
 import { DrawnElement } from "../drawing.js";
-import { CANVAS, MultiplierData } from "../map/canvas.js";
+import { MultiplierData } from "../map/canvas.js";
 import { ScreenCoordinate } from "../types/coordinate.js";
 import { OverpassWay } from "../types/overpass.js";
 import { MergeData } from "../types/processed.js";
@@ -14,9 +14,15 @@ export interface Compute {
 	 *
 	 * In most situations, this method will be called automatically by containers this container is
 	 * dependent on, however it can also be called manually if desired.
+	 *
+	 * It is imperative that this method calls both {@link GraphItem.beginCalculation}
+	 * and {@link GraphItem.finishCalculation} when it begins and finishes a calculation it if
+	 * wishes to utility the automatic dependency management system.
 	 */
 	compute(): void;
 }
+
+export type ComputeFn<T> = () => T;
 
 /**
  * A state container that can only store data.
@@ -48,10 +54,9 @@ export class Store<T> extends GraphItem {
 	 * passed by value, and for all object values, passed by reference. For this reason, even
 	 * though objects can be retrieved through this method and subsequently modified, they should
 	 * never be as doing so will bypass the state management from this container.
-	 *
-	 * @returns
 	 */
 	get() {
+		this.wasAccessed();
 		return this.data;
 	}
 }
@@ -110,7 +115,7 @@ export class Computed<T> extends Store<T> implements Compute {
 	/**
 	 * The function to compute a new value for this container.
 	 */
-	protected computeFn: () => T;
+	protected computeFn: ComputeFn<T>;
 
 	/**
 	 * Create a {@link Computed} container by defining a compute function.
@@ -127,15 +132,21 @@ export class Computed<T> extends Store<T> implements Compute {
 	 * @param computeFn The function that will be used to compute new values.
 	 * @param dependencies All dependencies of this computation.
 	 */
-	constructor(computeFn: () => T, dependencies: Array<Store<unknown>>) {
+	constructor(computeFn: ComputeFn<T>) {
 		super(computeFn());
 		this.computeFn = computeFn;
 
-		for (const dependency of dependencies) this.registerDependency(dependency);
+		// re-compute the value so that the dependency system can track it
+		this.compute();
 	}
 
 	compute() {
+		// recompute value
+		this.beginCalculation();
 		this.data = this.computeFn();
+		this.finishCalculation();
+
+		// notify dependencies
 		this.notifyDependents();
 	}
 }
@@ -150,7 +161,7 @@ export class Effect extends GraphItem implements Compute {
 	/**
 	 * The function to perform effects for this container.
 	 */
-	protected effectFn: () => void;
+	protected effectFn: ComputeFn<void>;
 
 	/**
 	 * Create a {@link Effect} container by defining an effect function.
@@ -158,15 +169,19 @@ export class Effect extends GraphItem implements Compute {
 	 * @param effectFn The function that will be used to perform effects.
 	 * @param dependencies All dependencies of this computation.
 	 */
-	constructor(effectFn: () => void, dependencies: Array<Store<unknown>>) {
+	constructor(effectFn: ComputeFn<void>) {
 		super();
 		this.effectFn = effectFn;
 
-		for (const dependency of dependencies) this.registerDependency(dependency);
+		// re-compute the value so that the dependency system can track it
+		this.compute();
 	}
 
 	compute() {
+		// recalculate value
+		this.beginCalculation();
 		this.effectFn();
+		this.finishCalculation();
 	}
 }
 
@@ -224,15 +239,15 @@ export class State {
 		multiplier = Math.sqrt(minDiff);
 
 		return { minLat, maxLat, minLon, maxLon, multiplier };
-	}, [this.data, this.canvasDimensions]);
+	});
 
 	static readonly totalMultiplierRaw = new Computed(() => {
 		return this.multiplier.get().multiplier + this.zoom.get();
-	}, [this.multiplier, this.zoom]);
+	});
 
 	static readonly totalMultiplier = new Computed(() => {
 		return this.totalMultiplierRaw.get() ** 2;
-	}, [this.totalMultiplierRaw]);
+	});
 
 	static readonly offset = new Computed(() => {
 		const totalMultiplierCache = this.totalMultiplier.get();
@@ -249,32 +264,5 @@ export class State {
 				this.mouseOffset.get().y +
 				this.zoomOffset.get().y
 		);
-	}, [
-		this.totalMultiplier,
-		this.multiplier,
-		this.canvasDimensions,
-		this.mouseOffset,
-		this.zoomOffset
-	]);
-
-	// effects
-	static readonly redraw = new Effect(
-		() => CANVAS.draw(),
-		[
-			this.data,
-			this.canvasDimensions,
-			this.mousePos,
-			this.mouseDownPos,
-			this.mouseOffset,
-			this.zoomOffset,
-			this.mouseDown,
-			this.mouseMoved,
-			this.zoom
-		]
-	);
-
-	static readonly permalink = new Effect(
-		() => (window.location.hash = `#${this.currentRelationId.get()}`),
-		[this.currentRelationId]
-	);
+	});
 }
