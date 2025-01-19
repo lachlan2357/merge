@@ -2,7 +2,7 @@ import { laneLength, metresToPixels } from "../conversions.js";
 import { drawArrow, drawLine, drawPolygon, getSurfaceColour } from "../drawing.js";
 import { WAY_INFO, displaySidebar } from "../popup/index.js";
 import { Settings } from "../settings.js";
-import { State } from "../state/index.js";
+import { Effect, State } from "../state/index.js";
 import { getElement } from "../supplement/elements.js";
 import { zoomIncrement } from "../supplement/index.js";
 import { ScreenCoordinate, WorldCoordinate } from "../types/coordinate.js";
@@ -332,4 +332,7 @@ class Canvas {
         return context;
     }
 }
+// canvas instance
 export const CANVAS = new Canvas("canvas", "canvas-container", "main");
+// canvas effects
+new Effect(() => CANVAS.draw());

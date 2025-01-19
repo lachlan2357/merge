@@ -1,4 +1,3 @@
-import { CANVAS } from "../map/canvas.js";
 import { ScreenCoordinate } from "../types/coordinate.js";
 import { GraphItem } from "./graph.js";
 /**
@@ -29,10 +28,9 @@ export class Store extends GraphItem {
      * passed by value, and for all object values, passed by reference. For this reason, even
      * though objects can be retrieved through this method and subsequently modified, they should
      * never be as doing so will bypass the state management from this container.
-     *
-     * @returns
      */
     get() {
+        this.wasAccessed();
         return this.data;
     }
 }
@@ -104,14 +102,18 @@ export class Computed extends Store {
      * @param computeFn The function that will be used to compute new values.
      * @param dependencies All dependencies of this computation.
      */
-    constructor(computeFn, dependencies) {
+    constructor(computeFn) {
         super(computeFn());
         this.computeFn = computeFn;
-        for (const dependency of dependencies)
-            this.registerDependency(dependency);
+        // re-compute the value so that the dependency system can track it
+        this.compute();
     }
     compute() {
+        // recompute value
+        this.beginCalculation();
         this.data = this.computeFn();
+        this.finishCalculation();
+        // notify dependencies
         this.notifyDependents();
     }
 }
@@ -132,14 +134,17 @@ export class Effect extends GraphItem {
      * @param effectFn The function that will be used to perform effects.
      * @param dependencies All dependencies of this computation.
      */
-    constructor(effectFn, dependencies) {
+    constructor(effectFn) {
         super();
         this.effectFn = effectFn;
-        for (const dependency of dependencies)
-            this.registerDependency(dependency);
+        // re-compute the value so that the dependency system can track it
+        this.compute();
     }
     compute() {
+        // recalculate value
+        this.beginCalculation();
         this.effectFn();
+        this.finishCalculation();
     }
 }
 /**
@@ -185,13 +190,13 @@ export class State {
         const minDiff = Math.min(diffScale.x, diffScale.y);
         multiplier = Math.sqrt(minDiff);
         return { minLat, maxLat, minLon, maxLon, multiplier };
-    }, [this.data, this.canvasDimensions]);
+    });
     static totalMultiplierRaw = new Computed(() => {
         return this.multiplier.get().multiplier + this.zoom.get();
-    }, [this.multiplier, this.zoom]);
+    });
     static totalMultiplier = new Computed(() => {
         return this.totalMultiplierRaw.get() ** 2;
-    }, [this.totalMultiplierRaw]);
+    });
     static offset = new Computed(() => {
         const totalMultiplierCache = this.totalMultiplier.get();
         const { minLon, maxLon, minLat, maxLat } = this.multiplier.get();
@@ -203,24 +208,5 @@ export class State {
             (minLat + (maxLat - minLat) / 2) * totalMultiplierCache +
             this.mouseOffset.get().y +
             this.zoomOffset.get().y);
-    }, [
-        this.totalMultiplier,
-        this.multiplier,
-        this.canvasDimensions,
-        this.mouseOffset,
-        this.zoomOffset
-    ]);
-    // effects
-    static redraw = new Effect(() => CANVAS.draw(), [
-        this.data,
-        this.canvasDimensions,
-        this.mousePos,
-        this.mouseDownPos,
-        this.mouseOffset,
-        this.zoomOffset,
-        this.mouseDown,
-        this.mouseMoved,
-        this.zoom
-    ]);
-    static permalink = new Effect(() => (window.location.hash = `#${this.currentRelationId.get()}`), [this.currentRelationId]);
+    });
 }
