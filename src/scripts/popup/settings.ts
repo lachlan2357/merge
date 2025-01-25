@@ -22,6 +22,12 @@ export class SettingsPopup extends Popup {
 			// fetch the input box
 			const inputElement = setting.inputElement.build();
 
+			// create reset button
+			const resetButton = new ElementBuilder("button")
+				.text("Reset")
+				.event("click", () => setting.reset())
+				.build();
+
 			// append children
 			const innerDiv = new ElementBuilder("div")
 				.class("setting-text")
@@ -29,7 +35,7 @@ export class SettingsPopup extends Popup {
 				.build();
 			const outerDiv = new ElementBuilder("div")
 				.class("setting-container")
-				.children(innerDiv, inputElement)
+				.children(innerDiv, inputElement, resetButton)
 				.build();
 			list.append(outerDiv);
 		}

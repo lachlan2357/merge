@@ -56,6 +56,7 @@ export abstract class Setting<T extends ToString> {
 
 	set value(newValue: T) {
 		this.currentValue = newValue;
+		this.configureInputElement(this.inputElement);
 		this.save();
 	}
 
@@ -95,6 +96,13 @@ export abstract class Setting<T extends ToString> {
 
 		// build input element
 		this.inputElement = this.buildInputElement();
+	}
+
+	/**
+	 * Reset this setting to its default value.
+	 */
+	reset() {
+		this.value = this.defaultValue;
 	}
 
 	/**
