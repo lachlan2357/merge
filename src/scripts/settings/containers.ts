@@ -125,6 +125,7 @@ export abstract class Setting<T extends ToString> {
 
 		// build input element
 		this.inputElement = this.buildInputElement();
+		this.setInputValue();
 	}
 
 	/**
