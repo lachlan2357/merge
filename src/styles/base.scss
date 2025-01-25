@@ -200,6 +200,10 @@ button:has(i:only-child) {
 	input:invalid {
 		outline: 2px solid var(--error);
 	}
+
+	button {
+		padding: 0.5em 1em;
+	}
 }
 
 #welcome-img {
