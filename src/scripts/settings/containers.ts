@@ -183,7 +183,7 @@ export class BooleanSetting extends Setting<boolean> {
 	}
 
 	configureInputElement(builder: ElementBuilder<"input">) {
-		builder.inputType("checkbox").inputChecked(this.value);
+		builder.inputType("checkbox").setChecked(this.value);
 	}
 
 	protected getValueFromInput(input: HTMLInputElement) {
@@ -201,7 +201,7 @@ export class UrlSetting extends Setting<URL> {
 	}
 
 	configureInputElement(builder: ElementBuilder<"input">): void {
-		builder.inputType("url").inputValue(this.value.toString());
+		builder.inputType("url").setValue(this.value.toString());
 	}
 
 	protected getValueFromInput(input: HTMLInputElement) {
