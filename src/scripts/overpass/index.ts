@@ -1,7 +1,7 @@
 import { Database } from "../database.js";
 import { CANVAS } from "../map/canvas.js";
 import { MESSAGE_BOX, MessageBoxError } from "../messages.js";
-import { Settings } from "../settings.js";
+import * as Settings from "../settings/index.js";
 import { State } from "../state/index.js";
 import {
 	OverpassNode,

@@ -1,7 +1,7 @@
 import { laneLength, metresToPixels } from "../conversions.js";
 import { DrawnElement, drawArrow, drawLine, drawPolygon, getSurfaceColour } from "../drawing.js";
 import { WAY_INFO, displaySidebar } from "../popup/index.js";
-import { Settings } from "../settings.js";
+import * as Settings from "../settings/index.js";
 import { Effect, State } from "../state/index.js";
 import { getElement } from "../supplement/elements.js";
 import { zoomIncrement } from "../supplement/index.js";

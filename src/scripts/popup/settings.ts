@@ -1,5 +1,5 @@
 import { ElementBuilder } from "../elements.js";
-import { Settings, SettingsObject } from "../settings.js";
+import * as Settings from "../settings/index.js";
 import { Popup } from "./index.js";
 
 export class SettingsPopup extends Popup {
@@ -7,37 +7,25 @@ export class SettingsPopup extends Popup {
 		const heading = new ElementBuilder("h2").text("Settings").build();
 		const list = new ElementBuilder("div").id("settings-list").build();
 
-		const keys = Settings.keys();
-		for (let i = 0, n = keys.length; i < n; i++) {
-			const key = keys[i];
-
+		for (const key of Settings.keys()) {
+			// ensure setting should be displayed in the menu
 			const setting = Settings.getObject(key);
-			if (!setting.inSettings) continue;
+			if (!setting.inSettingsMenu) continue;
 
-			const settingDescription = setting.description;
-			const isBoolean = typeof setting.value === "boolean";
-
+			// setting info
 			const heading = new ElementBuilder("h3").text(setting.name).build();
 			const text = new ElementBuilder("p")
 				.class("setting-title")
-				.text(settingDescription)
+				.text(setting.description)
 				.build();
 
-			const inputBox = new ElementBuilder("input")
+			// fetch the input box
+			const inputBox = setting.value
+				.buildInputBox()
 				.class("setting-input")
-				.inputType(isBoolean ? "checkbox" : "text")
-				.attribute("data-setting", key)
-				.event("change", e => {
-					const target = e.target as HTMLInputElement;
-					Settings.set(
-						target.getAttribute("data-setting") as keyof SettingsObject,
-						target.getAttribute("type") == "checkbox" ? target.checked : target.value
-					);
-				});
+				.attribute("data-setting", key);
 
-			if (typeof setting.value === "boolean") inputBox.inputChecked(setting.value);
-			else inputBox.inputValue(setting.value);
-
+			// append children
 			const innerDiv = new ElementBuilder("div")
 				.class("setting-text")
 				.children(heading, text)
@@ -46,7 +34,6 @@ export class SettingsPopup extends Popup {
 				.class("setting-container")
 				.children(innerDiv, inputBox.build())
 				.build();
-
 			list.append(outerDiv);
 		}
 
