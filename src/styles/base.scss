@@ -22,6 +22,8 @@
 	--radius: 5px;
 
 	// colours
+	--error: crimson;
+
 	--copy: darkgreen;
 	--copy-hover: green;
 	--copy-active: lightgreen;
@@ -186,12 +188,17 @@ button:has(i:only-child) {
 		top: 1em;
 	}
 
-	input[type="text"] {
+	input[type="text"],
+	input[type="url"] {
 		background-color: var(--foreground-colour);
 		border: none;
 		border-radius: 5px;
 		height: 2.5em;
 		padding-inline: 10px;
+	}
+
+	input:invalid {
+		outline: 2px solid var(--error);
 	}
 }
 

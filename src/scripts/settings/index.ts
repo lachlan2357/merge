@@ -1,43 +1,49 @@
-import { Setting } from "./state.js";
-import { BooleanSetting, UrlSetting } from "./types.js";
+import { ToString } from "../types/osm.js";
+import { Setting } from "./containers.js";
+import { BooleanSetting, UrlSetting } from "./containers.js";
 
 const settingsStorage = {
-	leftHandTraffic: new Setting<boolean>(
+	leftHandTraffic: new BooleanSetting(
 		"Left Hand Traffic",
+		"left-hand-traffic",
 		"Whether the traffic drives on the left-hand-side of the road, for example in the UK, Australia, Japan, etc.",
-		new BooleanSetting(false),
+		false,
 		true,
 		true
 	),
-	endpoint: new Setting<URL>(
+	endpoint: new UrlSetting(
 		"Overpass Endpoint",
+		"overpass-endpoint",
 		"The address of the Overpass Endpoint to use.",
-		new UrlSetting("https://overpass-api.de/api/interpreter"),
+		new URL("https://overpass-api.de/api/interpreter"),
 		true,
 		true
 	),
-	ignoreCache: new Setting<boolean>(
+	ignoreCache: new BooleanSetting(
 		"Ignore Cache",
+		"ignore-cache",
 		"Whether to disregard the cache for the next request. Must be toggled on for each request.",
-		new BooleanSetting(false),
+		false,
 		false,
 		true
 	),
-	darkMode: new Setting<boolean>(
+	darkMode: new BooleanSetting(
 		"Dark Mode",
+		"dark-mode",
 		"Whether to use the dark theme for the application.",
-		new BooleanSetting(window.matchMedia("(prefers-color-scheme: dark)").matches),
+		window.matchMedia("(prefers-color-scheme: dark)").matches,
 		true,
 		true
 	),
-	firstLaunch: new Setting<boolean>(
+	firstLaunch: new BooleanSetting(
 		"First Launch",
+		"first-launch",
 		"Whether it is the first time using the application.",
-		new BooleanSetting(true),
+		true,
 		true,
 		false
 	)
-} as const;
+} as const satisfies Record<string, Setting<ToString>>;
 
 type SettingsObject = typeof settingsStorage;
 type SettingsKey = keyof SettingsObject;
@@ -45,7 +51,7 @@ type SettingType<K extends SettingsKey> = SettingsObject[K] extends Setting<infe
 
 export function get<K extends SettingsKey>(key: K): SettingType<K> {
 	const setting = settingsStorage[key];
-	return setting.value.value as SettingType<K>;
+	return setting.value as unknown as SettingType<K>;
 }
 
 export function getObject<K extends SettingsKey>(key: K): SettingsObject[K] {
@@ -53,8 +59,8 @@ export function getObject<K extends SettingsKey>(key: K): SettingsObject[K] {
 }
 
 export function set<K extends SettingsKey>(key: K, value: SettingType<K>) {
-	const setting = settingsStorage[key] as Setting<SettingType<K>>;
-	setting.value.value = value;
+	const setting = settingsStorage[key] as unknown as Setting<SettingType<K>>;
+	setting.value = value;
 }
 
 export function keys() {

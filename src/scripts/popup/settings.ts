@@ -20,10 +20,7 @@ export class SettingsPopup extends Popup {
 				.build();
 
 			// fetch the input box
-			const inputBox = setting.value
-				.buildInputBox()
-				.class("setting-input")
-				.attribute("data-setting", key);
+			const inputElement = setting.inputElement.build();
 
 			// append children
 			const innerDiv = new ElementBuilder("div")
@@ -32,7 +29,7 @@ export class SettingsPopup extends Popup {
 				.build();
 			const outerDiv = new ElementBuilder("div")
 				.class("setting-container")
-				.children(innerDiv, inputBox.build())
+				.children(innerDiv, inputElement)
 				.build();
 			list.append(outerDiv);
 		}
