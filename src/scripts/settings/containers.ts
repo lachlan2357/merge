@@ -3,7 +3,9 @@ import { MessageBoxError } from "../messages.js";
 import { ToString } from "../types/osm.js";
 
 /**
- * Containing for storing information about a particular application setting.
+ * Container for storing information about a particular application setting.
+ *
+ * @template T The type for the underlying data this container stores.
  */
 export abstract class Setting<T extends ToString> {
 	/**
@@ -50,22 +52,47 @@ export abstract class Setting<T extends ToString> {
 	 */
 	private readonly defaultValue: T;
 
+	/**
+	 * Retrieve the underlying data from this container.
+	 *
+	 * @returns The current value of the underlying data.
+	 */
 	get value() {
 		return this.currentValue;
 	}
 
+	/**
+	 * Overwrite the value stored in this container with a new one.
+	 *
+	 * Setting the value will cause the new value to be saved in {@link localStorage}, provided
+	 * {@link isPersistent} is `true`.
+	 *
+	 * Setting this value will also cause the {@link inputElement} to have it's value set to the
+	 * new value. In almost all cases, since this value is being called from an event listener on
+	 * that element, it will functionally be redundant, however there is the possibility of the
+	 * value being set from elsewhere, in which this is necessary.
+	 *
+	 * @param newValue The new value to overwrite this container's value with.
+	 */
 	set value(newValue: T) {
 		this.currentValue = newValue;
-		this.configureInputElement(this.inputElement);
+
+		// update state
+		this.setInputValue();
 		this.save();
 	}
 
+	/**
+	 * The builder for the {@link HTMLInputElement} responsibly for allowing the user to change this
+	 * setting's value.
+	 */
 	readonly inputElement: ElementBuilder<"input">;
 
 	/**
 	 * Create a new setting definition.
 	 *
 	 * @param name The display name of this setting.
+	 * @param key The key used when reading/writing to {@link localStorage}.
 	 * @param description A description of the function this setting changes.
 	 * @param value The default value of this setting if it isn't fetched from persistent storage.
 	 * @param isPersistent Whether this setting should be persistent across sessions.
@@ -79,6 +106,7 @@ export abstract class Setting<T extends ToString> {
 		isPersistent: boolean,
 		inSettingsMenu: boolean
 	) {
+		// store data
 		this.name = name;
 		this.key = key;
 		this.description = description;
@@ -87,19 +115,20 @@ export abstract class Setting<T extends ToString> {
 
 		// ensure setting names don't duplicate
 		const hasDuplicateName = Setting.registeredKeys.has(name);
-		if (hasDuplicateName) throw SettingError.duplicateSettingName(name);
+		if (hasDuplicateName) throw SettingError.duplicateSettingKey(name);
 		Setting.registeredKeys.add(name);
 
 		// set initial value
 		this.defaultValue = defaultValue;
-		this.currentValue = this.load();
+		this.currentValue = defaultValue;
+		this.load();
 
 		// build input element
 		this.inputElement = this.buildInputElement();
 	}
 
 	/**
-	 * Reset this setting to its default value.
+	 * Reset this setting to its {@link defaultValue}.
 	 */
 	reset() {
 		this.value = this.defaultValue;
@@ -112,16 +141,16 @@ export abstract class Setting<T extends ToString> {
 	 * {@link localStorage} or the value stored cannot be processed correctly, the currently stored
 	 * value is not updated.
 	 */
-	load() {
+	protected load() {
 		// retrieve value from localstorage, if applicable
 		const valueString = localStorage.getItem(this.key);
-		if (!this.isPersistent || valueString === null) return this.defaultValue;
+		if (!this.isPersistent || valueString === null) return;
 
-		// return processed value
+		// set processed value, if valid
 		try {
-			return this.process(valueString);
+			this.currentValue = this.process(valueString);
 		} catch {
-			return this.defaultValue;
+			return;
 		}
 	}
 
@@ -130,15 +159,21 @@ export abstract class Setting<T extends ToString> {
 	 *
 	 * If {@link this.isPersistent} is `false`, nothing is written to {@link localStorage}.
 	 */
-	save() {
+	protected save() {
 		if (!this.isPersistent) return;
 
 		const valueString = this.value.toString();
 		localStorage.setItem(this.key, valueString);
 	}
 
+	/**
+	 * Construct the {@link inputElement} responsible for updating the value of this setting.
+	 *
+	 * @returns The {@link ElementBuilder} for this element.
+	 */
 	private buildInputElement() {
 		const builder = new ElementBuilder("input").event("input", e => {
+			// ensure target is the input element
 			const input = e.target;
 			if (!(input instanceof HTMLInputElement)) return;
 
@@ -149,18 +184,10 @@ export abstract class Setting<T extends ToString> {
 				return;
 			}
 		});
+
 		this.configureInputElement(builder);
 		return builder;
 	}
-
-	/**
-	 * Process an incoming `string` from {@link localStorage} into the correct setting type.
-	 *
-	 * @param valueString The `string` value to process
-	 * @throws {SettingTypeError} If the value could not be processed.
-	 * @returns The processed value.
-	 */
-	abstract process(input: string): T;
 
 	/**
 	 * Configure the {@link this.inputElement} to be specialised for this input type.
@@ -170,16 +197,37 @@ export abstract class Setting<T extends ToString> {
 	abstract configureInputElement(builder: ElementBuilder<"input">): void;
 
 	/**
+	 * Process an incoming `string` from {@link localStorage} into the correct setting type.
+	 *
+	 * @param valueString The `string` value to process
+	 * @throws {SettingTypeError} If the value could not be processed.
+	 * @returns The processed value.
+	 */
+	protected abstract process(input: string): T;
+
+	/**
 	 * Retrieve a new value for this container from a {@link HTMLInputElement}.
 	 *
 	 * @throws {SettingTypeError} If the value of the input field is not valid for this setting.
 	 * @param input The {@link HTMLInputField} to retrieve the value from.
 	 */
 	protected abstract getValueFromInput(input: HTMLInputElement): T;
+
+	/**
+	 * Set the value of {@link inputElement} to the value stored in this container.
+	 */
+	protected abstract setInputValue(): void;
 }
 
+/**
+ * Container for storing a setting represented as a boolean.
+ */
 export class BooleanSetting extends Setting<boolean> {
-	process(value: string) {
+	configureInputElement(builder: ElementBuilder<"input">) {
+		builder.inputType("checkbox");
+	}
+
+	protected process(value: string) {
 		switch (value) {
 			case "true":
 				return true;
@@ -190,40 +238,61 @@ export class BooleanSetting extends Setting<boolean> {
 		}
 	}
 
-	configureInputElement(builder: ElementBuilder<"input">) {
-		builder.inputType("checkbox").setChecked(this.value);
-	}
-
 	protected getValueFromInput(input: HTMLInputElement) {
 		return input.checked;
 	}
+
+	protected setInputValue() {
+		this.inputElement.setChecked(this.value);
+	}
 }
 
+/**
+ * Container for storing a setting represented as a url.
+ */
 export class UrlSetting extends Setting<URL> {
-	process(value: string) {
+	configureInputElement(builder: ElementBuilder<"input">): void {
+		builder.inputType("url").setRequired();
+	}
+
+	protected process(value: string) {
 		try {
+			if (value === "") throw null;
 			return new URL(value);
 		} catch {
 			throw SettingError.invalidValue(value, "url");
 		}
 	}
 
-	configureInputElement(builder: ElementBuilder<"input">): void {
-		builder.inputType("url").setValue(this.value.toString());
-	}
-
 	protected getValueFromInput(input: HTMLInputElement) {
 		return this.process(input.value);
+	}
+
+	protected setInputValue() {
+		this.inputElement.setValue(this.value.toString());
 	}
 }
 
 class SettingError extends MessageBoxError {
-	static duplicateSettingName(name: string) {
+	/**
+	 * Error constructor for when a setting is created with a key that has already been registered.
+	 *
+	 * @param key The key that was attempted to be used.
+	 * @returns The error.
+	 */
+	static duplicateSettingKey(key: string) {
 		return new SettingError(
-			`Attempted to create a setting called ${name} when a setting already exists with that name.`
+			`Attempted to create a setting with key '${key}' when a setting already exists with that key.`
 		);
 	}
 
+	/**
+	 * Error constructor for when a setting's value is attempted to be updated with an invalid value.
+	 *
+	 * @param value The string value that was attempted to be converted.
+	 * @param type The type the string value was attempted to be converted into.
+	 * @returns The error.
+	 */
 	static invalidValue(value: string, type: string) {
 		return new SettingError(`'${value}' is an invalid value for type ${type}.`);
 	}

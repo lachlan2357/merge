@@ -68,6 +68,11 @@ export class ElementBuilder<T extends keyof HTMLElementTagNameMap> {
 
 	// input (requires "input")
 
+	inputType(this: ElementBuilder<"input">, type: string) {
+		this.element.type = type;
+		return this;
+	}
+
 	setChecked(this: ElementBuilder<"input">, value: boolean) {
 		this.element.checked = value;
 		return this;
@@ -78,8 +83,8 @@ export class ElementBuilder<T extends keyof HTMLElementTagNameMap> {
 		return this;
 	}
 
-	inputType(this: ElementBuilder<"input">, type: string) {
-		this.element.type = type;
+	setRequired(this: ElementBuilder<"input">) {
+		this.element.required = true;
 		return this;
 	}
 
