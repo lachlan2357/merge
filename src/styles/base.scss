@@ -201,7 +201,7 @@ button:has(i:only-child) {
 		outline: 2px solid var(--error);
 	}
 
-	button {
+	.reset-button {
 		padding: 0.5em 1em;
 	}
 }

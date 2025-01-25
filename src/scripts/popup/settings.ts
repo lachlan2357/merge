@@ -24,6 +24,7 @@ export class SettingsPopup extends Popup {
 
 			// create reset button
 			const resetButton = new ElementBuilder("button")
+				.class("reset-button")
 				.text("Reset")
 				.event("click", () => setting.reset())
 				.build();
