@@ -1,7 +1,7 @@
 import { loadSearchBox } from "./map/search.js";
 import { displayMessage } from "./messages.js";
 import { WELCOME_POPUP } from "./popup/welcome.js";
-import { Settings } from "./settings.js";
+import * as Settings from "./settings/index.js";
 import { Effect, State } from "./state/index.js";
 
 // display a message on the message popup when a JS error occurs

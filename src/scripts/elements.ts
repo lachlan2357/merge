@@ -7,9 +7,7 @@ export class ElementBuilder<T extends keyof HTMLElementTagNameMap> {
 		this.element = document.createElement(tag);
 	}
 
-	anchorExternal() {
-		if (this.is(this.element, "a")) this.element.target = "_blank";
-	}
+	// global
 
 	attribute(key: string, value: string) {
 		this.element.setAttribute(key, value);
@@ -34,33 +32,8 @@ export class ElementBuilder<T extends keyof HTMLElementTagNameMap> {
 		return this;
 	}
 
-	href(url: string) {
-		if (this.is(this.element, "a")) this.element.href = url;
-		return this;
-	}
-
 	id(id: string) {
 		this.element.id = id;
-		return this;
-	}
-
-	inputChecked(value: boolean) {
-		if (this.is(this.element, "input")) this.element.checked = value;
-		return this;
-	}
-
-	inputValue(value: string) {
-		if (this.is(this.element, "input")) this.element.value = value;
-		return this;
-	}
-
-	inputType(type: string) {
-		if (this.is(this.element, "input")) this.element.type = type;
-		return this;
-	}
-
-	src(src: string) {
-		if (this.is(this.element, "img")) this.element.src = src;
 		return this;
 	}
 
@@ -74,15 +47,51 @@ export class ElementBuilder<T extends keyof HTMLElementTagNameMap> {
 		return this;
 	}
 
-	build() {
-		return this.element;
+	// anchor (requires "a")
+
+	setExternalLink(this: ElementBuilder<"a">) {
+		this.element.target = "_blank";
+		return this;
 	}
 
-	is<K extends keyof HTMLElementTagNameMap>(
-		element: HTMLElement,
-		tag: K
-	): element is HTMLElementTagNameMap[K] {
-		return this.tag.toString() === tag.toString();
+	href(this: ElementBuilder<"a">, url: string) {
+		this.element.href = url;
+		return this;
+	}
+
+	// image (requires "img")
+
+	src(this: ElementBuilder<"img">, src: string) {
+		this.element.src = src;
+		return this;
+	}
+
+	// input (requires "input")
+
+	inputType(this: ElementBuilder<"input">, type: string) {
+		this.element.type = type;
+		return this;
+	}
+
+	setChecked(this: ElementBuilder<"input">, value: boolean) {
+		this.element.checked = value;
+		return this;
+	}
+
+	setValue(this: ElementBuilder<"input">, value: string) {
+		this.element.value = value;
+		return this;
+	}
+
+	setRequired(this: ElementBuilder<"input">) {
+		this.element.required = true;
+		return this;
+	}
+
+	// build
+
+	build() {
+		return this.element;
 	}
 }
 
@@ -131,7 +140,7 @@ export class LinkChip {
 	}
 
 	url(url: string) {
-		this.element.href(url).anchorExternal();
+		this.element.href(url).setExternalLink();
 		return this;
 	}
 

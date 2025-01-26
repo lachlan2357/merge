@@ -1,5 +1,37 @@
 @use "mixins";
 
+.setting-container {
+	align-items: center;
+	background-color: var(--accent);
+	border-radius: 5px;
+	display: flex;
+	gap: 1em;
+	justify-content: space-between;
+	padding: 1em;
+
+	h3 {
+		font-size: 1em;
+	}
+
+	input {
+		flex-grow: 0;
+		overflow: hidden;
+	}
+
+	button {
+		flex-grow: 0;
+	}
+
+	.setting-text {
+		flex-grow: 1;
+	}
+}
+
+canvas {
+	background-color: var(--canvas);
+	border-radius: var(--radius);
+}
+
 #open-with-container {
 	@include mixins.flexbox($gap: 0.5em);
 	@include mixins.flexbox-align(center, center);
@@ -15,30 +47,6 @@
 	display: flex;
 	flex-direction: column;
 	gap: 1em;
-}
-
-.setting-container {
-	align-items: center;
-	background-color: var(--accent);
-	border-radius: 5px;
-	display: flex;
-	gap: 1em;
-	justify-content: space-between;
-	padding: 1em;
-
-	h3 {
-		font-size: 1em;
-	}
-
-	input {
-		flex-shrink: 1;
-		overflow: hidden;
-	}
-}
-
-canvas {
-	background-color: var(--canvas);
-	border-radius: var(--radius);
 }
 
 #canvas-container {
