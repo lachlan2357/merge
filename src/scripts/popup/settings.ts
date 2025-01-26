@@ -1,4 +1,4 @@
-import { ElementBuilder } from "../elements.js";
+import { ElementBuilder, FontAwesomeIcon } from "../elements.js";
 import * as Settings from "../settings/index.js";
 import { Popup } from "./index.js";
 
@@ -23,10 +23,11 @@ export class SettingsPopup extends Popup {
 			const inputElement = setting.inputElement.build();
 
 			// create reset button
+			const resetIcon = new FontAwesomeIcon("solid", "arrow-rotate-right").build();
 			const resetButton = new ElementBuilder("button")
 				.class("reset-button")
-				.text("Reset")
 				.event("click", () => setting.reset())
+				.children(resetIcon)
 				.build();
 
 			// append children

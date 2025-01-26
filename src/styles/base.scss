@@ -202,7 +202,8 @@ button:has(i:only-child) {
 	}
 
 	.reset-button {
-		padding: 0.5em 1em;
+		aspect-ratio: 1;
+		padding: 1em;
 	}
 }
 
