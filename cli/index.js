@@ -8,7 +8,7 @@ if (args.length > 1)
 		"Warning: only the first argument passed is interpreted by Merge CLI. All other's are disregarded."
 	);
 
-// ensure command was parsed
+// ensure a command was passed
 const command = args[0];
 if (command === undefined) {
 	console.error("Error: No command specified, exiting.");

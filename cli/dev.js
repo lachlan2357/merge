@@ -9,9 +9,12 @@ const websocketPort = 3001;
 const ws = new WebSocketServer({ port: websocketPort });
 const sendReload = () => ws.clients.forEach(client => client.send("reload"));
 
+/**
+ * JavaScript code to inject into the HTML file in order for automatic reloading to function.
+ */
 const jsInject = `
 	<script>
-		const ws = new WebSocket("ws://localhost:3001");
+		const ws = new WebSocket("ws://localhost:${websocketPort}");
 		ws.addEventListener("message", event => {
 			const message = event.data.toString();
 			if (message === "reload") window.location.reload();
@@ -19,12 +22,20 @@ const jsInject = `
 	</script>
 </body`;
 
-export default function dev() {
-	startScssListener();
-	startTscListener();
+export default async function dev() {
+	// start recompilation listeners, waiting for them to finish before starting server
+	const cssStart = startScssListener();
+	const tscStart = startTscListener();
+	await Promise.all([cssStart, tscStart]);
 
 	const app = express();
 
+	// redirect `/` to `/merge/index.html`
+	app.get("/", (req, res) => {
+		res.redirect("/merge/index.html");
+	});
+
+	// serve html files
 	app.get("/merge/:filename.html", (req, res) => {
 		const filename = req.params["filename"];
 		// res.sendFile(`${filename}.html`, { root: "../src/pages" });
@@ -35,23 +46,27 @@ export default function dev() {
 		res.send(injectedFile);
 	});
 
+	// serve css files
 	app.get("/merge/styles/:filename.css", (req, res) => {
 		const path = req.path.split("/").splice(3).join("/");
 		res.sendFile(path, { root: "./temp_css" });
 	});
 
+	// serve js files
 	app.get("/merge/scripts/*", (req, res) => {
 		const path = req.path.split("/").splice(3).join("/");
 		res.sendFile(path, { root: "./temp_js" });
 	});
 
+	// serve asset files
 	app.get("/merge/*", (req, res) => {
 		const path = req.path.split("/").splice(2).join("/");
 		res.sendFile(path, { root: "../assets" });
 	});
 
+	// 404 not found
 	app.get("*", (req, res) => {
-		res.send("no idea what you asked for");
+		res.send(404);
 	});
 
 	app.listen(serverPort, () => {
@@ -65,6 +80,9 @@ const scssWatching = /^Sass is watching for changes\. Press Ctrl-C to stop\.$/;
 const scssRecompiled = /\[[^\]]+\] Compiled .+?\.scss to (.+\.css)\./;
 
 function startScssListener() {
+	// setup promise for initialisation
+	const { promise, resolve } = Promise.withResolvers();
+
 	// remove any previously compiled files from the directory
 	rmSync("./temp_css", { recursive: true, force: true });
 
@@ -75,7 +93,9 @@ function startScssListener() {
 
 		if (scssWatching.test(stdout)) {
 			console.log("SCSS initialised.");
+			console.log("SCSS generated.");
 			scssInitialised = true;
+			resolve();
 			return;
 		}
 
@@ -85,14 +105,20 @@ function startScssListener() {
 			sendReload();
 		}
 	});
+
+	return promise;
 }
 
 let tscInitialised = false;
+let tscFirstGeneration = true;
 
 const tscWatching = /^[^-]+- Starting compilation in watch mode\.\.\.$/;
 const tscRecompiled = /^[^-]+- Found (\d+) errors\. Watching for file changes\.$/;
 
 function startTscListener() {
+	// setup promise for initialisation
+	const { promise, resolve } = Promise.withResolvers();
+
 	// remove any previously compiled files from the directory
 	rmSync("./temp_js", { recursive: true, force: true });
 
@@ -110,8 +136,14 @@ function startTscListener() {
 		const tscMatch = tscRecompiled.exec(stdout);
 		if (tscMatch !== null && tscInitialised) {
 			const numErrors = tscMatch[1];
-			console.log(`TSC re-generated with ${numErrors} errors.`);
+			if (tscFirstGeneration && numErrors === "0") {
+				console.log("TSC generated.");
+				tscFirstGeneration = false;
+			} else console.log(`TSC re-generated with ${numErrors} errors.`);
+			resolve();
 			sendReload();
 		}
 	});
+
+	return promise;
 }
