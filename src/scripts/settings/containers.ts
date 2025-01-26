@@ -45,7 +45,9 @@ export abstract class Setting<T extends ToString> {
 	/**
 	 * The default value of this setting.
 	 */
-	private readonly defaultValue: T;
+	readonly #defaultValue: T;
+
+	readonly #onChange: (newValue: T) => void;
 
 	/**
 	 * The current value of this setting.
@@ -80,6 +82,9 @@ export abstract class Setting<T extends ToString> {
 		// update state
 		this.setInputValue();
 		this.save();
+
+		// call callback
+		this.#onChange(this.#currentValue);
 	}
 
 	/**
@@ -97,6 +102,7 @@ export abstract class Setting<T extends ToString> {
 	 * @param value The default value of this setting if it isn't fetched from persistent storage.
 	 * @param isPersistent Whether this setting should be persistent across sessions.
 	 * @param inSettingsMenu Whether this setting should appear in the settings menu.
+	 * @param onChange A callback function to be called whenever the stored value changes.
 	 * @throws {SettingError} If {@link key} has already been registered in another setting.
 	 */
 	constructor(
@@ -105,7 +111,8 @@ export abstract class Setting<T extends ToString> {
 		description: string,
 		defaultValue: T,
 		isPersistent: boolean,
-		inSettingsMenu: boolean
+		inSettingsMenu: boolean,
+		onChange: (newValue: T) => void = () => {}
 	) {
 		// store data
 		this.name = name;
@@ -113,6 +120,7 @@ export abstract class Setting<T extends ToString> {
 		this.description = description;
 		this.isPersistent = isPersistent;
 		this.inSettingsMenu = inSettingsMenu;
+		this.#onChange = onChange;
 
 		// ensure setting key isn't a duplicate
 		const hasDuplicateKey = Setting.#registeredKeys.has(name);
@@ -120,7 +128,7 @@ export abstract class Setting<T extends ToString> {
 		Setting.#registeredKeys.add(name);
 
 		// set initial value
-		this.defaultValue = defaultValue;
+		this.#defaultValue = defaultValue;
 		this.#currentValue = defaultValue;
 		this.load();
 
@@ -130,10 +138,10 @@ export abstract class Setting<T extends ToString> {
 	}
 
 	/**
-	 * Reset this setting to its {@link defaultValue}.
+	 * Reset this setting to its {@link #defaultValue}.
 	 */
 	reset() {
-		this.value = this.defaultValue;
+		this.value = this.#defaultValue;
 	}
 
 	/**

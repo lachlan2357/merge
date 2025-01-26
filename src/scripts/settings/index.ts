@@ -1,4 +1,3 @@
-import { ToString } from "../types/osm.js";
 import { Setting } from "./containers.js";
 import { BooleanSetting, UrlSetting } from "./containers.js";
 
@@ -33,7 +32,8 @@ const settingsStorage = {
 		"Whether to use the dark theme for the application.",
 		window.matchMedia("(prefers-color-scheme: dark)").matches,
 		true,
-		true
+		true,
+		value => document.documentElement.setAttribute("darkmode", value.toString())
 	),
 	firstLaunch: new BooleanSetting(
 		"First Launch",
@@ -43,7 +43,7 @@ const settingsStorage = {
 		true,
 		false
 	)
-} as const satisfies Record<string, Setting<ToString>>;
+} as const;
 
 type SettingsObject = typeof settingsStorage;
 type SettingsKey = keyof SettingsObject;
