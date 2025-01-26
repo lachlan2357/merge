@@ -15,7 +15,7 @@ export abstract class Setting<T extends ToString> {
 	 * this set to be checked against at the construction of each setting to ensure duplicated
 	 * setting keys are not used.
 	 */
-	private static readonly registeredKeys = new Set<string>();
+	static readonly #registeredKeys = new Set<string>();
 
 	/**
 	 * The display name of this setting.
@@ -43,14 +43,14 @@ export abstract class Setting<T extends ToString> {
 	readonly inSettingsMenu: boolean;
 
 	/**
-	 * The current value of this setting.
-	 */
-	private currentValue: T;
-
-	/**
 	 * The default value of this setting.
 	 */
 	private readonly defaultValue: T;
+
+	/**
+	 * The current value of this setting.
+	 */
+	#currentValue: T;
 
 	/**
 	 * Retrieve the underlying data from this container.
@@ -58,7 +58,7 @@ export abstract class Setting<T extends ToString> {
 	 * @returns The current value of the underlying data.
 	 */
 	get value() {
-		return this.currentValue;
+		return this.#currentValue;
 	}
 
 	/**
@@ -75,7 +75,7 @@ export abstract class Setting<T extends ToString> {
 	 * @param newValue The new value to overwrite this container's value with.
 	 */
 	set value(newValue: T) {
-		this.currentValue = newValue;
+		this.#currentValue = newValue;
 
 		// update state
 		this.setInputValue();
@@ -97,6 +97,7 @@ export abstract class Setting<T extends ToString> {
 	 * @param value The default value of this setting if it isn't fetched from persistent storage.
 	 * @param isPersistent Whether this setting should be persistent across sessions.
 	 * @param inSettingsMenu Whether this setting should appear in the settings menu.
+	 * @throws {SettingError} If {@link key} has already been registered in another setting.
 	 */
 	constructor(
 		name: string,
@@ -113,14 +114,14 @@ export abstract class Setting<T extends ToString> {
 		this.isPersistent = isPersistent;
 		this.inSettingsMenu = inSettingsMenu;
 
-		// ensure setting names don't duplicate
-		const hasDuplicateName = Setting.registeredKeys.has(name);
-		if (hasDuplicateName) throw SettingError.duplicateSettingKey(name);
-		Setting.registeredKeys.add(name);
+		// ensure setting key isn't a duplicate
+		const hasDuplicateKey = Setting.#registeredKeys.has(name);
+		if (hasDuplicateKey) throw SettingError.duplicateSettingKey(name);
+		Setting.#registeredKeys.add(name);
 
 		// set initial value
 		this.defaultValue = defaultValue;
-		this.currentValue = defaultValue;
+		this.#currentValue = defaultValue;
 		this.load();
 
 		// build input element
@@ -149,7 +150,7 @@ export abstract class Setting<T extends ToString> {
 
 		// set processed value, if valid
 		try {
-			this.currentValue = this.process(valueString);
+			this.#currentValue = this.process(valueString);
 		} catch {
 			return;
 		}
@@ -295,6 +296,6 @@ class SettingError extends MessageBoxError {
 	 * @returns The error.
 	 */
 	static invalidValue(value: string, type: string) {
-		return new SettingError(`'${value}' is an invalid value for type ${type}.`);
+		return new SettingError(`'${value}' is an invalid value for type '${type}'.`);
 	}
 }
