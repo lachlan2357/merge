@@ -1,6 +1,6 @@
 import { exec } from "child_process";
 import express from "express";
-import { readFileSync, rmSync } from "fs";
+import { readFileSync, rmSync, watch } from "fs";
 import { WebSocketServer } from "ws";
 
 const serverPort = 3000;
@@ -24,9 +24,11 @@ const jsInject = `
 
 export default async function dev() {
 	// start recompilation listeners, waiting for them to finish before starting server
+	const htmlStart = startHtmlListener();
 	const cssStart = startScssListener();
 	const tscStart = startTscListener();
-	await Promise.all([cssStart, tscStart]);
+	const assetStart = startAssetListener();
+	await Promise.all([htmlStart, cssStart, tscStart, assetStart]);
 
 	const app = express();
 
@@ -74,8 +76,15 @@ export default async function dev() {
 	});
 }
 
-let scssInitialised = false;
+function startHtmlListener() {
+	const watcher = watch("../src/pages", { recursive: true });
+	watcher.addListener("change", () => sendReload());
 
+	console.log("HTML initialised.");
+	return Promise.resolve();
+}
+
+let scssInitialised = false;
 const scssWatching = /^Sass is watching for changes\. Press Ctrl-C to stop\.$/;
 const scssRecompiled = /\[[^\]]+\] Compiled .+?\.scss to (.+\.css)\./;
 
@@ -93,7 +102,6 @@ function startScssListener() {
 
 		if (scssWatching.test(stdout)) {
 			console.log("SCSS initialised.");
-			console.log("SCSS generated.");
 			scssInitialised = true;
 			resolve();
 			return;
@@ -109,10 +117,8 @@ function startScssListener() {
 	return promise;
 }
 
-let tscInitialised = false;
-let tscFirstGeneration = true;
+let tscInitialised = true;
 
-const tscWatching = /^[^-]+- Starting compilation in watch mode\.\.\.$/;
 const tscRecompiled = /^[^-]+- Found (\d+) errors\. Watching for file changes\.$/;
 
 function startTscListener() {
@@ -127,23 +133,26 @@ function startTscListener() {
 		if (typeof data !== "string") return;
 		const stdout = data.trim();
 
-		if (tscWatching.test(stdout)) {
-			console.log("TSC initialised.");
-			tscInitialised = true;
-			return;
-		}
-
 		const tscMatch = tscRecompiled.exec(stdout);
-		if (tscMatch !== null && tscInitialised) {
+		if (tscMatch !== null) {
 			const numErrors = tscMatch[1];
-			if (tscFirstGeneration && numErrors === "0") {
-				console.log("TSC generated.");
-				tscFirstGeneration = false;
+			if (tscInitialised && numErrors === "0") {
+				console.log("TSC initialised.");
+				tscInitialised = false;
+				resolve();
 			} else console.log(`TSC re-generated with ${numErrors} errors.`);
-			resolve();
-			sendReload();
+
+			if (tscInitialised) sendReload();
 		}
 	});
 
 	return promise;
+}
+
+function startAssetListener() {
+	const watcher = watch("../assets", { recursive: true });
+	watcher.addListener("change", () => sendReload());
+
+	console.log("Assets initialised.");
+	return Promise.resolve();
 }
