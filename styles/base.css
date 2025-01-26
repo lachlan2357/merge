@@ -103,6 +103,7 @@ input[type=checkbox]:checked:after {
   --canvas-height: 750px;
   --box-shadow: 0 0 10px var(--shadow);
   --radius: 5px;
+  --error: crimson;
   --copy: darkgreen;
   --copy-hover: green;
   --copy-active: lightgreen;
@@ -271,12 +272,20 @@ button:has(i:only-child) {
   right: 1em;
   top: 1em;
 }
-#popup input[type=text] {
+#popup input[type=text],
+#popup input[type=url] {
   background-color: var(--foreground-colour);
   border: none;
   border-radius: 5px;
   height: 2.5em;
   padding-inline: 10px;
+}
+#popup input:invalid {
+  outline: 2px solid var(--error);
+}
+#popup .reset-button {
+  aspect-ratio: 1;
+  padding: 1em;
 }
 
 #welcome-img {

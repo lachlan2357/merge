@@ -1,42 +1,38 @@
-import { ElementBuilder } from "../elements.js";
-import { Settings } from "../settings.js";
+import { ElementBuilder, FontAwesomeIcon } from "../elements.js";
+import * as Settings from "../settings/index.js";
 import { Popup } from "./index.js";
 export class SettingsPopup extends Popup {
     build() {
         const heading = new ElementBuilder("h2").text("Settings").build();
         const list = new ElementBuilder("div").id("settings-list").build();
-        const keys = Settings.keys();
-        for (let i = 0, n = keys.length; i < n; i++) {
-            const key = keys[i];
+        for (const key of Settings.keys()) {
+            // ensure setting should be displayed in the menu
             const setting = Settings.getObject(key);
-            if (!setting.inSettings)
+            if (!setting.inSettingsMenu)
                 continue;
-            const settingDescription = setting.description;
-            const isBoolean = typeof setting.value === "boolean";
+            // setting info
             const heading = new ElementBuilder("h3").text(setting.name).build();
             const text = new ElementBuilder("p")
                 .class("setting-title")
-                .text(settingDescription)
+                .text(setting.description)
                 .build();
-            const inputBox = new ElementBuilder("input")
-                .class("setting-input")
-                .inputType(isBoolean ? "checkbox" : "text")
-                .attribute("data-setting", key)
-                .event("change", e => {
-                const target = e.target;
-                Settings.set(target.getAttribute("data-setting"), target.getAttribute("type") == "checkbox" ? target.checked : target.value);
-            });
-            if (typeof setting.value === "boolean")
-                inputBox.inputChecked(setting.value);
-            else
-                inputBox.inputValue(setting.value);
+            // fetch the input box
+            const inputElement = setting.inputElement.build();
+            // create reset button
+            const resetIcon = new FontAwesomeIcon("solid", "arrow-rotate-right").build();
+            const resetButton = new ElementBuilder("button")
+                .class("reset-button")
+                .event("click", () => setting.reset())
+                .children(resetIcon)
+                .build();
+            // append children
             const innerDiv = new ElementBuilder("div")
                 .class("setting-text")
                 .children(heading, text)
                 .build();
             const outerDiv = new ElementBuilder("div")
                 .class("setting-container")
-                .children(innerDiv, inputBox.build())
+                .children(innerDiv, inputElement, resetButton)
                 .build();
             list.append(outerDiv);
         }

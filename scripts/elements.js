@@ -5,10 +5,7 @@ export class ElementBuilder {
         this.tag = tag;
         this.element = document.createElement(tag);
     }
-    anchorExternal() {
-        if (this.is(this.element, "a"))
-            this.element.target = "_blank";
-    }
+    // global
     attribute(key, value) {
         this.element.setAttribute(key, value);
         return this;
@@ -27,33 +24,8 @@ export class ElementBuilder {
         this.element.addEventListener(event, fn);
         return this;
     }
-    href(url) {
-        if (this.is(this.element, "a"))
-            this.element.href = url;
-        return this;
-    }
     id(id) {
         this.element.id = id;
-        return this;
-    }
-    inputChecked(value) {
-        if (this.is(this.element, "input"))
-            this.element.checked = value;
-        return this;
-    }
-    inputValue(value) {
-        if (this.is(this.element, "input"))
-            this.element.value = value;
-        return this;
-    }
-    inputType(type) {
-        if (this.is(this.element, "input"))
-            this.element.type = type;
-        return this;
-    }
-    src(src) {
-        if (this.is(this.element, "img"))
-            this.element.src = src;
         return this;
     }
     text(text) {
@@ -64,11 +36,40 @@ export class ElementBuilder {
         this.element.setAttribute("tooltip", text);
         return this;
     }
+    // anchor (requires "a")
+    setExternalLink() {
+        this.element.target = "_blank";
+        return this;
+    }
+    href(url) {
+        this.element.href = url;
+        return this;
+    }
+    // image (requires "img")
+    src(src) {
+        this.element.src = src;
+        return this;
+    }
+    // input (requires "input")
+    inputType(type) {
+        this.element.type = type;
+        return this;
+    }
+    setChecked(value) {
+        this.element.checked = value;
+        return this;
+    }
+    setValue(value) {
+        this.element.value = value;
+        return this;
+    }
+    setRequired() {
+        this.element.required = true;
+        return this;
+    }
+    // build
     build() {
         return this.element;
-    }
-    is(element, tag) {
-        return this.tag.toString() === tag.toString();
     }
 }
 export class FontAwesomeIcon {
@@ -108,7 +109,7 @@ export class LinkChip {
         this.displayText = new ElementBuilder("span");
     }
     url(url) {
-        this.element.href(url).anchorExternal();
+        this.element.href(url).setExternalLink();
         return this;
     }
     text(text) {
