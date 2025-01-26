@@ -9,6 +9,16 @@ const websocketPort = 3001;
 const ws = new WebSocketServer({ port: websocketPort });
 const sendReload = () => ws.clients.forEach(client => client.send("reload"));
 
+const PATHS = {
+	html: "./src/pages",
+	scss: "./src/styles",
+	ts: "./src/scripts",
+	assets: "./assets",
+	tempCss: "./cli/temp_css",
+	tempJs: "./cli/temp_js",
+	tsConfig: "./tsconfig.json"
+};
+
 /**
  * JavaScript code to inject into the HTML file in order for automatic reloading to function.
  */
@@ -22,7 +32,7 @@ const jsInject = `
 	</script>
 </body`;
 
-export default async function dev() {
+export default async function () {
 	// start recompilation listeners, waiting for them to finish before starting server
 	const htmlStart = startHtmlListener();
 	const cssStart = startScssListener();
@@ -41,7 +51,7 @@ export default async function dev() {
 	app.get("/merge/:filename.html", (req, res) => {
 		const filename = req.params["filename"];
 		// res.sendFile(`${filename}.html`, { root: "../src/pages" });
-		const file = readFileSync(`../src/pages/${filename}.html`).toString();
+		const file = readFileSync(`${PATHS.html}/${filename}.html`).toString();
 
 		// inject ws into page
 		const injectedFile = file.replace("</body>", jsInject);
@@ -51,19 +61,19 @@ export default async function dev() {
 	// serve css files
 	app.get("/merge/styles/:filename.css", (req, res) => {
 		const path = req.path.split("/").splice(3).join("/");
-		res.sendFile(path, { root: "./temp_css" });
+		res.sendFile(path, { root: PATHS.tempCss });
 	});
 
 	// serve js files
 	app.get("/merge/scripts/*", (req, res) => {
 		const path = req.path.split("/").splice(3).join("/");
-		res.sendFile(path, { root: "./temp_js" });
+		res.sendFile(path, { root: PATHS.tempJs });
 	});
 
 	// serve asset files
 	app.get("/merge/*", (req, res) => {
 		const path = req.path.split("/").splice(2).join("/");
-		res.sendFile(path, { root: "../assets" });
+		res.sendFile(path, { root: PATHS.assets });
 	});
 
 	// 404 not found
@@ -77,7 +87,7 @@ export default async function dev() {
 }
 
 function startHtmlListener() {
-	const watcher = watch("../src/pages", { recursive: true });
+	const watcher = watch(PATHS.html, { recursive: true });
 	watcher.addListener("change", () => sendReload());
 
 	console.log("HTML initialised.");
@@ -93,9 +103,9 @@ function startScssListener() {
 	const { promise, resolve } = Promise.withResolvers();
 
 	// remove any previously compiled files from the directory
-	rmSync("./temp_css", { recursive: true, force: true });
+	rmSync(PATHS.tempCss, { recursive: true, force: true });
 
-	const process = exec("sass --watch ../src/styles:temp_css --no-source-map");
+	const process = exec(`sass --watch ${PATHS.scss}:${PATHS.tempCss} --no-source-map`);
 	process.stdout.on("data", data => {
 		if (typeof data !== "string") return;
 		const stdout = data.trim();
@@ -117,7 +127,7 @@ function startScssListener() {
 	return promise;
 }
 
-let tscInitialised = true;
+let tscInitialised = false;
 
 const tscRecompiled = /^[^-]+- Found (\d+) errors\. Watching for file changes\.$/;
 
@@ -128,7 +138,7 @@ function startTscListener() {
 	// remove any previously compiled files from the directory
 	rmSync("./temp_js", { recursive: true, force: true });
 
-	const process = exec("tsc --watch -p ../tsconfig.json --outDir ./temp_js");
+	const process = exec(`tsc --watch -p ${PATHS.tsConfig} --outDir ${PATHS.tempJs}`);
 	process.stdout.on("data", data => {
 		if (typeof data !== "string") return;
 		const stdout = data.trim();
@@ -136,9 +146,9 @@ function startTscListener() {
 		const tscMatch = tscRecompiled.exec(stdout);
 		if (tscMatch !== null) {
 			const numErrors = tscMatch[1];
-			if (tscInitialised && numErrors === "0") {
+			if (!tscInitialised && numErrors === "0") {
 				console.log("TSC initialised.");
-				tscInitialised = false;
+				tscInitialised = true;
 				resolve();
 			} else console.log(`TSC re-generated with ${numErrors} errors.`);
 
@@ -150,7 +160,7 @@ function startTscListener() {
 }
 
 function startAssetListener() {
-	const watcher = watch("../assets", { recursive: true });
+	const watcher = watch(PATHS.assets, { recursive: true });
 	watcher.addListener("change", () => sendReload());
 
 	console.log("Assets initialised.");

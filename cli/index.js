@@ -1,3 +1,5 @@
+import build from "./build.js";
+import deploy from "./deploy.js";
 import dev from "./dev.js";
 import process from "node:process";
 
@@ -18,8 +20,16 @@ if (command === undefined) {
 // perform command
 switch (command) {
 	case "dev":
-		dev();
+		await dev();
+		break;
+	case "build":
+		build();
+		break;
+	case "deploy":
+		deploy();
 		break;
 	default:
 		console.error(`Error: unrecognised command ${command}.`);
 }
+
+process.exit(0);
