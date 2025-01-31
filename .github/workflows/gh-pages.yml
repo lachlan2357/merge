@@ -19,6 +19,7 @@ jobs:
               run: |
                   npm install -g yarn
                   yarn install
+                  yarn --cwd cli install
                   yarn merge build
             - name: Deploy
               uses: s0/git-publish-subdir-action@develop
