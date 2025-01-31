@@ -2,16 +2,18 @@
 @use "overrides";
 @use "animations";
 
+// # imports
+@import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&family=Quicksand:wght@300..700&family=Tektur:wght@400..900&display=swap");
+
+// # css reset
 * {
 	box-sizing: border-box;
-	color: var(--text);
-	font-family: Roboto, sans-serif;
-	font-weight: 300;
 	margin: 0;
 	padding: 0;
 	scrollbar-width: thin;
 }
 
+// # custom properties
 :root {
 	// canvas
 	--canvas-width: 100%;
@@ -32,33 +34,35 @@
 	--open-with-hover: lightseagreen;
 	--open-with-active: lightblue;
 
-	--background-colour: #111;
-	--foreground-colour: #222;
-	--accent: #333;
-	--canvas: #666;
-	--shadow: #000;
-	--text: #fff;
-	--link: lightblue;
-	color-scheme: dark;
+	--background-colour: light-dark(#ddd, #111);
+	--foreground-colour: light-dark(#eee, #222);
+	--accent: light-dark(#fff, #333);
+	--canvas: light-dark(#fff, #666);
+	--shadow: light-dark(#ccc, #000);
+	--text: light-dark(#000, #fff);
+	--link: light-dark(darkblue, lightblue);
 
-	&[darkmode="false"] {
-		--background-colour: #ddd;
-		--foreground-colour: #eee;
-		--accent: #fff;
-		--canvas: #fff;
-		--shadow: #ccc;
-		--text: #000;
-		--link: darkblue;
+	// light/dark mode
+	&[data-dark-mode="false"] {
+		color-scheme: light;
+	}
+
+	&[data-dark-mode="true"] {
+		color-scheme: dark;
+	}
+}
+
+// ## set colour scheme based on @media if no dark mode attribute is present
+@media (prefers-color-scheme: light) {
+	:root:not([data-dark-mode]) {
 		color-scheme: light;
 	}
 }
 
-body {
-	@include mixins.flexbox(column, 0);
-	background-color: var(--background-colour);
-	height: 100dvh;
-	overflow: hidden;
-	width: 100dvw;
+@media (prefers-color-scheme: dark) {
+	:root:not([data-dark-mode]) {
+		color-scheme: dark;
+	}
 }
 
 h1,
@@ -67,8 +71,36 @@ h3,
 h4,
 h5,
 h6 {
-	font-family: Montserrat, sans-serif;
-	font-weight: 700;
+	font-family: "TekTur", sans-serif;
+	font-weight: 600;
+
+	color: var(--text);
+}
+
+p,
+a,
+button,
+input,
+span {
+	font-family: "Quicksand", sans-serif;
+	font-weight: 300;
+
+	color: var(--text);
+}
+
+code {
+	font-family: "Fira Code", monospace;
+	font-weight: 300;
+
+	color: var(--text);
+}
+
+body {
+	@include mixins.flexbox(column, 0);
+	background-color: var(--background-colour);
+	height: 100dvh;
+	overflow: hidden;
+	width: 100dvw;
 }
 
 header {

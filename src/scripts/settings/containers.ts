@@ -127,10 +127,11 @@ export abstract class Setting<T extends ToString> {
 		if (hasDuplicateKey) throw SettingError.duplicateSettingKey(name);
 		Setting.#registeredKeys.add(name);
 
-		// set initial value
+		// set initial value and run callback
 		this.#defaultValue = defaultValue;
 		this.#currentValue = defaultValue;
 		this.load();
+		this.#onChange(this.#currentValue);
 
 		// build input element
 		this.inputElement = this.buildInputElement();
