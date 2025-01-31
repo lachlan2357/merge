@@ -15,10 +15,6 @@
 
 // # custom properties
 :root {
-	// canvas
-	--canvas-width: 100%;
-	--canvas-height: 750px;
-
 	// styles
 	--box-shadow: 0 0 10px var(--shadow);
 	--radius: 5px;
@@ -65,6 +61,7 @@
 	}
 }
 
+// # fonts
 h1,
 h2,
 h3,
@@ -95,39 +92,86 @@ code {
 	color: var(--text);
 }
 
+// # buttons & links
+a {
+	color: var(--link);
+	cursor: pointer;
+
+	&:active {
+		color: var(--link);
+	}
+
+	&.link-chip {
+		@include mixins.flexbox();
+		background-color: var(--background-colour);
+		border-radius: 10px;
+		color: var(--text);
+		padding: 10px;
+		text-decoration: none;
+		width: fit-content;
+
+		&:hover {
+			background-color: var(--accent);
+			cursor: pointer;
+		}
+
+		&:active {
+			background-color: var(--canvas);
+		}
+	}
+}
+
+button {
+	cursor: pointer;
+}
+
+button,
+input {
+	background-color: var(--foreground-colour);
+	border: none;
+	border-radius: var(--radius);
+}
+
+a:has(i:only-child),
+button:has(i:only-child) {
+	@include mixins.icon-button();
+}
+
+// # landmarks
 body {
 	@include mixins.flexbox(column, 0);
-	background-color: var(--background-colour);
+
 	height: 100dvh;
-	overflow: hidden;
 	width: 100dvw;
+	overflow: hidden;
+
+	background-color: var(--background-colour);
 }
 
 header {
-	@include mixins.flexbox($gap: 1.25em);
+	@include mixins.flexbox(row);
 	@include mixins.flexbox-align(center, center);
 
-	background-color: var(--foreground-colour);
-	box-shadow: var(--box-shadow);
 	padding-block: 3em;
 	padding-inline: max(10%, 1.5em);
 
+	background-color: var(--foreground-colour);
+	box-shadow: var(--box-shadow);
+
 	img {
 		aspect-ratio: 1;
-		border-radius: 50%;
 		height: 6.25em;
-	}
 
-	div {
-		@include mixins.flexbox(column, 0.5em);
+		border-radius: 50%;
 	}
 }
 
 main {
-	height: 100%;
-	overflow: hidden;
+	flex-grow: 1;
 	padding: 1em;
 	position: relative;
+	overflow: hidden;
+
 	width: 100%;
 
 	&[error] {
@@ -140,63 +184,19 @@ main {
 	}
 }
 
-a.link-chip {
-	@include mixins.flexbox();
-	background-color: var(--background-colour);
-	border-radius: 10px;
-	color: var(--text);
-	padding: 10px;
-	text-decoration: none;
-	width: fit-content;
-
-	&:hover {
-		background-color: var(--accent);
-		cursor: pointer;
-	}
-
-	&:active {
-		background-color: var(--canvas);
-	}
-}
-
-button,
-input {
-	background-color: var(--foreground-colour);
-	border: none;
-	border-radius: var(--radius);
-	transition: background-color 0.1s;
-}
-
-a {
-	color: var(--link);
-}
-
-a,
-button {
-	cursor: pointer;
-	transition: background-color 0.25s;
-}
-
-a:active {
-	color: var(--link);
-}
-
-a:has(i:only-child),
-button:has(i:only-child) {
-	@include mixins.icon-button();
-}
-
 #popup {
 	@include mixins.flexbox(column);
+
+	margin: auto;
+	max-block-size: calc(100svh - 2rem);
+	width: min(95vw, 80ch);
+	padding: 1em;
+	z-index: 100;
+
 	background-color: var(--background-colour);
 	border: none;
 	border-radius: var(--radius);
 	box-shadow: var(--box-shadow);
-	margin: auto;
-	max-block-size: calc(100svh - 2rem);
-	padding: 1em;
-	width: min(95vw, 80ch);
-	z-index: 100;
 
 	&[open] {
 		animation: fade-in 0.25s;
@@ -215,18 +215,19 @@ button:has(i:only-child) {
 	}
 
 	#popup-close {
-		position: absolute;
 		right: 1em;
 		top: 1em;
+		position: absolute;
 	}
 
 	input[type="text"],
 	input[type="url"] {
+		height: 2.5em;
+		padding-inline: 10px;
+
 		background-color: var(--foreground-colour);
 		border: none;
 		border-radius: 5px;
-		height: 2.5em;
-		padding-inline: 10px;
 	}
 
 	input:invalid {
@@ -240,9 +241,9 @@ button:has(i:only-child) {
 }
 
 #welcome-img {
+	width: 6em;
 	height: 6em;
 	margin-inline: auto;
-	width: 6em;
 }
 
 #welcome-heading {
