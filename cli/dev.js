@@ -1,6 +1,9 @@
+import { PROCESS_COMPLETE } from "./index.js";
 import { exec } from "child_process";
 import express from "express";
 import { readFileSync, rmSync, watch } from "fs";
+import * as process from "process";
+import * as readline from "readline";
 import { WebSocketServer } from "ws";
 
 const serverPort = 3000;
@@ -81,8 +84,17 @@ export default async function () {
 		res.send(404);
 	});
 
+	// setup readline to detect keypresses
+	readline.emitKeypressEvents(process.stdin);
+	if (process.stdin.isTTY) process.stdin.setRawMode(true);
+
+	process.stdin.addListener("keypress", event => {
+		if (event === "q" || event === "\x03") throw PROCESS_COMPLETE;
+	});
+
 	app.listen(serverPort, () => {
 		console.log(`Listening on port ${serverPort}.`);
+		console.log("Enter 'q' to exit");
 	});
 }
 

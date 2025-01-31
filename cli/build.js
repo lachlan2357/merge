@@ -1,3 +1,4 @@
+import { AppError, PROCESS_COMPLETE } from "./index.js";
 import { execSync } from "child_process";
 import { cpSync, mkdirSync, rmSync } from "fs";
 
@@ -10,6 +11,12 @@ export default function () {
 		execSync("tsc");
 		execSync("sass src/styles:dist/styles --no-source-map");
 	} catch (e) {
-		throw e.stdout.toString();
+		if (e instanceof Error) {
+			throw new AppError(e.message);
+		} else {
+			throw e;
+		}
 	}
+
+	throw PROCESS_COMPLETE;
 }
