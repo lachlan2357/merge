@@ -9,6 +9,8 @@ export const WAY_INFO_ID = getElement("wayid", HTMLHeadingElement);
 export const WAY_INFO_TAGS = getElement("tags", HTMLTableElement);
 
 export abstract class Popup {
+	protected abstract title: string;
+
 	private children: Array<HTMLElement> = new Array();
 
 	/**
@@ -22,11 +24,8 @@ export abstract class Popup {
 		// purge all existing children
 		while (POPUP.lastChild !== null) POPUP.lastChild.remove();
 
-		// rebuild and append children
-		this.children = this.build();
-		POPUP.append(...this.children);
-
 		// add window popup decorations
+		const heading = new ElementBuilder("h3").text(this.title).build();
 		const closeIcon = new FontAwesomeIcon("solid", "xmark").build();
 		const closeButton = new ElementBuilder("button")
 			.id("popup-close")
@@ -34,26 +33,20 @@ export abstract class Popup {
 			.children(closeIcon)
 			.event("click", () => Popup.close())
 			.build();
+		const header = new ElementBuilder("header").children(heading, closeButton).build();
 
-		POPUP.append(closeButton);
+		// rebuild and append children
+		this.children = this.build();
+		const main = new ElementBuilder("main").children(...this.children).build();
 
 		// show popup
+		POPUP.append(header, main);
 		POPUP.showModal();
 	}
 
 	static close() {
 		if (!POPUP.open) return;
-
-		// close popup
-		POPUP.setAttribute("closing", "");
-		POPUP.addEventListener(
-			"animationend",
-			() => {
-				POPUP.removeAttribute("closing");
-				POPUP.close();
-			},
-			{ once: true }
-		);
+		POPUP.close();
 	}
 }
 

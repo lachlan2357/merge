@@ -3,8 +3,9 @@ import { State } from "../state/index.js";
 import { Popup, displaySidebar } from "./index.js";
 
 export class WarningsPopup extends Popup {
+	protected readonly title = "Warnings";
+
 	build(): Array<HTMLElement> {
-		const heading = new ElementBuilder("h2").text("Warnings").build();
 		const emptyText = new ElementBuilder("p")
 			.text("There are no warnings for the data on the map.")
 			.build();
@@ -12,7 +13,7 @@ export class WarningsPopup extends Popup {
 		// ensure data exists
 		const dataCache = State.data.get();
 		if (dataCache === undefined) {
-			return [heading, emptyText];
+			return [emptyText];
 		}
 
 		// display all warnings
@@ -42,8 +43,8 @@ export class WarningsPopup extends Popup {
 		}
 
 		// display warnings if present
-		if (entries.length === 0) return [heading, emptyText];
-		else return [heading, ...entries];
+		if (entries.length === 0) return [emptyText];
+		else return entries;
 	}
 }
 

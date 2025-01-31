@@ -1,6 +1,7 @@
 @use "mixins";
-@use "overrides";
+@use "inputs";
 @use "animations";
+@use "popup";
 
 // # imports
 @import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&family=Quicksand:wght@300..700&family=Tektur:wght@400..900&display=swap");
@@ -68,10 +69,24 @@ h3,
 h4,
 h5,
 h6 {
+	margin-block: 0.25em 0;
+
 	font-family: "TekTur", sans-serif;
 	font-weight: 600;
 
 	color: var(--text);
+}
+
+h1 {
+	font-size: 2rem;
+}
+
+h2 {
+	font-size: 1.75rem;
+}
+
+h3 {
+	font-size: 1.5rem;
 }
 
 p,
@@ -122,19 +137,19 @@ a {
 }
 
 button {
-	cursor: pointer;
-}
-
-button,
-input {
-	background-color: var(--foreground-colour);
+	background-color: var(--background-colour);
 	border: none;
 	border-radius: var(--radius);
+	cursor: pointer;
 }
 
 a:has(i:only-child),
 button:has(i:only-child) {
-	@include mixins.icon-button();
+	@include mixins.flexbox($gap: 0.5em);
+	@include mixins.flexbox-align(center, center);
+
+	padding: 1em;
+	aspect-ratio: 1;
 }
 
 // # landmarks
@@ -148,7 +163,7 @@ body {
 	background-color: var(--background-colour);
 }
 
-header {
+body > header {
 	@include mixins.flexbox(row);
 	@include mixins.flexbox-align(center, center);
 
@@ -166,7 +181,7 @@ header {
 	}
 }
 
-main {
+body > main {
 	flex-grow: 1;
 	padding: 1em;
 	position: relative;
@@ -181,62 +196,6 @@ main {
 		#canvas-container {
 			display: none;
 		}
-	}
-}
-
-#popup {
-	@include mixins.flexbox(column);
-
-	margin: auto;
-	max-block-size: calc(100svh - 2rem);
-	width: min(95vw, 80ch);
-	padding: 1em;
-	z-index: 100;
-
-	background-color: var(--background-colour);
-	border: none;
-	border-radius: var(--radius);
-	box-shadow: var(--box-shadow);
-
-	&[open] {
-		animation: fade-in 0.25s;
-	}
-
-	&:not([open]) {
-		display: none;
-	}
-
-	&[closing] {
-		animation: fade-out 0.25s;
-	}
-
-	h2 {
-		text-transform: capitalize;
-	}
-
-	#popup-close {
-		right: 1em;
-		top: 1em;
-		position: absolute;
-	}
-
-	input[type="text"],
-	input[type="url"] {
-		height: 2.5em;
-		padding-inline: 10px;
-
-		background-color: var(--foreground-colour);
-		border: none;
-		border-radius: 5px;
-	}
-
-	input:invalid {
-		outline: 2px solid var(--error);
-	}
-
-	.reset-button {
-		aspect-ratio: 1;
-		padding: 1em;
 	}
 }
 

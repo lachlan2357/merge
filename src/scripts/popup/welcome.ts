@@ -2,6 +2,8 @@ import { ElementBuilder } from "../elements.js";
 import { Popup } from "./index.js";
 
 export class WelcomePopup extends Popup {
+	protected readonly title = "Welcome";
+
 	build(): Array<HTMLElement> {
 		const img = new ElementBuilder("img").id("welcome-img").src("/merge/icon.png").build();
 

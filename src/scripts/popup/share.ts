@@ -3,8 +3,9 @@ import { State } from "../state/index.js";
 import { Popup, openID, openJOSM } from "./index.js";
 
 export class SharePopup extends Popup {
+	protected readonly title = "Share";
+
 	build(): Array<HTMLElement> {
-		const heading = new ElementBuilder("h2").text("Share").build();
 		const shareText = `${window.location.origin}${
 			window.location.pathname
 		}#${State.currentRelationId.get()}`;
@@ -56,7 +57,7 @@ export class SharePopup extends Popup {
 		iDButton.addEventListener("click", () => openID);
 		josmIcon.addEventListener("click", openJOSM);
 
-		return [heading, container, openWithContainer];
+		return [container, openWithContainer];
 	}
 }
 

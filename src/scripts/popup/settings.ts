@@ -2,9 +2,14 @@ import { ElementBuilder, FontAwesomeIcon } from "../elements.js";
 import * as Settings from "../settings/index.js";
 import { Popup } from "./index.js";
 
+
+
+
+
 export class SettingsPopup extends Popup {
+	protected readonly title = "Settings";
+
 	build(): Array<HTMLElement> {
-		const heading = new ElementBuilder("h2").text("Settings").build();
 		const list = new ElementBuilder("div").id("settings-list").build();
 
 		for (const key of Settings.keys()) {
@@ -42,7 +47,7 @@ export class SettingsPopup extends Popup {
 			list.append(outerDiv);
 		}
 
-		return [heading, list];
+		return [list];
 	}
 }
 

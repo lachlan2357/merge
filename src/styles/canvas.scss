@@ -56,6 +56,11 @@ canvas {
 	position: relative;
 	width: 100%;
 
+	input,
+	button {
+		background-color: var(--foreground-colour);
+	}
+
 	&[fullscreen] {
 		height: 100dvh;
 		inset: 0;

@@ -1,0 +1,42 @@
+@use "mixins";
+
+#popup {
+	@include mixins.flexbox(column, 0);
+
+	margin: auto;
+	max-block-size: calc(100svh - 2rem);
+	width: min(95vw, 80ch);
+	z-index: 100;
+
+	background-color: var(--background-colour);
+	border: none;
+	border-radius: var(--radius);
+	box-shadow: var(--box-shadow);
+
+	&:not([open]) {
+		display: none;
+	}
+
+	&::backdrop {
+		background-color: var(--background-colour);
+		opacity: 0.5;
+	}
+}
+
+#popup > header {
+	@include mixins.flexbox(row);
+	@include mixins.flexbox-align(space-between);
+
+	position: relative;
+	padding: 1em 2em;
+
+	background-color: var(--foreground-colour);
+
+	#popup-close {
+		background-color: var(--accent);
+	}
+}
+
+#popup > main {
+	margin: 1em;
+}
