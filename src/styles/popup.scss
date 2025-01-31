@@ -6,6 +6,7 @@
 	margin: auto;
 	max-block-size: calc(100svh - 2rem);
 	width: min(95vw, 80ch);
+	max-height: min(80%, 1280px);
 	z-index: 100;
 
 	background-color: var(--background-colour);
@@ -38,5 +39,54 @@
 }
 
 #popup > main {
+	@include mixins.flexbox(column);
+
 	margin: 1em;
+	overflow: auto;
+}
+
+#popup .container {
+	align-items: center;
+	background-color: var(--accent);
+	border-radius: 5px;
+	display: flex;
+	gap: 1em;
+	justify-content: space-between;
+	padding: 1em;
+
+	& header {
+		@include mixins.flexbox(row, 0);
+		@include mixins.flexbox-align(space-between, center);
+
+		width: 100%;
+	}
+
+	&.vertical {
+		flex-direction: column;
+	}
+
+	h3 {
+		font-size: 1em;
+	}
+
+	input {
+		flex-grow: 0;
+		overflow: hidden;
+	}
+
+	button {
+		flex-grow: 0;
+	}
+
+	ul {
+		width: 100%;
+
+		li {
+			margin-inline-start: 2em;
+		}
+	}
+
+	.setting-text {
+		flex-grow: 1;
+	}
 }

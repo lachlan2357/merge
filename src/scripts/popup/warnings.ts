@@ -38,8 +38,19 @@ export class WarningsPopup extends Popup {
 			}
 
 			const listElement = list.build();
-			if (listElement.children.length > 0)
-				entries.push(subHeading, subHeadingLink, listElement);
+
+			if (listElement.children.length > 0) {
+				const header = new ElementBuilder("header")
+					.children(subHeading, subHeadingLink)
+					.build();
+
+				const container = new ElementBuilder("div")
+					.class("container", "vertical")
+					.children(header, listElement)
+					.build();
+
+				entries.push(container);
+			}
 		}
 
 		// display warnings if present

@@ -2,15 +2,11 @@ import { ElementBuilder, FontAwesomeIcon } from "../elements.js";
 import * as Settings from "../settings/index.js";
 import { Popup } from "./index.js";
 
-
-
-
-
 export class SettingsPopup extends Popup {
 	protected readonly title = "Settings";
 
 	build(): Array<HTMLElement> {
-		const list = new ElementBuilder("div").id("settings-list").build();
+		const elements = new Array<HTMLElement>();
 
 		for (const key of Settings.keys()) {
 			// ensure setting should be displayed in the menu
@@ -41,13 +37,13 @@ export class SettingsPopup extends Popup {
 				.children(heading, text)
 				.build();
 			const outerDiv = new ElementBuilder("div")
-				.class("setting-container")
+				.class("container")
 				.children(innerDiv, inputElement, resetButton)
 				.build();
-			list.append(outerDiv);
+			elements.push(outerDiv);
 		}
 
-		return [list];
+		return elements;
 	}
 }
 

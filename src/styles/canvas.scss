@@ -1,32 +1,5 @@
 @use "mixins";
 
-.setting-container {
-	align-items: center;
-	background-color: var(--accent);
-	border-radius: 5px;
-	display: flex;
-	gap: 1em;
-	justify-content: space-between;
-	padding: 1em;
-
-	h3 {
-		font-size: 1em;
-	}
-
-	input {
-		flex-grow: 0;
-		overflow: hidden;
-	}
-
-	button {
-		flex-grow: 0;
-	}
-
-	.setting-text {
-		flex-grow: 1;
-	}
-}
-
 canvas {
 	background-color: var(--canvas);
 	border-radius: var(--radius);
@@ -37,16 +10,11 @@ canvas {
 	@include mixins.flexbox-align(center, center);
 
 	button {
-		@include mixins.button-color("open-with");
 		aspect-ratio: 1;
 		padding: 1em;
-	}
-}
 
-#settings-list {
-	display: flex;
-	flex-direction: column;
-	gap: 1em;
+		background-color: var(--open-with);
+	}
 }
 
 #canvas-container {
@@ -74,7 +42,9 @@ canvas {
 }
 
 #copy-container {
-	// todo - change this to have the button outside the text
+	@include mixins.flexbox(row, 0);
+	@include mixins.flexbox-align(space-between);
+
 	background-color: var(--accent);
 	border-radius: var(--radius);
 	height: 40px;
@@ -84,9 +54,10 @@ canvas {
 	}
 
 	button {
-		@include mixins.button-color("copy");
 		aspect-ratio: 1;
 		height: 100%;
+
+		background-color: var(--copy);
 	}
 }
 
@@ -154,7 +125,7 @@ canvas {
 			@include mixins.flexbox($gap: 0.5em);
 
 			button {
-				@include mixins.button-color("open-with");
+				background-color: var(--open-with);
 				border-radius: var(--radius);
 			}
 		}
@@ -167,8 +138,6 @@ canvas {
 		table {
 			border: none;
 			border-collapse: collapse;
-			border-spacing: 0;
-			color: white;
 
 			tr {
 				* {

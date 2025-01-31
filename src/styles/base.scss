@@ -21,23 +21,18 @@
 	--radius: 5px;
 
 	// colours
-	--error: crimson;
+	--error: light-dark(rgb(161, 41, 65), rgb(238, 138, 158));
 
-	--copy: darkgreen;
-	--copy-hover: green;
-	--copy-active: lightgreen;
+	--copy: light-dark(rgb(76, 202, 124), rgb(22, 119, 59));
+	--open-with: light-dark(rgb(76, 202, 196), rgb(15, 121, 115));
 
-	--open-with: darkcyan;
-	--open-with-hover: lightseagreen;
-	--open-with-active: lightblue;
-
-	--background-colour: light-dark(#ddd, #111);
-	--foreground-colour: light-dark(#eee, #222);
+	--background-colour: light-dark(#eee, #111);
+	--foreground-colour: light-dark(#ddd, #222);
 	--accent: light-dark(#fff, #333);
 	--canvas: light-dark(#fff, #666);
-	--shadow: light-dark(#ccc, #000);
+	--shadow: light-dark(#aaa, #000);
 	--text: light-dark(#000, #fff);
-	--link: light-dark(darkblue, lightblue);
+	--link: light-dark(rgb(31, 100, 122), rgb(163, 212, 228));
 
 	// light/dark mode
 	&[data-dark-mode="false"] {
@@ -91,9 +86,11 @@ h3 {
 
 p,
 a,
+i,
 button,
 input,
-span {
+span,
+table {
 	font-family: "Quicksand", sans-serif;
 	font-weight: 300;
 
