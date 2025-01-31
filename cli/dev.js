@@ -6,12 +6,46 @@ import * as process from "process";
 import * as readline from "readline";
 import { WebSocketServer } from "ws";
 
-const serverPort = 3000;
-const websocketPort = 3001;
+/**
+ * Port declarations for the development server.
+ */
+const port = Object.freeze({
+	/**
+	 * The port the application will be hosted on, to visit in a browser.
+	 */
+	server: 3000,
+	/**
+	 * The port the communication between server and application travel on.
+	 */
+	websocket: 3001
+});
 
-const ws = new WebSocketServer({ port: websocketPort });
+/**
+ * The websocket server used to communicate to the application to alert it when to reload.
+ */
+const ws = new WebSocketServer({ port: port.websocket });
+
+/**
+ * Alert all websocket instances of the application to reload their page as updates have occurred.
+ */
 const sendReload = () => ws.clients.forEach(client => client.send("reload"));
 
+/**
+ * JavaScript code to inject into the HTML file in order for automatic reloading to function.
+ */
+const jsInject = `
+	<script>
+		const ws = new WebSocket("ws://localhost:${port.websocket}");
+		ws.addEventListener("message", event => {
+			const message = event.data.toString();
+			if (message === "reload") window.location.reload();
+		});
+	</script>
+</body`;
+
+/**
+ * All base-paths for various file/folder locations.
+ */
 const PATHS = {
 	html: "./src/pages",
 	scss: "./src/styles",
@@ -23,18 +57,8 @@ const PATHS = {
 };
 
 /**
- * JavaScript code to inject into the HTML file in order for automatic reloading to function.
+ * Open a development server with automatic change-reloading.
  */
-const jsInject = `
-	<script>
-		const ws = new WebSocket("ws://localhost:${websocketPort}");
-		ws.addEventListener("message", event => {
-			const message = event.data.toString();
-			if (message === "reload") window.location.reload();
-		});
-	</script>
-</body`;
-
 export default async function () {
 	// start recompilation listeners, waiting for them to finish before starting server
 	const htmlStart = startHtmlListener();
@@ -84,17 +108,18 @@ export default async function () {
 		res.send(404);
 	});
 
-	// setup readline to detect keypresses
+	// host server
+	app.listen(port.server, () => {
+		console.log(`Listening on port ${port.server}.`);
+		console.log("Enter 'q' to exit");
+	});
+
+	// setup readline to detect keypresses of 'q' or 'ctrl + c' to quit
 	readline.emitKeypressEvents(process.stdin);
 	if (process.stdin.isTTY) process.stdin.setRawMode(true);
 
 	process.stdin.addListener("keypress", event => {
 		if (event === "q" || event === "\x03") throw PROCESS_COMPLETE;
-	});
-
-	app.listen(serverPort, () => {
-		console.log(`Listening on port ${serverPort}.`);
-		console.log("Enter 'q' to exit");
 	});
 }
 

@@ -2,6 +2,9 @@ import { AppError, PROCESS_COMPLETE } from "./index.js";
 import { execSync } from "child_process";
 import { cpSync, mkdirSync, rmSync } from "fs";
 
+/**
+ * Build Merge into the `dist` directory.
+ */
 export default function () {
 	try {
 		rmSync("dist", { recursive: true, force: true });

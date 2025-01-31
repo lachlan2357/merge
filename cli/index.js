@@ -3,6 +3,9 @@ import deploy from "./deploy.js";
 import dev from "./dev.js";
 import process from "node:process";
 
+/**
+ * CLI Application entrypoint.
+ */
 async function main() {
 	// read cli arguments
 	const args = process.argv.splice(2);
@@ -29,9 +32,17 @@ async function main() {
 	}
 }
 
-// setup error listener
+/**
+ * Symbol to be thrown whenever a command process wishes to exit the process.
+ *
+ * This must be thrown by all processes explicitly otherwise there is a high chance the application
+ * will be left in a state where nothing will happen, but it will not exit.
+ */
 export const PROCESS_COMPLETE = Symbol("Process complete");
 
+/**
+ * Error type to be used by the application to differentiate between errors that are predicable.
+ */
 export class AppError extends Error {}
 
 process.addListener("uncaughtException", e => {
