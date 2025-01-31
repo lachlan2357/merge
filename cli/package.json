@@ -1,0 +1,19 @@
+{
+	"name": "merge-cli",
+	"version": "0.0.0",
+	"description": "CLI tool to assist with the development of Merge",
+	"author": {
+		"name": "Lachlan Rehder",
+		"email": "lachlan.rehder@outlook.com",
+		"url": "https://lachlan2357.github.io/"
+	},
+	"license": "GPL-3.0-only",
+	"private": true,
+	"main": "index.js",
+	"type": "module",
+	"scripts": {},
+	"dependencies": {
+		"express": "^4.21.2",
+		"ws": "^8.18.0"
+	}
+}
