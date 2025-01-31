@@ -8,11 +8,8 @@
 	"css.validate": false,
 	"scss.validate": false,
 	"stylelint.validate": ["scss"],
-	"[css]": {
-		"editor.defaultFormatter": "stylelint.vscode-stylelint"
-	},
 	"[scss]": {
-		"editor.defaultFormatter": "stylelint.vscode-stylelint"
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
 	},
 
 	// js/ts
