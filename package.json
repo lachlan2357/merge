@@ -12,11 +12,9 @@
 	"type": "module",
 	"scripts": {
 		"lint": "eslint ./src",
-		"build": "node cli/index.js build",
-		"deploy": "node cli/index.js deploy",
 		"serve": "serve",
-		"dev": "node cli/index.js dev",
-		"format": "prettier --write src/"
+		"format": "prettier --write src/",
+		"merge": "node cli/index.js"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.17.0",
