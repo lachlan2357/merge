@@ -12,15 +12,8 @@ export async function loadSearchBox(searchTerm: string) {
 }
 
 function setSearching(searching: boolean) {
-	// icon definitions
-	const static_icons = ["fa-magnifying-glass"];
-	const searching_icons = ["fa-circle-notch", "fa-spin"];
-
-	// remove all icons
-	SEARCH_ICON.classList.remove(...static_icons, ...searching_icons);
-
-	// set icon depending on state
-	SEARCH_ICON.classList.add(...(searching ? searching_icons : static_icons));
+	SEARCH_ICON.setAttribute("icon", searching ? "circle-notch" : "magnifying-glass");
+	SEARCH_ICON.setAttribute("animation", searching ? "spin" : "");
 }
 
 SEARCH_FORM.addEventListener("submit", async e => {
