@@ -1,12 +1,12 @@
-import * as components from "./components/index.js";
+import { registerCustomElements } from "./components/index.js";
 import { loadSearchBox } from "./map/search.js";
 import { displayMessage } from "./messages.js";
 import { WELCOME_POPUP } from "./popup/welcome.js";
 import * as Settings from "./settings/index.js";
 import { Effect, State } from "./state/index.js";
 
-// register all custom elements
-components.registerCustomElements();
+// register all WebComponents if they haven't already been
+registerCustomElements();
 
 // display a message on the message popup when a JS error occurs
 window.addEventListener("error", () => displayMessage("error"));

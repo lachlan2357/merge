@@ -1,10 +1,19 @@
+import { registerCustomElements } from "../components/index.js";
+
 /**
  * Constructor signature of a {@link HTMLElement} or any children.
+ *
+ * This constructor type is valid for any class inheriting from {@link HTMLElement}, including
+ * WebComponents.
  */
 export type ElementConstructor<E extends HTMLElement> = new () => E;
 
 /**
  * Retrieve an element from the DOM, ensuring it is of an expected class.
+ *
+ * This method can retrieve both standard HTML elements and custom WebComponents, so on each method
+ * call, all custom WebComponents are registered with the DOM if they haven't already been in order
+ * to be able to properly return an element of the correct class.
  *
  * @param id The ID of the element to retrieve.
  * @param constructor The expected type of the element.
@@ -13,6 +22,9 @@ export type ElementConstructor<E extends HTMLElement> = new () => E;
  * @returns The element if successfully found.
  */
 export function getElement<E extends HTMLElement>(id: string, constructor: ElementConstructor<E>) {
+	// ensure WebComponents have been registered
+	registerCustomElements();
+
 	// find element
 	const element = document.getElementById(id);
 	if (element === null) throw ElementError.notFound(id);

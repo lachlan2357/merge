@@ -1,10 +1,11 @@
+import { FontAwesomeIcon } from "../components/fa_icon.js";
 import { MessageBoxError } from "../messages.js";
 import { overpassSearch } from "../overpass/index.js";
 import { getElement } from "../supplement/elements.js";
 
 const SEARCH_FORM = getElement("search-form", HTMLFormElement);
 const SEARCH_BOX = getElement("relation-name", HTMLInputElement);
-const SEARCH_ICON = getElement("search-icon", HTMLElement);
+const SEARCH_ICON = getElement("search-icon", FontAwesomeIcon);
 
 export async function loadSearchBox(searchTerm: string) {
 	SEARCH_BOX.value = searchTerm;
