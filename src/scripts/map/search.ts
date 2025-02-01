@@ -1,4 +1,4 @@
-import { FontAwesomeIcon } from "../components/fa_icon.js";
+import { FontAwesomeIcon } from "../components/icon.js";
 import { MessageBoxError } from "../messages.js";
 import { overpassSearch } from "../overpass/index.js";
 import { getElement } from "../supplement/elements.js";
@@ -13,8 +13,13 @@ export async function loadSearchBox(searchTerm: string) {
 }
 
 function setSearching(searching: boolean) {
-	SEARCH_ICON.setAttribute("icon", searching ? "circle-notch" : "magnifying-glass");
-	SEARCH_ICON.setAttribute("animation", searching ? "spin" : "");
+	// set icon
+	const icon = searching ? "circle-notch" : "magnifying-glass";
+	SEARCH_ICON.setIcon(icon);
+
+	// set/clear animation
+	const animation = searching ? "spin" : null;
+	SEARCH_ICON.setAnimation(animation);
 }
 
 SEARCH_FORM.addEventListener("submit", async e => {

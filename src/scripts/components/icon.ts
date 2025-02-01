@@ -22,19 +22,25 @@ export class FontAwesomeIcon extends CustomHTMLElement {
 		shadow.append(fontawesomeCss, this.icon);
 	}
 
-	attributeChangedCallback(name: string, oldValue: string, newValue: string) {
-		switch (name) {
+	attributeChangedCallback(attribute: string, oldValue: string | null, newValue: string | null) {
+		switch (attribute) {
 			case "icon":
 			case "animation": {
-				const oldClassName = `fa-${oldValue}`;
-				const newClassName = `fa-${newValue}`;
-
-				if (oldValue !== "") this.icon.classList.remove(oldClassName);
-				if (newValue !== "") this.icon.classList.add(newClassName);
+				if (oldValue !== null) this.icon.classList.remove(`fa-${oldValue}`);
+				if (newValue !== null) this.icon.classList.add(`fa-${newValue}`);
 				break;
 			}
 			default:
-				return super.attributeChangedCallback(name, oldValue, newValue);
+				return super.attributeChangedCallback(attribute, oldValue, newValue);
 		}
+	}
+
+	setIcon(icon: string) {
+		this.setAttribute("icon", icon);
+	}
+
+	setAnimation(animation: string | null) {
+		if (animation === null) this.removeAttribute("animation");
+		else this.setAttribute("animation", animation ?? "");
 	}
 }

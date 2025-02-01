@@ -1,6 +1,6 @@
 import { ElementConstructor } from "../supplement/elements.js";
 import { CustomHTMLElement } from "./base.js";
-import { FontAwesomeIcon } from "./fa_icon.js";
+import { FontAwesomeIcon } from "./icon.js";
 
 /**
  * Declaration of all custom elements defined in this application.
