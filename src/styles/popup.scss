@@ -29,7 +29,7 @@
 	@include mixins.flexbox-align(space-between);
 
 	position: relative;
-	padding: 1em 2em;
+	padding: 1.5em 2em;
 
 	background-color: var(--foreground-colour);
 
@@ -46,19 +46,25 @@
 }
 
 #popup .container {
-	align-items: center;
 	background-color: var(--accent);
 	border-radius: 5px;
-	display: flex;
-	gap: 1em;
-	justify-content: space-between;
-	padding: 1em;
 
 	& header {
-		@include mixins.flexbox(row, 0);
+		@include mixins.flexbox(row);
 		@include mixins.flexbox-align(space-between, center);
 
 		width: 100%;
+		padding: 0.5em 1em;
+
+		background-color: var(--foreground-colour);
+		border-radius: var(--radius) var(--radius) 0 0;
+	}
+
+	& main {
+		@include mixins.flexbox(row);
+		@include mixins.flexbox-align(space-between, center);
+
+		margin: 1em;
 	}
 
 	&.vertical {
