@@ -19,7 +19,7 @@ export class SharePopup extends Popup {
 			.children(copyIcon)
 			.build();
 
-		const share = new ElementBuilder("span").class("share").text(shareText).build();
+		const share = new ElementBuilder("span").text(shareText).build();
 
 		const container = new ElementBuilder("div")
 			.id("copy-container")
