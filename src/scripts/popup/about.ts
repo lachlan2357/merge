@@ -13,7 +13,7 @@ export class AboutPopup extends Popup {
 			)
 			.build();
 
-		const icon = createCustomElement(FontAwesomeIcon).setIcon("github");
+		const icon = createCustomElement(FontAwesomeIcon).setFamily("brands").setIcon("github");
 		const chip = new LinkChip()
 			.url("https://www.github.com/lachlan2357/merge")
 			.text("GitHub")

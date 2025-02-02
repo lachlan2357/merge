@@ -5,7 +5,7 @@ import { CustomHTMLElement } from "./index.js";
  */
 @CustomHTMLElement.registerCustomElement("fa-icon")
 export class FontAwesomeIcon extends CustomHTMLElement {
-	static readonly observedAttributes = ["icon", "animation"];
+	static readonly observedAttributes = ["family", "icon", "animation"];
 
 	/**
 	 * Underlying {@link HTMLElement} which FontAwesome uses to display icons.
@@ -15,12 +15,12 @@ export class FontAwesomeIcon extends CustomHTMLElement {
 	connectedCallback() {
 		const shadow = this.attachShadow({ mode: "closed" });
 
-		// setup icon
-		this.icon.classList.add("fa-solid");
+		// set default family if none is specified
+		if (this.getAttribute("family") === null) this.setFamily("solid");
 
-		// required stylesheet
+		// required stylesheets
 		const fontawesomeCss = document.createElement("link");
-		fontawesomeCss.href = "/merge/fontawesome/css/fontawesome.css";
+		fontawesomeCss.href = "/merge/fontawesome/css/all.min.css";
 		fontawesomeCss.rel = "stylesheet";
 
 		shadow.append(fontawesomeCss, this.icon);
@@ -28,6 +28,7 @@ export class FontAwesomeIcon extends CustomHTMLElement {
 
 	attributeChangedCallback(attribute: string, oldValue: string | null, newValue: string | null) {
 		switch (attribute) {
+			case "family":
 			case "icon":
 			case "animation": {
 				if (oldValue !== null) this.icon.classList.remove(`fa-${oldValue}`);
@@ -37,6 +38,11 @@ export class FontAwesomeIcon extends CustomHTMLElement {
 			default:
 				return super.attributeChangedCallback(attribute, oldValue, newValue);
 		}
+	}
+
+	setFamily(family: string) {
+		this.setAttribute("family", family);
+		return this;
 	}
 
 	/**
