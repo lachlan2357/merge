@@ -93,12 +93,9 @@ export function displaySidebar(wayId: number) {
 	});
 
 	// get all tags from both maps
-	const allTagsRaw = originalTagMap
-		.keys()
-		.toArray()
-		.concat(inferredTagMap.keys().toArray())
-		.sort();
-	const allTags = new Set(allTagsRaw);
+	const allOriginalTags = Array.from(originalTagMap.keys());
+	const allInferredTags = Array.from(inferredTagMap.keys());
+	const allTags = new Set([...allOriginalTags, ...allInferredTags].sort());
 
 	// create each content row
 	for (const tag of allTags) {

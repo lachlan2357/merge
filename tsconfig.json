@@ -1,7 +1,7 @@
 {
 	"compilerOptions": {
 		/* Target */
-		"target": "ESNext",
+		"target": "ES2024",
 		"module": "NodeNext",
 		"moduleResolution": "NodeNext",
 

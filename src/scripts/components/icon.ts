@@ -1,5 +1,9 @@
-import { CustomHTMLElement } from "./base.js";
+import { CustomHTMLElement } from "./index.js";
 
+/**
+ * Icon element providing an interface to a FontAwesomeIcon.
+ */
+@CustomHTMLElement.registerCustomElement("fa-icon")
 export class FontAwesomeIcon extends CustomHTMLElement {
 	static readonly observedAttributes = ["icon", "animation"];
 
@@ -35,10 +39,26 @@ export class FontAwesomeIcon extends CustomHTMLElement {
 		}
 	}
 
+	/**
+	 * Set the icon for this container.
+	 * 
+	 * {@link icon} needs to be a valid FontAwesome icon. See https://fontawesome.com/icons/ for
+	 * available icons.
+	 * 
+	 * @param icon The name of the icon.
+	 */
 	setIcon(icon: string) {
 		this.setAttribute("icon", icon);
 	}
 
+	/**
+	 * Set the animation for this container.
+	 * 
+	 * {@link animation} needs to be a valid FontAwesome animation. See
+	 * https://docs.fontawesome.com/web/style/animate for available animations.
+	 * 
+	 * @param animation The name of the animation.
+	 */
 	setAnimation(animation: string | null) {
 		if (animation === null) this.removeAttribute("animation");
 		else this.setAttribute("animation", animation ?? "");
