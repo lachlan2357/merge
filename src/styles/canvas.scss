@@ -63,15 +63,12 @@ canvas {
 
 #canvas-overlay {
 	display: grid;
-	gap: 0.25em;
-	grid-template-columns: max-content max-content auto max-content;
-	grid-template-rows: min-content min-content min-content auto min-content;
+	grid-template-columns: min-content min-content 1fr max-content;
+	grid-template-rows: min-content min-content 1fr min-content;
+	column-gap: 1em;
+	row-gap: 0.25em 5em;
 
 	inset: 0.5em;
-	// might need these?
-	// height: var(--height);
-	// width: var(--width);
-	overflow: visible;
 	pointer-events: none;
 	position: absolute;
 
