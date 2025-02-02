@@ -41,26 +41,30 @@ export class FontAwesomeIcon extends CustomHTMLElement {
 
 	/**
 	 * Set the icon for this container.
-	 * 
+	 *
 	 * {@link icon} needs to be a valid FontAwesome icon. See https://fontawesome.com/icons/ for
 	 * available icons.
-	 * 
+	 *
 	 * @param icon The name of the icon.
+	 * @returns This object for method chaining.
 	 */
 	setIcon(icon: string) {
 		this.setAttribute("icon", icon);
+		return this;
 	}
 
 	/**
 	 * Set the animation for this container.
-	 * 
+	 *
 	 * {@link animation} needs to be a valid FontAwesome animation. See
 	 * https://docs.fontawesome.com/web/style/animate for available animations.
-	 * 
+	 *
 	 * @param animation The name of the animation.
+	 * @returns This object for method chaining.
 	 */
 	setAnimation(animation: string | null) {
 		if (animation === null) this.removeAttribute("animation");
 		else this.setAttribute("animation", animation ?? "");
+		return this;
 	}
 }

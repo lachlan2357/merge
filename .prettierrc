@@ -1,5 +1,5 @@
 {
-	"plugins": ["decorators", "@trivago/prettier-plugin-sort-imports"],
+	"plugins": ["@trivago/prettier-plugin-sort-imports"],
 	"arrowParens": "avoid",
 	"bracketSameLine": false,
 	"bracketSpacing": true,
@@ -10,5 +10,13 @@
 	"semi": true,
 	"tabWidth": 4,
 	"trailingComma": "none",
-	"useTabs": true
+	"useTabs": true,
+	"overrides": [
+		{
+			"files": "*.ts",
+			"options": {
+				"parser": "babel-ts"
+			}
+		}
+	]
 }

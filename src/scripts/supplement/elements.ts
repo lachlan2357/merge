@@ -82,7 +82,7 @@ class ElementError extends Error {
 
 	/**
 	 * Construct an error for when a custom element is created without being registered.
-	 * 
+	 *
 	 * @param constructor The element that was requested to be created.
 	 * @returns The constructed {@link ElementError}.
 	 */
