@@ -140,8 +140,8 @@ button {
 	cursor: pointer;
 }
 
-a:has(i:only-child),
-button:has(i:only-child) {
+a:has(fa-icon:only-child),
+button:has(fa-icon:only-child) {
 	@include mixins.flexbox($gap: 0.5em);
 	@include mixins.flexbox-align(center, center);
 

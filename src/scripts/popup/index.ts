@@ -1,6 +1,7 @@
-import { ElementBuilder, FontAwesomeIcon } from "../elements.js";
+import { FontAwesomeIcon } from "../components/icon.js";
+import { ElementBuilder } from "../elements.js";
 import { State } from "../state/index.js";
-import { getElement } from "../supplement/elements.js";
+import { createCustomElement, getElement } from "../supplement/elements.js";
 import { OsmValue } from "../types/osm.js";
 
 export const POPUP = getElement("popup", HTMLDialogElement);
@@ -26,7 +27,7 @@ export abstract class Popup {
 
 		// add window popup decorations
 		const heading = new ElementBuilder("h3").text(this.title).build();
-		const closeIcon = new FontAwesomeIcon("solid", "xmark").build();
+		const closeIcon = createCustomElement(FontAwesomeIcon).setIcon("xmark");
 		const closeButton = new ElementBuilder("button")
 			.id("popup-close")
 			.class("button")

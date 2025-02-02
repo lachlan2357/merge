@@ -1,5 +1,7 @@
-import { ElementBuilder, FontAwesomeIcon } from "../elements.js";
+import { FontAwesomeIcon } from "../components/icon.js";
+import { ElementBuilder } from "../elements.js";
 import { State } from "../state/index.js";
+import { createCustomElement } from "../supplement/elements.js";
 import { Popup, displaySidebar } from "./index.js";
 
 export class WarningsPopup extends Popup {
@@ -21,7 +23,7 @@ export class WarningsPopup extends Popup {
 		for (const way of dataCache.values()) {
 			const id = way.originalWay.id;
 			const subHeading = new ElementBuilder("h3").text(`Way ${id.toString()}`).build();
-			const icon = new FontAwesomeIcon("solid", "arrow-up-right-from-square").build();
+			const icon = createCustomElement(FontAwesomeIcon).setIcon("arrow-up-right-from-square");
 			const subHeadingLink = new ElementBuilder("button")
 				.event("click", () => displaySidebar(id))
 				.children(icon)

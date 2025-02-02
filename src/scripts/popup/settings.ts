@@ -1,5 +1,7 @@
-import { ElementBuilder, FontAwesomeIcon } from "../elements.js";
+import { FontAwesomeIcon } from "../components/icon.js";
+import { ElementBuilder } from "../elements.js";
 import * as Settings from "../settings/index.js";
+import { createCustomElement } from "../supplement/elements.js";
 import { Popup } from "./index.js";
 
 export class SettingsPopup extends Popup {
@@ -24,7 +26,7 @@ export class SettingsPopup extends Popup {
 			const inputElement = setting.inputElement.build();
 
 			// create reset button
-			const resetIcon = new FontAwesomeIcon("solid", "arrow-rotate-right").build();
+			const resetIcon = createCustomElement(FontAwesomeIcon).setIcon("arrow-rotate-right");
 			const resetButton = new ElementBuilder("button")
 				.class("reset-button")
 				.event("click", () => setting.reset())

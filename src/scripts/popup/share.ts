@@ -1,5 +1,7 @@
-import { ElementBuilder, FontAwesomeIcon } from "../elements.js";
+import { FontAwesomeIcon } from "../components/icon.js";
+import { ElementBuilder } from "../elements.js";
 import { State } from "../state/index.js";
+import { createCustomElement } from "../supplement/elements.js";
 import { Popup, openID, openJOSM } from "./index.js";
 
 export class SharePopup extends Popup {
@@ -10,7 +12,7 @@ export class SharePopup extends Popup {
 			window.location.pathname
 		}#${State.currentRelationId.get()}`;
 
-		const copyIcon = new FontAwesomeIcon("solid", "copy").build();
+		const copyIcon = createCustomElement(FontAwesomeIcon).setIcon("copy");
 		const copyButton = new ElementBuilder("button")
 			.id("copy-button")
 			.class("copy")
@@ -24,7 +26,7 @@ export class SharePopup extends Popup {
 			.children(share, copyButton)
 			.build();
 
-		const iDIcon = new FontAwesomeIcon("solid", "map").build();
+		const iDIcon = createCustomElement(FontAwesomeIcon).setIcon("map");
 		const iDButton = new ElementBuilder("button")
 			.id("osm")
 			.class("open-with")
@@ -33,7 +35,7 @@ export class SharePopup extends Popup {
 			.children(iDIcon)
 			.build();
 
-		const josmIcon = new FontAwesomeIcon("solid", "desktop").build();
+		const josmIcon = createCustomElement(FontAwesomeIcon).setIcon("desktop");
 		const josmButton = new ElementBuilder("button")
 			.id("josm")
 			.class("open-with")
