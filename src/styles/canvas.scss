@@ -1,44 +1,146 @@
 @use "mixins";
 
 canvas {
+	width: 100%;
+	height: 100%;
+
 	background-color: var(--canvas);
 	border-radius: var(--radius);
+
+	&:has([fullscreen]) {
+		border-radius: 0;
+	}
+}
+
+#canvas-overlay {
+	--gap: 0.25em;
+
+	display: grid;
+	grid-template-columns: min-content min-content 1fr max-content;
+	grid-template-rows: min-content min-content 1fr min-content;
+	column-gap: 1em;
+	row-gap: var(--gap);
+
+	inset: 0.5em;
+	pointer-events: none;
+	position: absolute;
+
+	* {
+		pointer-events: auto;
+	}
+}
+
+#canvas-overlay .map-ui {
+	border-radius: 100vw;
+	height: 2.5em;
+	padding-inline: 0.875em;
+}
+
+#search-form {
+	@include mixins.flexbox($gap: var(--gap));
+
+	grid-column: 1 / 3;
+	grid-row: 1;
+}
+
+#left-buttons {
+	@include mixins.flexbox(column, var(--gap));
+
+	grid-column: 1;
+	grid-row: 2;
+}
+
+#way-info {
+	@include mixins.flexbox(column);
+
+	grid-column: 4;
+	grid-row: 1 / 5;
+	padding: 2em 1em;
+
+	// ideally `overflow-y: auto` but grid max-content is calculated without
+	// scrollbar, so it causes the sidebar to be ever-so-slightly too thin
+	overflow-y: scroll;
+
+	background-color: var(--foreground-colour);
+	border-radius: var(--radius);
+	box-shadow: var(--box-shadow);
+
+	&[hidden] {
+		display: none;
+	}
+
+	#edit-in {
+		@include mixins.flexbox($gap: 0.5em);
+	}
+
+	table {
+		border: none;
+		border-collapse: collapse;
+
+		th {
+			background-color: var(--background-colour);
+		}
+
+		th,
+		td {
+			padding: 0.5em 1em;
+		}
+
+		tr:nth-child(2n - 1) td {
+			background-color: var(--foreground-colour);
+		}
+
+		tr:nth-child(2n) td {
+			background-color: var(--accent);
+		}
+	}
+}
+
+#messages {
+	@include mixins.flexbox(column);
+
+	grid-column: 3;
+	grid-row: 1 / -1;
+	overflow-y: hidden;
+	pointer-events: none;
+
+	.message-box {
+		display: none;
+		width: 100%;
+		padding: 1em;
+
+		background-color: var(--foreground-colour);
+		border-radius: var(--radius);
+		text-align: center;
+
+		&[visible] {
+			animation: fade-in 0.25s;
+			display: revert;
+		}
+
+		&[closing] {
+			animation: fade-out-and-shrink 0.25s;
+			overflow: hidden;
+		}
+	}
+}
+
+#copyright {
+	grid-column: 1 / -1;
+	grid-row: 5;
+	width: fit-content;
+	margin-inline-start: auto;
+	padding: 0.5em;
+
+	background-color: var(--foreground-colour);
+	border-radius: var(--radius);
+	font-size: 0.75em;
+	text-align: right;
 }
 
 #open-with-container {
 	@include mixins.flexbox($gap: 0.5em);
 	@include mixins.flexbox-align(center, center);
-
-	button {
-		aspect-ratio: 1;
-		padding: 1em;
-
-		background-color: var(--open-with);
-	}
-}
-
-#canvas-container {
-	background-color: var(--canvas);
-	border-radius: var(--radius);
-	height: 100%;
-	position: relative;
-	width: 100%;
-
-	input,
-	button {
-		background-color: var(--foreground-colour);
-	}
-
-	&[fullscreen] {
-		height: 100dvh;
-		inset: 0;
-		position: fixed;
-		width: 100dvw;
-
-		canvas {
-			border-radius: 0;
-		}
-	}
 }
 
 #copy-container {
@@ -53,154 +155,18 @@ canvas {
 		padding: 0.5em;
 		align-self: center;
 	}
-
-	button {
-		aspect-ratio: 1;
-		height: 100%;
-
-		background-color: var(--copy);
-	}
 }
 
-#canvas-overlay {
-	display: grid;
-	grid-template-columns: min-content min-content 1fr max-content;
-	grid-template-rows: min-content min-content 1fr min-content;
-	column-gap: 1em;
-	row-gap: 0.25em;
+button.open-with {
+	background-color: var(--open-with);
+}
 
-	inset: 0.5em;
-	pointer-events: none;
-	position: absolute;
-
-	* {
-		pointer-events: initial;
-	}
-
-	input,
-	button {
-		border-radius: 100vw;
-		height: 2.5em;
-		padding-inline: 0.875em;
-	}
-
-	button {
-		@include mixins.flexbox($gap: 0.25em);
-		@include mixins.flexbox-align(center, center);
-		aspect-ratio: 1;
-		overflow: hidden;
-	}
-
-	#search-form {
-		@include mixins.flexbox($gap: 0.25em);
-		grid-column: 1 / 3;
-		grid-row: 1;
-	}
-
-	#left-buttons {
-		// subgrid
-		@include mixins.flexbox(column, 0.25em);
-		grid-column: 1;
-		grid-row: 2;
-	}
-
-	#way-info {
-		@include mixins.flexbox(column);
-		background-color: var(--foreground-colour);
-		border-radius: var(--radius);
-		box-shadow: var(--box-shadow);
-		grid-column: 4;
-		grid-row: 1 / 5;
-		max-height: calc(var(--height) - 2em);
-		overflow-y: auto;
-		padding: 2em 1em;
-
-		&[hidden] {
-			display: none;
-		}
-
-		#edit-in {
-			@include mixins.flexbox($gap: 0.5em);
-
-			button {
-				background-color: var(--open-with);
-				border-radius: var(--radius);
-			}
-		}
-
-		h3,
-		a {
-			font-weight: 700;
-		}
-
-		table {
-			border: none;
-			border-collapse: collapse;
-
-			tr {
-				* {
-					padding: 0.5em 1em;
-				}
-
-				th {
-					background-color: var(--background-colour);
-				}
-
-				&:nth-child(2n - 1) td {
-					background-color: var(--foreground-colour);
-				}
-
-				&:nth-child(2n) td {
-					background-color: var(--accent);
-				}
-			}
-		}
-	}
-
-	#messages {
-		@include mixins.flexbox(column);
-		grid-column: 3;
-		grid-row: 1 / -1;
-		overflow-y: hidden;
-		pointer-events: none;
-
-		.message-box {
-			background-color: var(--foreground-colour);
-			border-radius: var(--radius);
-			display: none;
-			padding: 1em;
-			text-align: center;
-			width: 100%;
-
-			&[visible] {
-				animation: fade-in 0.25s;
-				display: revert;
-			}
-
-			&[closing] {
-				animation: fade-out-and-shrink 0.25s;
-				overflow: hidden;
-			}
-		}
-	}
-
-	#copyright {
-		background-color: var(--foreground-colour);
-		border-radius: var(--radius);
-		font-size: 0.75em;
-		grid-column: 1 / -1;
-		grid-row: 5;
-		margin-inline-start: auto;
-		padding: 0.5em;
-		text-align: right;
-		width: fit-content;
-	}
+button#copy-button {
+	background-color: var(--copy);
 }
 
 #empty-message {
-	left: 50%;
 	position: absolute;
-	text-align: center;
-	top: 50%;
-	transform: translate(-50%, -50%);
+	justify-self: center;
+	align-self: center;
 }

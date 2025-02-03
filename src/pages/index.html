@@ -16,7 +16,7 @@
 		<link href="/merge/fontawesome/css/all.min.css" rel="stylesheet" />
 
 		<!-- javascript -->
-		<script type="module" src="/merge/scripts/index.js" defer></script>
+		<script type="module" src="/merge/scripts/index.js"></script>
 	</head>
 
 	<body>
@@ -38,91 +38,92 @@
 
 		<!-- map -->
 		<main id="main">
-			<div id="canvas-container">
-				<!-- map canvas -->
-				<canvas id="canvas"></canvas>
+			<!-- map canvas -->
+			<canvas id="canvas"></canvas>
 
-				<!-- canvas overlay -->
-				<div id="canvas-overlay">
-					<!-- search bar and accompanying buttons -->
-					<form id="search-form">
-						<input
-							type="text"
-							id="relation-name"
-							name="relation"
-							placeholder="Search..."
-						/>
+			<!-- canvas overlay -->
+			<div id="canvas-overlay">
+				<!-- search bar and accompanying buttons -->
+				<form id="search-form">
+					<input
+						id="relation-name"
+						class="map-ui"
+						type="text"
+						name="relation"
+						placeholder="Search..."
+						aria-label="Search"
+					/>
 
-						<button type="submit" tooltip="Search">
-							<fa-icon id="search-icon" icon="magnifying-glass"></fa-icon>
-						</button>
+					<button class="map-ui" type="submit" aria-label="Search">
+						<fa-icon id="search-icon" icon="magnifying-glass"></fa-icon>
+					</button>
 
-						<button type="button" id="advanced" tooltip="Advanced">
-							<fa-icon icon="arrow-up-right-from-square"></fa-icon>
-						</button>
-						<button type="button" id="settings" tooltip="Settings">
-							<fa-icon icon="gear"></fa-icon>
-						</button>
-					</form>
+					<button class="map-ui" type="button" id="advanced" aria-label="Advanced">
+						<fa-icon icon="arrow-up-right-from-square"></fa-icon>
+					</button>
+					<button class="map-ui" type="button" id="settings" aria-label="Settings">
+						<fa-icon icon="gear"></fa-icon>
+					</button>
+				</form>
 
-					<!-- left side buttons -->
-					<div id="left-buttons">
-						<button id="zoom-in" tooltip="Zoom In">
-							<fa-icon icon="plus"></fa-icon>
-						</button>
-						<button id="zoom-out" tooltip="Zoom Out">
-							<fa-icon icon="minus"></fa-icon>
-						</button>
-						<button id="zoom-reset" tooltip="Reset View">
-							<fa-icon icon="rotate-right"></fa-icon>
-						</button>
-						<button id="fullscreen" tooltip="Fullscreen">
-							<fa-icon icon="expand"></fa-icon>
-						</button>
-						<button id="share" tooltip="Share">
-							<fa-icon icon="share"></fa-icon>
-						</button>
-						<button id="help" tooltip="Help">
-							<fa-icon icon="question"></fa-icon>
-						</button>
-						<button id="about" tooltip="About">
-							<fa-icon icon="info"></fa-icon>
-						</button>
-						<button id="warnings" tooltip="Warnings">
-							<fa-icon icon="triangle-exclamation"></fa-icon>
-						</button>
-					</div>
-
-					<!-- way info card -->
-
-					<div id="way-info" hidden>
-						<h3 id="wayid"></h3>
-						<div id="edit-in">
-							<button id="edit-id" class="open-with" tooltip="Edit in iD">
-								<fa-icon icon="map"></fa-icon>
-							</button>
-							<button id="edit-josm" class="open-with" tooltip="Edit in JOSM">
-								<fa-icon icon="desktop"></fa-icon>
-							</button>
-						</div>
-						<table id="tags"></table>
-					</div>
-
-					<!-- OSM and Font Awesome Copyright -->
-					<p id="copyright">
-						Data &#169;
-						<a href="https://www.openstreetmap.org/copyright" target="_blank"
-							>OpenStreetMap Contributors</a
-						>. Icons by
-						<a href="http://fontawesome.com" target="_blank">Font Awesome</a>.
-					</p>
-
-					<!-- message box -->
-					<div id="messages"></div>
-
-					<!-- initial statement -->
-					<h2 id="empty-message">Use the search box to select highways.</h2>
+				<!-- left side buttons -->
+				<div id="left-buttons">
+					<button class="map-ui" id="zoom-in" aria-label="Zoom In">
+						<fa-icon icon="plus"></fa-icon>
+					</button>
+					<button class="map-ui" id="zoom-out" aria-label="Zoom Out">
+						<fa-icon icon="minus"></fa-icon>
+					</button>
+					<button class="map-ui" id="zoom-reset" aria-label="Reset View">
+						<fa-icon icon="rotate-right"></fa-icon>
+					</button>
+					<button class="map-ui" id="fullscreen" aria-label="Fullscreen">
+						<fa-icon icon="expand"></fa-icon>
+					</button>
+					<button class="map-ui" id="share" aria-label="Share">
+						<fa-icon icon="share"></fa-icon>
+					</button>
+					<button class="map-ui" id="help" aria-label="Help">
+						<fa-icon icon="question"></fa-icon>
+					</button>
+					<button class="map-ui" id="about" aria-label="About">
+						<fa-icon icon="info"></fa-icon>
+					</button>
+					<button class="map-ui" id="warnings" aria-label="Warnings">
+						<fa-icon icon="triangle-exclamation"></fa-icon>
+					</button>
 				</div>
+
+				<!-- way info card -->
+
+				<div id="way-info" hidden>
+					<h3 id="wayid">
+						Way <a id="wayid-link" class="h3" href="" target="_blank"></a>
+					</h3>
+					<div id="edit-in">
+						<button id="edit-id" class="open-with" aria-label="Edit in iD">
+							<fa-icon icon="map"></fa-icon>
+						</button>
+						<button id="edit-josm" class="open-with" aria-label="Edit in JOSM">
+							<fa-icon icon="desktop"></fa-icon>
+						</button>
+					</div>
+					<table id="tags"></table>
+				</div>
+
+				<!-- OSM and Font Awesome Copyright -->
+				<p id="copyright">
+					Data &#169;
+					<a href="https://www.openstreetmap.org/copyright" target="_blank">
+						OpenStreetMap Contributors </a
+					>. Icons by <a href="http://fontawesome.com" target="_blank">Font Awesome</a>.
+				</p>
+
+				<!-- message box -->
+				<div id="messages"></div>
+
+				<!-- initial statement -->
+				<h2 id="empty-message">Use the search box to select highways.</h2>
 			</div>
 
 			<noscript>

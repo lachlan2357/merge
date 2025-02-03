@@ -61,26 +61,40 @@
 h1,
 h2,
 h3,
-h4,
-h5,
-h6 {
+p,
+i,
+button,
+input,
+span,
+table,
+code {
+	color: var(--text);
+}
+
+h1,
+h2,
+h3,
+.h1,
+.h2,
+.h3 {
 	margin-block: 0.25em 0;
 
 	font-family: "TekTur", sans-serif;
 	font-weight: 600;
-
-	color: var(--text);
 }
 
-h1 {
+h1,
+.h1 {
 	font-size: 2rem;
 }
 
-h2 {
+h2,
+.h2 {
 	font-size: 1.75rem;
 }
 
-h3 {
+h3,
+.h3 {
 	font-size: 1.5rem;
 }
 
@@ -93,15 +107,11 @@ span,
 table {
 	font-family: "Quicksand", sans-serif;
 	font-weight: 300;
-
-	color: var(--text);
 }
 
 code {
 	font-family: "Fira Code", monospace;
 	font-weight: 300;
-
-	color: var(--text);
 }
 
 // # buttons & links
@@ -147,9 +157,13 @@ button:has(fa-icon:only-child) {
 
 	padding: 1em;
 	aspect-ratio: 1;
+
+	// fix for chromium not being able to squash the buttons
+	overflow: hidden;
 }
 
 // # landmarks
+
 body {
 	@include mixins.flexbox(column, 0);
 
@@ -171,7 +185,7 @@ body > header {
 	box-shadow: var(--box-shadow);
 
 	img {
-		aspect-ratio: 1;
+		width: 6.25em;
 		height: 6.25em;
 
 		border-radius: 50%;
@@ -180,19 +194,14 @@ body > header {
 
 body > main {
 	flex-grow: 1;
-	padding: 1em;
+	margin: 1em;
 	position: relative;
 	overflow: hidden;
 
-	width: 100%;
-
-	&[error] {
-		@include mixins.flexbox(column);
-		@include mixins.flexbox-align(center, center);
-
-		#canvas-container {
-			display: none;
-		}
+	&[fullscreen] {
+		position: fixed;
+		inset: 0;
+		margin: 0;
 	}
 }
 

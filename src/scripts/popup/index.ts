@@ -7,6 +7,7 @@ import { OsmValue } from "../types/osm.js";
 export const POPUP = getElement("popup", HTMLDialogElement);
 export const WAY_INFO = getElement("way-info", HTMLDivElement);
 export const WAY_INFO_ID = getElement("wayid", HTMLHeadingElement);
+export const WAY_INFO_LINK = getElement("wayid-link", HTMLAnchorElement);
 export const WAY_INFO_TAGS = getElement("tags", HTMLTableElement);
 
 export abstract class Popup {
@@ -43,6 +44,7 @@ export abstract class Popup {
 		// show popup
 		POPUP.append(header, main);
 		POPUP.showModal();
+		POPUP.scrollTop = 0;
 	}
 
 	static close() {
@@ -56,8 +58,9 @@ export function displaySidebar(wayId: number) {
 	const wayData = State.data.get()?.get(wayId);
 	if (wayData === undefined) return;
 
-	// update url
-	WAY_INFO_ID.innerHTML = `Way <a href="https://www.openstreetmap.org/way/${wayId}" target="_blank">${wayId}</a>`;
+	// update heading url and text
+	WAY_INFO_LINK.href = `https://www.openstreetmap.org/way/${wayId}`;
+	WAY_INFO_LINK.textContent = wayId.toString();
 
 	// purge all tag entries from any previous ways
 	while (WAY_INFO_TAGS.lastChild) WAY_INFO_TAGS.removeChild(WAY_INFO_TAGS.lastChild);
@@ -121,6 +124,7 @@ export function displaySidebar(wayId: number) {
 
 	WAY_INFO.removeAttribute("hidden");
 	State.selectedWay.set(wayId);
+	WAY_INFO.scrollTop = 0;
 }
 
 export function openID() {
