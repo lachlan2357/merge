@@ -12,7 +12,6 @@
 	background-color: var(--background-colour);
 	border: none;
 	border-radius: var(--radius);
-	box-shadow: var(--box-shadow);
 
 	&:not([open]) {
 		display: none;
@@ -20,7 +19,7 @@
 
 	&::backdrop {
 		background-color: var(--background-colour);
-		opacity: 0.5;
+		opacity: 0.8;
 	}
 }
 

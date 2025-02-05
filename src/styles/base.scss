@@ -22,14 +22,15 @@
 
 	// document colours
 	--background-colour: light-dark(#eee, #111);
-	--midground-colour: light-dark(#ddd, #222);
-	--foreground-colour: light-dark(#fff, #333);
-	--canvas: light-dark(#fff, #666);
-	--shadow: light-dark(#aaa, #000);
+	--midground-colour: light-dark(#fff, #222);
+	--foreground-colour: light-dark(#ddd, #333);
+	--canvas: light-dark(#ccc, #666);
+	--shadow: light-dark(#aaa, #555);
 	--text: light-dark(#000, #fff);
 
 	// vibrant colours
-	--accent: #35adbb --error: light-dark(rgb(161, 41, 65), rgb(238, 138, 158));
+	--accent: #35adbb;
+	--error: light-dark(rgb(161, 41, 65), rgb(238, 138, 158));
 	--copy: light-dark(rgb(76, 202, 124), rgb(22, 119, 59));
 	--open-with: light-dark(rgb(76, 202, 196), rgb(15, 121, 115));
 	--link: light-dark(rgb(31, 100, 122), rgb(163, 212, 228));
@@ -192,7 +193,6 @@ body > header {
 	padding-inline: max(10%, 1.5em);
 
 	background-color: var(--midground-colour);
-	box-shadow: var(--box-shadow);
 
 	img {
 		width: 6.25em;

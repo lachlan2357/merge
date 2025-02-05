@@ -31,9 +31,11 @@ canvas {
 }
 
 #canvas-overlay .map-ui {
-	border-radius: 100vw;
 	height: 2.5em;
 	padding-inline: 0.875em;
+
+	border-radius: 100vw;
+	box-shadow: var(--box-shadow);
 }
 
 #search-form {
@@ -134,6 +136,7 @@ canvas {
 
 	background-color: var(--foreground-colour);
 	border-radius: var(--radius);
+	box-shadow: var(--box-shadow);
 	font-size: 0.75em;
 	text-align: right;
 }
