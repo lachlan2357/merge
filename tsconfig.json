@@ -1,21 +1,21 @@
 {
-	"compilerOptions": {
-		/* Target */
-		"target": "ES2024",
-		"module": "NodeNext",
-		"moduleResolution": "NodeNext",
+  "compilerOptions": {
+    /* target */
+    "target": "ES2024",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
 
-		/* Disallow JavaScript */
-		"allowJs": false,
+    /* disallow JavaScript */
+    "allowJs": false,
 
-		/* Build Options */
-		"outDir": "./dist/scripts",
-		"esModuleInterop": true,
+    /* build options */
+    "outDir": "./dist/scripts",
+    "esModuleInterop": true,
 
-		/* Strictness */
-		"forceConsistentCasingInFileNames": true,
-		"strict": true,
-		"alwaysStrict": true
-	},
-	"include": ["./src/scripts/**/*"]
+    /* strictness */
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "alwaysStrict": true
+  },
+  "include": ["./src/scripts/**/*"]
 }

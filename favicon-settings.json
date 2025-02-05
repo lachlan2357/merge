@@ -1,0 +1,29 @@
+{
+  "icon": {
+    "desktop": {
+      "regularIconTransformation": {
+        "type": "none"
+      },
+      "darkIconType": "none"
+    },
+    "touch": {
+      "transformation": {
+        "type": "background",
+        "backgroundColor": "#35adbb",
+        "backgroundRadius": 0,
+        "imageScale": 0.7
+      },
+      "appTitle": "Merge"
+    },
+    "webAppManifest": {
+      "transformation": {
+        "type": "none"
+      },
+      "backgroundColor": "#ffffff",
+      "name": "Merge",
+      "shortName": "Merge",
+      "themeColor": "#35adbb"
+    }
+  },
+  "path": "/merge/icons/"
+}

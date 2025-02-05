@@ -91,7 +91,7 @@ canvas {
 		}
 
 		tr:nth-child(2n) td {
-			background-color: var(--accent);
+			background-color: var(--midground-colour);
 		}
 	}
 }
@@ -147,7 +147,7 @@ canvas {
 	@include mixins.flexbox(row, 0);
 	@include mixins.flexbox-align(space-between);
 
-	background-color: var(--accent);
+	background-color: var(--midground-colour);
 	border-radius: var(--radius);
 	height: 40px;
 

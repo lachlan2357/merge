@@ -34,7 +34,7 @@
 	background-color: var(--foreground-colour);
 
 	#popup-close {
-		background-color: var(--accent);
+		background-color: var(--midground-colour);
 	}
 }
 
@@ -46,7 +46,7 @@
 }
 
 #popup .container {
-	background-color: var(--accent);
+	background-color: var(--midground-colour);
 	border-radius: 5px;
 
 	& header {

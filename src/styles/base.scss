@@ -4,7 +4,7 @@
 @use "popup";
 
 // # imports
-@import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&family=Quicksand:wght@300..700&family=Tektur:wght@400..900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&family=Quicksand:wght@300..700&family=SUSE:wght@400..800&display=swap");
 
 // # css reset
 * {
@@ -20,19 +20,21 @@
 	--box-shadow: 0 0 10px var(--shadow);
 	--radius: 5px;
 
-	// colours
-	--error: light-dark(rgb(161, 41, 65), rgb(238, 138, 158));
-
-	--copy: light-dark(rgb(76, 202, 124), rgb(22, 119, 59));
-	--open-with: light-dark(rgb(76, 202, 196), rgb(15, 121, 115));
-
+	// document colours
 	--background-colour: light-dark(#eee, #111);
-	--foreground-colour: light-dark(#ddd, #222);
-	--accent: light-dark(#fff, #333);
+	--midground-colour: light-dark(#ddd, #222);
+	--foreground-colour: light-dark(#fff, #333);
 	--canvas: light-dark(#fff, #666);
 	--shadow: light-dark(#aaa, #000);
 	--text: light-dark(#000, #fff);
+
+	// vibrant colours
+	--accent: #35adbb --error: light-dark(rgb(161, 41, 65), rgb(238, 138, 158));
+	--copy: light-dark(rgb(76, 202, 124), rgb(22, 119, 59));
+	--open-with: light-dark(rgb(76, 202, 196), rgb(15, 121, 115));
 	--link: light-dark(rgb(31, 100, 122), rgb(163, 212, 228));
+
+	accent-color: var(--accent);
 
 	// light/dark mode
 	&[data-dark-mode="false"] {
@@ -79,7 +81,7 @@ h3,
 .h3 {
 	margin-block: 0.25em 0;
 
-	font-family: "TekTur", sans-serif;
+	font-family: "SUSE", sans-serif;
 }
 
 h1,
@@ -92,12 +94,14 @@ h2,
 .h2 {
 	font-size: 1.75rem;
 	font-weight: 700;
+	opacity: 0.875;
 }
 
 h3,
 .h3 {
 	font-size: 1.375rem;
-	font-weight: 600;
+	font-weight: 700;
+	opacity: 0.75;
 }
 
 p,
@@ -139,7 +143,7 @@ a {
 		width: fit-content;
 
 		&:hover {
-			background-color: var(--accent);
+			background-color: var(--foreground-colour);
 			cursor: pointer;
 		}
 
@@ -187,7 +191,7 @@ body > header {
 	padding-block: 3em;
 	padding-inline: max(10%, 1.5em);
 
-	background-color: var(--foreground-colour);
+	background-color: var(--midground-colour);
 	box-shadow: var(--box-shadow);
 
 	img {

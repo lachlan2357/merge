@@ -1,20 +1,26 @@
 {
-	// html
-	"[html]": {
-		"editor.defaultFormatter": "esbenp.prettier-vscode"
-	},
+  // html
+  "[html]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
 
-	// css/scss
-	"css.validate": false,
-	"scss.validate": false,
-	"stylelint.validate": ["scss"],
-	"[scss]": {
-		"editor.defaultFormatter": "esbenp.prettier-vscode"
-	},
+  // css/scss
+  "css.validate": false,
+  "scss.validate": false,
+  "stylelint.validate": ["scss"],
+  "[scss]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
 
-	// js/ts
-	"typescript.tsdk": "node_modules\\typescript\\lib",
-	"[typescript]": {
-		"editor.defaultFormatter": "esbenp.prettier-vscode"
-	}
+  // js/ts
+  "typescript.tsdk": "node_modules\\typescript\\lib",
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  // json
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  }
 }
