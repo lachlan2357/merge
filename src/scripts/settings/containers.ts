@@ -131,6 +131,7 @@ export abstract class Setting<T extends ToString> {
 		this.#defaultValue = defaultValue;
 		this.#currentValue = defaultValue;
 		this.load();
+		this.save();
 		this.#onChange(this.#currentValue);
 
 		// build input element
