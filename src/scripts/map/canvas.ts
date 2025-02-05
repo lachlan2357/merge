@@ -1,6 +1,6 @@
 import { laneLength, metresToPixels } from "../conversions.js";
 import { DrawnElement, drawArrow, drawLine, drawPolygon, getSurfaceColour } from "../drawing.js";
-import { WAY_INFO, displaySidebar } from "../popup/index.js";
+import sidebar from "./sidebar.js";
 import * as Settings from "../settings/index.js";
 import { Effect, State } from "../state/index.js";
 import { getElement } from "../supplement/elements.js";
@@ -56,7 +56,7 @@ class Canvas {
 			if (!State.data.get()) return;
 
 			if (!State.mouseMoved.get() && !this.checkHover()) {
-				WAY_INFO.setAttribute("hidden", "");
+				sidebar.hide();
 				State.selectedWay.set(-1);
 			}
 
@@ -394,7 +394,7 @@ class Canvas {
 			// display popup if element is clicked
 			const way = State.allWays.get().get(element.wayId);
 			if (way === undefined) continue;
-			if (clicked) displaySidebar(element.wayId);
+			if (clicked) sidebar.show(element.wayId);
 		}
 
 		return anyHovered;

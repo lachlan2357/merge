@@ -70,29 +70,4 @@
 	&.vertical {
 		flex-direction: column;
 	}
-
-	h3 {
-		font-size: 1em;
-	}
-
-	input {
-		flex-grow: 0;
-		overflow: hidden;
-	}
-
-	button {
-		flex-grow: 0;
-	}
-
-	ul {
-		width: 100%;
-
-		li {
-			margin-inline-start: 2em;
-		}
-	}
-
-	.setting-text {
-		flex-grow: 1;
-	}
 }

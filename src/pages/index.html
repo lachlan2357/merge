@@ -94,12 +94,9 @@
 					</button>
 				</div>
 
-				<!-- way info card -->
-
+				<!-- way info sidebar -->
 				<div id="way-info" hidden>
-					<h3 id="wayid">
-						Way <a id="wayid-link" class="h3" href="" target="_blank"></a>
-					</h3>
+					<h2>Way <a id="wayid-link" class="h3" href="" target="_blank"></a></h2>
 					<div id="edit-in">
 						<button id="edit-id" class="open-with" aria-label="Edit in iD">
 							<fa-icon icon="map"></fa-icon>
@@ -108,7 +105,34 @@
 							<fa-icon icon="desktop"></fa-icon>
 						</button>
 					</div>
-					<table id="tags"></table>
+
+					<!-- tags used for drawing -->
+					<div>
+						<h3>Drawn Tags</h3>
+						<p>Tags used in the drawing process.</p>
+					</div>
+					<table>
+						<thead>
+							<tr>
+								<th>Tag</th>
+								<th>Value</th>
+							</tr>
+						</thead>
+						<tbody id="drawn-tags"></tbody>
+					</table>
+
+					<!-- all other tags -->
+					<div>
+						<h3>Other Tags</h3>
+						<p>Tags not used/supported.</p>
+					</div>
+					<table>
+						<tr>
+							<th>Tag</th>
+							<th>Value</th>
+						</tr>
+						<tbody id="other-tags"></tbody>
+					</table>
 				</div>
 
 				<!-- OSM and Font Awesome Copyright -->
@@ -123,7 +147,7 @@
 				<div id="messages"></div>
 
 				<!-- initial statement -->
-				<h2 id="empty-message">Use the search box to select highways.</h2>
+				<p id="empty-message" class="h2">Use the search box to select highways.</p>
 			</div>
 
 			<noscript>

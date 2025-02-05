@@ -3,7 +3,8 @@ import { PopupContainer } from "../components/popup.js";
 import { ElementBuilder } from "../elements.js";
 import { State } from "../state/index.js";
 import { createCustomElement } from "../supplement/elements.js";
-import { POPUP, Popup, displaySidebar } from "./index.js";
+import { POPUP_DIALOG, Popup } from "./index.js";
+import sidebar from "../map/sidebar.js";
 
 export class WarningsPopup extends Popup {
 	protected readonly title = "Warnings";
@@ -29,8 +30,8 @@ export class WarningsPopup extends Popup {
 			const icon = createCustomElement(FontAwesomeIcon).setIcon("arrow-up-right-from-square");
 			const button = new ElementBuilder("button")
 				.event("click", () => {
-					POPUP.close();
-					displaySidebar(id);
+					POPUP_DIALOG.close();
+					sidebar.show(id);
 				})
 				.children(icon)
 				.build();
