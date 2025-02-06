@@ -1,8 +1,9 @@
 import { FontAwesomeIcon } from "../components/icon.js";
 import { ElementBuilder } from "../elements.js";
+import external from "../external.js";
 import { State } from "../state/index.js";
 import { createCustomElement } from "../supplement/elements.js";
-import { Popup, openID, openJOSM } from "./index.js";
+import { Popup } from "./index.js";
 
 export class SharePopup extends Popup {
 	protected readonly title = "Share";
@@ -41,7 +42,7 @@ export class SharePopup extends Popup {
 			.id("osm")
 			.class("open-with")
 			.tooltip("Open in iD", "top")
-			.event("click", openID)
+			.event("click", () => external.relation.iD())
 			.children(iDIcon)
 			.build();
 
@@ -50,7 +51,7 @@ export class SharePopup extends Popup {
 			.id("josm")
 			.class("open-with")
 			.tooltip("Open in JOSM", "top")
-			.event("click", openJOSM)
+			.event("click", () => external.relation.josm())
 			.children(josmIcon)
 			.build();
 
@@ -58,9 +59,6 @@ export class SharePopup extends Popup {
 			.id("open-with-container")
 			.children(iDButton, josmButton)
 			.build();
-
-		iDButton.addEventListener("click", () => openID);
-		josmIcon.addEventListener("click", openJOSM);
 
 		return [container, openWithContainer];
 	}

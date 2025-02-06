@@ -72,10 +72,6 @@ canvas {
 		display: none;
 	}
 
-	& > header {
-		@include mixins.header();
-	}
-
 	& > main {
 		padding: 1em;
 	}
@@ -105,6 +101,7 @@ canvas {
 
 			&:nth-child(2) {
 				@include mixins.flexbox(row, 1ch);
+				@include mixins.flexbox-align(space-between, center);
 			}
 		}
 

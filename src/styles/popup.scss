@@ -23,12 +23,6 @@
 	}
 }
 
-#popup > header {
-	@include mixins.header();
-
-	position: relative;
-}
-
 #popup > main {
 	@include mixins.flexbox(column);
 

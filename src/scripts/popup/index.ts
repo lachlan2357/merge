@@ -1,6 +1,5 @@
 import { FontAwesomeIcon } from "../components/icon.js";
 import { ElementBuilder } from "../elements.js";
-import { State } from "../state/index.js";
 import { createCustomElement, getElement } from "../supplement/elements.js";
 
 export const POPUP_DIALOG = getElement("popup", HTMLDialogElement);
@@ -31,8 +30,14 @@ export abstract class Popup {
 			.event("click", () => Popup.close())
 			.tooltip("Close", "bottom")
 			.build();
-		const icons = new ElementBuilder("div").class("header-icons").children(closeButton).build();
-		const header = new ElementBuilder("header").children(heading, icons).build();
+		const icons = new ElementBuilder("div")
+			.class("title-bar-buttons")
+			.children(closeButton)
+			.build();
+		const header = new ElementBuilder("header")
+			.class("title-bar")
+			.children(heading, icons)
+			.build();
 
 		// rebuild and append children
 		this.children = this.build();
@@ -48,26 +53,4 @@ export abstract class Popup {
 		if (!POPUP_DIALOG.open) return;
 		POPUP_DIALOG.close();
 	}
-}
-
-export function openID() {
-	window.open(
-		`https://www.openstreetmap.org/relation/${State.currentRelationId.get()}`,
-		"_blank",
-		"noreferrer noopener"
-	);
-}
-
-export function editID() {
-	window.open(
-		`https://www.openstreetmap.org/edit?way=${State.selectedWay.get()}`,
-		"_blank",
-		"noreferrer noopener"
-	);
-}
-
-export function openJOSM() {
-	const { minLat, maxLat, minLon, maxLon } = State.multiplier.get();
-	const url = `127.0.0.1:8111/load_and_zoom?left=${minLon}&right=${maxLon}&top=${maxLat}&bottom=${minLat}&select=relation${State.currentRelationId.get()}`;
-	fetch(url);
 }

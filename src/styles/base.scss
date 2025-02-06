@@ -2,6 +2,7 @@
 @use "inputs";
 @use "animations";
 @use "popup";
+@use "title-bar";
 
 // # imports
 @import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&family=Quicksand:wght@300..700&family=SUSE:wght@400..800&display=swap");
@@ -266,19 +267,4 @@ body > main {
 
 #welcome-heading {
 	text-align: center;
-}
-
-// # header icon bar
-
-.header-icons {
-	@include mixins.flexbox(row, 0.5em);
-
-	& > * {
-		width: 3em;
-		height: 3em;
-	}
-}
-
-.close-button {
-	background-color: var(--midground-colour);
 }

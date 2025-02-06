@@ -1,5 +1,6 @@
 import { FontAwesomeIcon } from "../components/icon.js";
 import { ElementBuilder } from "../elements.js";
+import external from "../external.js";
 import { State } from "../state/index.js";
 import { createCustomElement, getElement } from "../supplement/elements.js";
 import { OsmValue } from "../types/osm.js";
@@ -9,6 +10,12 @@ const WAY_EXTERNAL_LINK = getElement("wayid-link", HTMLAnchorElement);
 
 const DRAWN_TAGS = getElement("drawn-tags", HTMLTableSectionElement);
 const OTHER_TAGS = getElement("other-tags", HTMLTableSectionElement);
+
+const EDIT_ID = getElement("edit-id", HTMLButtonElement);
+EDIT_ID.addEventListener("click", () => external.way.iD());
+
+const EDIT_JOSM = getElement("edit-josm", HTMLButtonElement);
+EDIT_JOSM.addEventListener("click", () => external.way.josm());
 
 const CLOSE_BUTTON = getElement("sidebar-close", HTMLButtonElement);
 CLOSE_BUTTON.addEventListener("click", () => hide());
@@ -90,7 +97,7 @@ function show(wayId: number) {
 		// build row
 		const tagCell = new ElementBuilder("td").class("code").text(tag.toString()).build();
 		const valueCell = new ElementBuilder("td").class("code").text(valueString);
-		if (originalValue === undefined && inferredValue !== undefined) {
+		if (originalValue === undefined && inferredValueRaw !== undefined) {
 			const icon = createCustomElement(FontAwesomeIcon).setIcon("circle-info");
 			const iconSpan = new ElementBuilder("span")
 				.class("inference-icon")

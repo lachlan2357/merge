@@ -20,17 +20,3 @@
 		background-color: var(--#{$color}-active);
 	}
 }
-
-@mixin header() {
-	@include flexbox(row, 2em);
-	@include flexbox-align(space-between, center);
-
-	padding-block: 2em 1.5em;
-	padding-inline: 2em;
-
-	background-color: var(--foreground-colour);
-
-	* {
-		margin: 0;
-	}
-}

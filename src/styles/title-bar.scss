@@ -1,0 +1,28 @@
+@use "mixins";
+
+.title-bar {
+	@include mixins.flexbox(row, 2em);
+	@include mixins.flexbox-align(space-between, center);
+
+	padding-block: 2em 1.5em;
+	padding-inline: 2em;
+
+	background-color: var(--foreground-colour);
+
+	* {
+		margin: 0;
+	}
+
+	.title-bar-buttons {
+		@include mixins.flexbox(row, 0.5em);
+
+		& > * {
+			width: 3em;
+			height: 3em;
+		}
+	}
+
+	.close-button {
+		background-color: var(--midground-colour);
+	}
+}

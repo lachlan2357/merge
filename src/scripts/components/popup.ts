@@ -18,10 +18,14 @@ export class PopupContainer extends CustomHTMLElement {
 	 */
 	appendToHeader(title: HTMLElement, ...buttons: Array<HTMLElement>) {
 		const icons = new ElementBuilder("div")
-			.class("header-icons")
+			.class("title-bar-buttons")
 			.children(...buttons)
 			.build();
-		const header = new ElementBuilder("header").children(title, icons).build();
+		const header = new ElementBuilder("header")
+			.children(title, icons)
+			.class("title-bar")
+			.build();
+
 		this.append(header);
 		return this;
 	}
