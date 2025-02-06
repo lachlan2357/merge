@@ -49,21 +49,18 @@ canvas {
 	@include mixins.flexbox(column, var(--gap));
 
 	grid-column: 1;
-	grid-row: 2;
+	grid-row: 2 / 4;
 }
 
 #way-info {
-	@include mixins.flexbox(column);
-
 	grid-column: 4;
 	grid-row: 1 / 5;
-	padding: 2em 1em;
 
 	// ideally `overflow-y: auto` but grid max-content is calculated without
 	// scrollbar, so it causes the sidebar to be ever-so-slightly too thin
 	overflow-y: scroll;
 
-	background-color: var(--foreground-colour);
+	background-color: var(--background-colour);
 	border-radius: var(--radius);
 	box-shadow: var(--box-shadow);
 
@@ -71,25 +68,50 @@ canvas {
 		display: none;
 	}
 
+	& > header {
+		@include mixins.header();
+	}
+
 	#edit-in {
 		@include mixins.flexbox($gap: 0.5em);
 	}
 
 	table {
+		// margin: 0 1em 1em 1em;
+		margin: 1em;
+
 		border: none;
 		border-collapse: collapse;
 
-		th {
-			background-color: var(--background-colour);
+		& > :first-child .h3 {
+			margin-block-start: 0;
 		}
 
-		th,
-		td {
+		thead.section-header th {
+			display: block;
+
+			text-align: left;
+		}
+
+		thead.cell-header th {
+			background-color: var(--foreground-colour);
 			padding: 0.5em 1em;
 		}
 
+		tbody td {
+			padding: 0.5em 1em;
+
+			&:nth-child(2) {
+				@include mixins.flexbox(row, 1ch);
+			}
+		}
+
+		tr td:first-child {
+			text-align: right;
+		}
+
 		tr:nth-child(2n - 1) td {
-			background-color: var(--foreground-colour);
+			background-color: var(--background-colour);
 		}
 
 		tr:nth-child(2n) td {
@@ -111,7 +133,7 @@ canvas {
 		width: 100%;
 		padding: 1em;
 
-		background-color: var(--foreground-colour);
+		background-color: var(--background-colour);
 		border-radius: var(--radius);
 		text-align: center;
 
@@ -134,7 +156,7 @@ canvas {
 	margin-inline-start: auto;
 	padding: 0.5em;
 
-	background-color: var(--foreground-colour);
+	background-color: var(--background-colour);
 	border-radius: var(--radius);
 	box-shadow: var(--box-shadow);
 	font-size: 0.75em;

@@ -1,6 +1,7 @@
+import { FontAwesomeIcon } from "../components/icon.js";
 import { ElementBuilder } from "../elements.js";
 import { State } from "../state/index.js";
-import { getElement } from "../supplement/elements.js";
+import { createCustomElement, getElement } from "../supplement/elements.js";
 import { OsmValue } from "../types/osm.js";
 
 const SIDEBAR = getElement("way-info", HTMLDivElement);
@@ -75,26 +76,29 @@ function show(wayId: number) {
 	// create each content row
 	for (const tag of allTags) {
 		const originalValue = originalTagMap.get(tag);
-		const inferredValue = inferredTagMap.get(tag);
+		const inferredValueRaw = inferredTagMap.get(tag);
 
-		// generate display string
-		let displayString = originalValue;
-		if (displayString === undefined && inferredValue !== undefined) {
-			if (inferredValue === "") displayString = "<no value>";
-			else displayString = `${inferredValue} (inferred)`;
-		}
-		displayString ??= "<unknown>";
+		// inferred values strings store no-value as empty string, convert it back
+		const inferredValue = inferredValueRaw === "" ? undefined : inferredValueRaw;
+
+		// create children
+		const valueString = originalValue ?? inferredValue ?? "<no value>";
 
 		// build row
-		const tagCell = new ElementBuilder("td").text(tag.toString()).build();
-		const valueCell = new ElementBuilder("td").text(displayString).build();
-		const tagRow = new ElementBuilder("tr").children(tagCell, valueCell).build();
+		const tagCell = new ElementBuilder("td").class("code").text(tag.toString()).build();
+		const valueCell = new ElementBuilder("td").class("code").text(valueString);
+		if (originalValue === undefined && inferredValue !== undefined) {
+			const icon = createCustomElement(FontAwesomeIcon).setIcon("circle-info");
+			valueCell.children(icon);
+		}
+		const tagRow = new ElementBuilder("tr").children(tagCell, valueCell.build()).build();
 
 		// append row to table depending on whether it's used in the drawing process
 		if (usedTags.includes(tag)) DRAWN_TAGS.append(tagRow);
 		else OTHER_TAGS.append(tagRow);
 	}
 
+	// show sidebar
 	SIDEBAR.removeAttribute("hidden");
 	State.selectedWay.set(wayId);
 	SIDEBAR.scrollTop = 0;

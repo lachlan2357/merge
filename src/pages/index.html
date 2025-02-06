@@ -103,41 +103,46 @@
 
 				<!-- way info sidebar -->
 				<div id="way-info" hidden>
-					<h2>Way <a id="wayid-link" class="h3" href="" target="_blank"></a></h2>
-					<div id="edit-in">
-						<button id="edit-id" class="open-with" aria-label="Edit in iD">
-							<fa-icon icon="map"></fa-icon>
-						</button>
-						<button id="edit-josm" class="open-with" aria-label="Edit in JOSM">
-							<fa-icon icon="desktop"></fa-icon>
-						</button>
-					</div>
+					<header>
+						<h2>Way <a id="wayid-link" class="h3" href="" target="_blank"></a></h2>
+						<div id="edit-in">
+							<button id="edit-id" class="open-with" aria-label="Edit in iD">
+								<fa-icon icon="map"></fa-icon>
+							</button>
+							<button id="edit-josm" class="open-with" aria-label="Edit in JOSM">
+								<fa-icon icon="desktop"></fa-icon>
+							</button>
+						</div>
+					</header>
 
-					<!-- tags used for drawing -->
-					<div>
-						<h3>Drawn Tags</h3>
-						<p>Tags used in the drawing process.</p>
-					</div>
+					<!-- tag table -->
 					<table>
-						<thead>
+						<!-- tags used for drawing -->
+						<thead class="section-header">
+							<tr>
+								<th class="h3" colspan="2">Drawn Tags</th>
+							</tr>
+						</thead>
+						<thead class="cell-header">
 							<tr>
 								<th>Tag</th>
 								<th>Value</th>
 							</tr>
 						</thead>
 						<tbody id="drawn-tags"></tbody>
-					</table>
 
-					<!-- all other tags -->
-					<div>
-						<h3>Other Tags</h3>
-						<p>Tags not used/supported.</p>
-					</div>
-					<table>
-						<tr>
-							<th>Tag</th>
-							<th>Value</th>
-						</tr>
+						<!-- all other tags -->
+						<thead class="section-header">
+							<tr>
+								<th class="h3" colspan="2">Other Tags</th>
+							</tr>
+						</thead>
+						<thead class="cell-header">
+							<tr>
+								<th>Tag</th>
+								<th>Value</th>
+							</tr>
+						</thead>
 						<tbody id="other-tags"></tbody>
 					</table>
 				</div>

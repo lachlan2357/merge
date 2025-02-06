@@ -24,13 +24,9 @@
 }
 
 #popup > header {
-	@include mixins.flexbox(row);
-	@include mixins.flexbox-align(space-between);
+	@include mixins.header();
 
 	position: relative;
-	padding: 1.5em 2em;
-
-	background-color: var(--foreground-colour);
 
 	#popup-close {
 		background-color: var(--midground-colour);

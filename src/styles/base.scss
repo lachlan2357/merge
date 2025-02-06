@@ -80,7 +80,7 @@ h3,
 .h1,
 .h2,
 .h3 {
-	margin-block: 0.25em 0;
+	margin-block: 0.75em 0.5em;
 
 	font-family: "SUSE", sans-serif;
 }
@@ -116,9 +116,11 @@ table {
 	font-weight: 300;
 }
 
-code {
+code,
+.code {
 	font-family: "Fira Code", monospace;
 	font-weight: 300;
+	font-size: 0.9em;
 }
 
 ul {
@@ -193,6 +195,10 @@ body > header {
 	padding-inline: max(10%, 1.5em);
 
 	background-color: var(--midground-colour);
+
+	* {
+		margin: 0;
+	}
 
 	img {
 		width: 6.25em;
