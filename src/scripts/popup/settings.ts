@@ -22,6 +22,7 @@ export class SettingsPopup extends Popup {
 			const resetButton = new ElementBuilder("button")
 				.class("reset-button")
 				.event("click", () => setting.reset())
+				.tooltip("Reset", "bottom")
 				.children(resetIcon)
 				.build();
 

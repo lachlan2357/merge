@@ -36,6 +36,10 @@ canvas {
 
 	border-radius: 100vw;
 	box-shadow: var(--box-shadow);
+
+	&button {
+		width: 2.5em;
+	}
 }
 
 #search-form {
@@ -72,14 +76,12 @@ canvas {
 		@include mixins.header();
 	}
 
-	#edit-in {
-		@include mixins.flexbox($gap: 0.5em);
+	& > main {
+		padding: 1em;
 	}
 
 	table {
-		// margin: 0 1em 1em 1em;
-		margin: 1em;
-
+		width: 100%;
 		border: none;
 		border-collapse: collapse;
 
@@ -117,6 +119,11 @@ canvas {
 		tr:nth-child(2n) td {
 			background-color: var(--midground-colour);
 		}
+	}
+
+	.inference-icon {
+		@include mixins.flexbox();
+		@include mixins.flexbox-align(center, center);
 	}
 }
 

@@ -16,21 +16,31 @@ export class SharePopup extends Popup {
 		const copyButton = new ElementBuilder("button")
 			.id("copy-button")
 			.class("copy")
-			.children(copyIcon)
-			.build();
+			.tooltip("Copy", "left")
+			.event("click", () => {
+				navigator.clipboard.writeText(shareText).then(() => {
+					copyIcon.setIcon("check");
+					copyButton.tooltip("Copied", "left");
+					setTimeout(() => {
+						copyIcon.setIcon("copy");
+						copyButton.tooltip("Copy", "left");
+					}, 2000);
+				});
+			})
+			.children(copyIcon);
 
 		const share = new ElementBuilder("span").text(shareText).build();
 
 		const container = new ElementBuilder("div")
 			.id("copy-container")
-			.children(share, copyButton)
+			.children(share, copyButton.build())
 			.build();
 
 		const iDIcon = createCustomElement(FontAwesomeIcon).setIcon("map");
 		const iDButton = new ElementBuilder("button")
 			.id("osm")
 			.class("open-with")
-			.tooltip("Open in iD")
+			.tooltip("Open in iD", "top")
 			.event("click", openID)
 			.children(iDIcon)
 			.build();
@@ -39,7 +49,7 @@ export class SharePopup extends Popup {
 		const josmButton = new ElementBuilder("button")
 			.id("josm")
 			.class("open-with")
-			.tooltip("Open in JOSM")
+			.tooltip("Open in JOSM", "top")
 			.event("click", openJOSM)
 			.children(josmIcon)
 			.build();
@@ -48,13 +58,6 @@ export class SharePopup extends Popup {
 			.id("open-with-container")
 			.children(iDButton, josmButton)
 			.build();
-
-		copyButton.addEventListener("click", () => {
-			navigator.clipboard.writeText(shareText).then(() => {
-				copyIcon.classList.remove("fa-copy");
-				copyIcon.classList.add("fa-check");
-			});
-		});
 
 		iDButton.addEventListener("click", () => openID);
 		josmIcon.addEventListener("click", openJOSM);

@@ -10,6 +10,9 @@ const WAY_EXTERNAL_LINK = getElement("wayid-link", HTMLAnchorElement);
 const DRAWN_TAGS = getElement("drawn-tags", HTMLTableSectionElement);
 const OTHER_TAGS = getElement("other-tags", HTMLTableSectionElement);
 
+const CLOSE_BUTTON = getElement("sidebar-close", HTMLButtonElement);
+CLOSE_BUTTON.addEventListener("click", () => hide());
+
 /**
  * All tags used when drawing the map.
  *
@@ -89,7 +92,12 @@ function show(wayId: number) {
 		const valueCell = new ElementBuilder("td").class("code").text(valueString);
 		if (originalValue === undefined && inferredValue !== undefined) {
 			const icon = createCustomElement(FontAwesomeIcon).setIcon("circle-info");
-			valueCell.children(icon);
+			const iconSpan = new ElementBuilder("span")
+				.class("inference-icon")
+				.tooltip("This value has been inferred", "left")
+				.children(icon)
+				.build();
+			valueCell.children(iconSpan);
 		}
 		const tagRow = new ElementBuilder("tr").children(tagCell, valueCell.build()).build();
 

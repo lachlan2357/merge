@@ -61,14 +61,26 @@
 						aria-label="Search"
 					/>
 
-					<button class="map-ui" type="submit" aria-label="Search">
+					<button class="map-ui" type="submit" aria-label="Search" data-tooltip="bottom">
 						<fa-icon id="search-icon" icon="magnifying-glass"></fa-icon>
 					</button>
 
-					<button class="map-ui" type="button" id="advanced" aria-label="Advanced">
+					<button
+						class="map-ui"
+						type="button"
+						id="advanced"
+						aria-label="Advanced"
+						data-tooltip="bottom"
+					>
 						<fa-icon icon="arrow-up-right-from-square"></fa-icon>
 					</button>
-					<button class="map-ui" type="button" id="settings" aria-label="Settings">
+					<button
+						class="map-ui"
+						type="button"
+						id="settings"
+						aria-label="Settings"
+						data-tooltip="bottom"
+					>
 						<fa-icon icon="gear"></fa-icon>
 					</button>
 				</form>
@@ -104,47 +116,69 @@
 				<!-- way info sidebar -->
 				<div id="way-info" hidden>
 					<header>
-						<h2>Way <a id="wayid-link" class="h3" href="" target="_blank"></a></h2>
-						<div id="edit-in">
-							<button id="edit-id" class="open-with" aria-label="Edit in iD">
+						<h2>Way <a id="wayid-link" class="h2" href="" target="_blank"></a></h2>
+
+						<!-- header icons -->
+						<div class="header-icons">
+							<button
+								id="edit-id"
+								class="open-with"
+								aria-label="Edit in iD"
+								data-tooltip="bottom"
+							>
 								<fa-icon icon="map"></fa-icon>
 							</button>
-							<button id="edit-josm" class="open-with" aria-label="Edit in JOSM">
+							<button
+								id="edit-josm"
+								class="open-with"
+								aria-label="Edit in JOSM"
+								data-tooltip="bottom"
+							>
 								<fa-icon icon="desktop"></fa-icon>
+							</button>
+							<button
+								id="sidebar-close"
+								class="close-button"
+								aria-label="Close"
+								data-tooltip="bottom"
+							>
+								<fa-icon icon="xmark"></fa-icon>
 							</button>
 						</div>
 					</header>
 
 					<!-- tag table -->
-					<table>
-						<!-- tags used for drawing -->
-						<thead class="section-header">
-							<tr>
-								<th class="h3" colspan="2">Drawn Tags</th>
-							</tr>
-						</thead>
-						<thead class="cell-header">
-							<tr>
-								<th>Tag</th>
-								<th>Value</th>
-							</tr>
-						</thead>
-						<tbody id="drawn-tags"></tbody>
+					<main>
+						<table>
+							<!-- tags used for drawing -->
+							<thead class="section-header">
+								<tr>
+									<th class="h3" colspan="2">Drawn Tags</th>
+								</tr>
+							</thead>
+							<thead class="cell-header">
+								<tr>
+									<th>Tag</th>
+									<th>Value</th>
+								</tr>
+							</thead>
+							<tbody id="drawn-tags"></tbody>
 
-						<!-- all other tags -->
-						<thead class="section-header">
-							<tr>
-								<th class="h3" colspan="2">Other Tags</th>
-							</tr>
-						</thead>
-						<thead class="cell-header">
-							<tr>
-								<th>Tag</th>
-								<th>Value</th>
-							</tr>
-						</thead>
-						<tbody id="other-tags"></tbody>
-					</table>
+							<!-- all other tags -->
+							<thead class="section-header">
+								<tr>
+									<th class="h3" colspan="2">Other Tags</th>
+								</tr>
+							</thead>
+							<thead class="cell-header">
+								<tr>
+									<th>Tag</th>
+									<th>Value</th>
+								</tr>
+							</thead>
+							<tbody id="other-tags"></tbody>
+						</table>
+					</main>
 				</div>
 
 				<!-- OSM and Font Awesome Copyright -->

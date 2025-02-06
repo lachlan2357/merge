@@ -27,10 +27,6 @@
 	@include mixins.header();
 
 	position: relative;
-
-	#popup-close {
-		background-color: var(--midground-colour);
-	}
 }
 
 #popup > main {

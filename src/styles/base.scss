@@ -170,9 +170,46 @@ button:has(fa-icon:only-child) {
 
 	padding: 1em;
 	aspect-ratio: 1;
+}
 
-	// fix for chromium not being able to squash the buttons
-	overflow: hidden;
+// # tooltips
+
+[aria-label] {
+	position: relative;
+}
+
+[aria-label]:hover::after {
+	display: block;
+	position: absolute;
+	content: attr(aria-label);
+	white-space: nowrap;
+	z-index: 1;
+	pointer-events: none;
+
+	background-color: var(--background-colour);
+	padding: 0.5em 1em;
+	border-radius: var(--radius);
+}
+
+[aria-label]:not([data-tooltip]):hover::after,
+[aria-label][data-tooltip="right"]:hover::after {
+	left: 100%;
+	margin-inline: 1ch 0;
+}
+
+[aria-label][data-tooltip="left"]:hover::after {
+	right: 100%;
+	margin-inline: 0 1ch;
+}
+
+[aria-label][data-tooltip="top"]:hover::after {
+	bottom: 100%;
+	margin-block: 0 1ch;
+}
+
+[aria-label][data-tooltip="bottom"]:hover::after {
+	top: 100%;
+	margin-block: 1ch 0;
 }
 
 // # landmarks
@@ -229,4 +266,19 @@ body > main {
 
 #welcome-heading {
 	text-align: center;
+}
+
+// # header icon bar
+
+.header-icons {
+	@include mixins.flexbox(row, 0.5em);
+
+	& > * {
+		width: 3em;
+		height: 3em;
+	}
+}
+
+.close-button {
+	background-color: var(--midground-colour);
 }

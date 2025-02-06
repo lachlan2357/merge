@@ -29,6 +29,7 @@ export class WarningsPopup extends Popup {
 			const heading = new ElementBuilder("h3").text(`Way ${id.toString()}`).build();
 			const icon = createCustomElement(FontAwesomeIcon).setIcon("arrow-up-right-from-square");
 			const button = new ElementBuilder("button")
+				.tooltip("Inspect Way", "left")
 				.event("click", () => {
 					POPUP_DIALOG.close();
 					sidebar.show(id);

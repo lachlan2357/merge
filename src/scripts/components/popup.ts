@@ -16,8 +16,12 @@ export class PopupContainer extends CustomHTMLElement {
 	 * @param children The children to append into the header.
 	 * @returns This object for method chaining.
 	 */
-	appendToHeader(...children: Array<HTMLElement>) {
-		const header = new ElementBuilder("header").children(...children).build();
+	appendToHeader(title: HTMLElement, ...buttons: Array<HTMLElement>) {
+		const icons = new ElementBuilder("div")
+			.class("header-icons")
+			.children(...buttons)
+			.build();
+		const header = new ElementBuilder("header").children(title, icons).build();
 		this.append(header);
 		return this;
 	}

@@ -26,11 +26,13 @@ export abstract class Popup {
 		const closeIcon = createCustomElement(FontAwesomeIcon).setIcon("xmark");
 		const closeButton = new ElementBuilder("button")
 			.id("popup-close")
-			.class("button")
+			.class("close-button")
 			.children(closeIcon)
 			.event("click", () => Popup.close())
+			.tooltip("Close", "bottom")
 			.build();
-		const header = new ElementBuilder("header").children(heading, closeButton).build();
+		const icons = new ElementBuilder("div").class("header-icons").children(closeButton).build();
+		const header = new ElementBuilder("header").children(heading, icons).build();
 
 		// rebuild and append children
 		this.children = this.build();

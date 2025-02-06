@@ -44,8 +44,9 @@ export class ElementBuilder<T extends keyof HTMLElementTagNameMap> {
 		return this;
 	}
 
-	tooltip(text: string) {
-		this.element.setAttribute("tooltip", text);
+	tooltip(text: string, direction?: "left" | "right" | "top" | "bottom") {
+		this.element.ariaLabel = text;
+		if (direction !== undefined) this.element.setAttribute("data-tooltip", direction);
 		return this;
 	}
 
