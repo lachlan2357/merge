@@ -8,7 +8,7 @@ import {
 	MergeWayTags,
 	MergeWayTagsIn
 } from "../types/processed.js";
-import { performInferences, performTransforms } from "./inferences.js";
+import { performInferences, performTransforms } from "./inferences/index.js";
 
 /**
  * Process {@link OverpassNode Nodes}, {@link OverpassWay Ways} and
