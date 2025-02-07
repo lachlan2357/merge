@@ -1,19 +1,22 @@
 {
-	"words": [
-		"behavior",
-		"camelcase",
-		"chipseal",
-		"codepaths",
-		"darkmode",
-		"Fallbacks",
-		"latlon",
-		"Lats",
-		"Lons",
-		"maxspeed",
-		"nodenext",
-		"stylelint",
-		"trivago",
-		"tsbuildinfo",
-		"wayid"
-	]
+  "words": [
+    "behavior",
+    "camelcase",
+    "chipseal",
+    "codepaths",
+    "darkmode",
+    "Fallbacks",
+    "latlon",
+    "Lats",
+    "Lons",
+    "maskable",
+    "maxspeed",
+    "midground",
+    "nodenext",
+    "realfavicon",
+    "stylelint",
+    "trivago",
+    "tsbuildinfo",
+    "wayid"
+  ]
 }

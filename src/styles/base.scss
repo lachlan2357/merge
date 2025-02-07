@@ -1,216 +1,268 @@
 @use "mixins";
-@use "overrides";
+@use "inputs";
 @use "animations";
+@use "popup";
+@use "title-bar";
 
+// # imports
+@import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&family=Quicksand:wght@300..700&family=SUSE:wght@400..800&display=swap");
+
+// # css reset
 * {
 	box-sizing: border-box;
-	color: var(--text);
-	font-family: Roboto, sans-serif;
-	font-weight: 300;
 	margin: 0;
 	padding: 0;
 	scrollbar-width: thin;
 }
 
+// # custom properties
 :root {
-	// canvas
-	--canvas-width: 100%;
-	--canvas-height: 750px;
-
 	// styles
 	--box-shadow: 0 0 10px var(--shadow);
 	--radius: 5px;
 
-	// colours
-	--error: crimson;
+	// document colours
+	--background-colour: light-dark(#eee, #111);
+	--midground-colour: light-dark(#fff, #222);
+	--foreground-colour: light-dark(#ddd, #333);
+	--canvas: light-dark(#ccc, #666);
+	--shadow: light-dark(#aaa, #555);
+	--text: light-dark(#000, #fff);
 
-	--copy: darkgreen;
-	--copy-hover: green;
-	--copy-active: lightgreen;
+	// vibrant colours
+	--accent: #35adbb;
+	--error: light-dark(rgb(161, 41, 65), rgb(238, 138, 158));
+	--copy: light-dark(rgb(76, 202, 124), rgb(22, 119, 59));
+	--open-with: light-dark(rgb(76, 202, 196), rgb(15, 121, 115));
+	--link: light-dark(rgb(31, 100, 122), rgb(163, 212, 228));
 
-	--open-with: darkcyan;
-	--open-with-hover: lightseagreen;
-	--open-with-active: lightblue;
+	accent-color: var(--accent);
 
-	--background-colour: #111;
-	--foreground-colour: #222;
-	--accent: #333;
-	--canvas: #666;
-	--shadow: #000;
-	--text: #fff;
-	--link: lightblue;
-	color-scheme: dark;
+	// light/dark mode
+	&[data-dark-mode="false"] {
+		color-scheme: light;
+	}
 
-	&[darkmode="false"] {
-		--background-colour: #ddd;
-		--foreground-colour: #eee;
-		--accent: #fff;
-		--canvas: #fff;
-		--shadow: #ccc;
-		--text: #000;
-		--link: darkblue;
+	&[data-dark-mode="true"] {
+		color-scheme: dark;
+	}
+}
+
+// ## set colour scheme based on @media if no dark mode attribute is present
+@media (prefers-color-scheme: light) {
+	:root:not([data-dark-mode]) {
 		color-scheme: light;
 	}
 }
 
-body {
-	@include mixins.flexbox(column, 0);
-	background-color: var(--background-colour);
-	height: 100dvh;
-	overflow: hidden;
-	width: 100dvw;
+@media (prefers-color-scheme: dark) {
+	:root:not([data-dark-mode]) {
+		color-scheme: dark;
+	}
+}
+
+// # text & fonts
+h1,
+h2,
+h3,
+p,
+i,
+button,
+input,
+span,
+table,
+code {
+	color: var(--text);
 }
 
 h1,
 h2,
 h3,
-h4,
-h5,
-h6 {
-	font-family: Montserrat, sans-serif;
+.h1,
+.h2,
+.h3 {
+	margin-block: 0.75em 0.5em;
+
+	font-family: "SUSE", sans-serif;
+}
+
+h1,
+.h1 {
+	font-size: 2rem;
+	font-weight: 800;
+}
+
+h2,
+.h2 {
+	font-size: 1.75rem;
 	font-weight: 700;
+	opacity: 0.875;
 }
 
-header {
-	@include mixins.flexbox($gap: 1.25em);
-	@include mixins.flexbox-align(center, center);
-
-	background-color: var(--foreground-colour);
-	box-shadow: var(--box-shadow);
-	padding-block: 3em;
-	padding-inline: max(10%, 1.5em);
-
-	img {
-		aspect-ratio: 1;
-		border-radius: 50%;
-		height: 6.25em;
-	}
-
-	div {
-		@include mixins.flexbox(column, 0.5em);
-	}
+h3,
+.h3 {
+	font-size: 1.375rem;
+	font-weight: 700;
+	opacity: 0.75;
 }
 
-main {
-	height: 100%;
-	overflow: hidden;
-	padding: 1em;
-	position: relative;
-	width: 100%;
+p,
+a,
+i,
+button,
+input,
+span,
+table {
+	font-family: "Quicksand", sans-serif;
+	font-weight: 300;
+}
 
-	&[error] {
-		@include mixins.flexbox(column);
-		@include mixins.flexbox-align(center, center);
+code,
+.code {
+	font-family: "Fira Code", monospace;
+	font-weight: 300;
+	font-size: 0.9em;
+}
 
-		#canvas-container {
-			display: none;
+ul {
+	padding-inline-start: 2ch;
+}
+
+// # buttons & links
+a {
+	color: var(--link);
+	cursor: pointer;
+
+	&:active {
+		color: var(--link);
+	}
+
+	&.link-chip {
+		@include mixins.flexbox();
+		background-color: var(--background-colour);
+		border-radius: 10px;
+		color: var(--text);
+		padding: 10px;
+		text-decoration: none;
+		width: fit-content;
+
+		&:hover {
+			background-color: var(--foreground-colour);
+			cursor: pointer;
+		}
+
+		&:active {
+			background-color: var(--canvas);
 		}
 	}
 }
 
-a.link-chip {
-	@include mixins.flexbox();
-	background-color: var(--background-colour);
-	border-radius: 10px;
-	color: var(--text);
-	padding: 10px;
-	text-decoration: none;
-	width: fit-content;
-
-	&:hover {
-		background-color: var(--accent);
-		cursor: pointer;
-	}
-
-	&:active {
-		background-color: var(--canvas);
-	}
-}
-
-button,
-input {
-	background-color: var(--foreground-colour);
-	border: none;
-	border-radius: var(--radius);
-	transition: background-color 0.1s;
-}
-
-a {
-	color: var(--link);
-}
-
-a,
 button {
-	cursor: pointer;
-	transition: background-color 0.25s;
-}
-
-a:active {
-	color: var(--link);
-}
-
-a:has(i:only-child),
-button:has(i:only-child) {
-	@include mixins.icon-button();
-}
-
-#popup {
-	@include mixins.flexbox(column);
 	background-color: var(--background-colour);
 	border: none;
 	border-radius: var(--radius);
-	box-shadow: var(--box-shadow);
-	margin: auto;
-	max-block-size: calc(100svh - 2rem);
+	cursor: pointer;
+}
+
+a:has(fa-icon:only-child),
+button:has(fa-icon:only-child) {
+	@include mixins.flexbox($gap: 0.5em);
+	@include mixins.flexbox-align(center, center);
+
 	padding: 1em;
-	width: min(95vw, 80ch);
-	z-index: 100;
+	aspect-ratio: 1;
+}
 
-	&[open] {
-		animation: fade-in 0.25s;
+// # tooltips
+
+[aria-label] {
+	position: relative;
+}
+
+[aria-label]:hover::after {
+	display: block;
+	position: absolute;
+	content: attr(aria-label);
+	white-space: nowrap;
+	z-index: 1;
+	pointer-events: none;
+
+	background-color: var(--background-colour);
+	padding: 0.5em 1em;
+	border-radius: var(--radius);
+}
+
+[aria-label]:not([data-tooltip]):hover::after,
+[aria-label][data-tooltip="right"]:hover::after {
+	left: 100%;
+	margin-inline: 1ch 0;
+}
+
+[aria-label][data-tooltip="left"]:hover::after {
+	right: 100%;
+	margin-inline: 0 1ch;
+}
+
+[aria-label][data-tooltip="top"]:hover::after {
+	bottom: 100%;
+	margin-block: 0 1ch;
+}
+
+[aria-label][data-tooltip="bottom"]:hover::after {
+	top: 100%;
+	margin-block: 1ch 0;
+}
+
+// # landmarks
+
+body {
+	@include mixins.flexbox(column, 0);
+
+	height: 100dvh;
+	width: 100dvw;
+	overflow: hidden;
+
+	background-color: var(--background-colour);
+}
+
+body > header {
+	@include mixins.flexbox(row);
+	@include mixins.flexbox-align(center, center);
+
+	padding-block: 3em;
+	padding-inline: max(10%, 1.5em);
+
+	background-color: var(--midground-colour);
+
+	* {
+		margin: 0;
 	}
 
-	&:not([open]) {
-		display: none;
-	}
+	img {
+		width: 6.25em;
+		height: 6.25em;
 
-	&[closing] {
-		animation: fade-out 0.25s;
+		border-radius: 50%;
 	}
+}
 
-	h2 {
-		text-transform: capitalize;
-	}
+body > main {
+	flex-grow: 1;
+	margin: 1em;
+	position: relative;
+	overflow: hidden;
 
-	#popup-close {
-		position: absolute;
-		right: 1em;
-		top: 1em;
-	}
-
-	input[type="text"],
-	input[type="url"] {
-		background-color: var(--foreground-colour);
-		border: none;
-		border-radius: 5px;
-		height: 2.5em;
-		padding-inline: 10px;
-	}
-
-	input:invalid {
-		outline: 2px solid var(--error);
-	}
-
-	.reset-button {
-		aspect-ratio: 1;
-		padding: 1em;
+	&[fullscreen] {
+		position: fixed;
+		inset: 0;
+		margin: 0;
 	}
 }
 
 #welcome-img {
+	width: 6em;
 	height: 6em;
 	margin-inline: auto;
-	width: 6em;
 }
 
 #welcome-heading {

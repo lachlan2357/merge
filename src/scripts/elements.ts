@@ -1,3 +1,5 @@
+import { FontAwesomeIcon } from "./components/icon.js";
+
 export class ElementBuilder<T extends keyof HTMLElementTagNameMap> {
 	protected tag: T;
 	protected element: HTMLElementTagNameMap[T];
@@ -42,8 +44,9 @@ export class ElementBuilder<T extends keyof HTMLElementTagNameMap> {
 		return this;
 	}
 
-	tooltip(text: string) {
-		this.element.setAttribute("tooltip", text);
+	tooltip(text: string, direction?: "left" | "right" | "top" | "bottom") {
+		this.element.ariaLabel = text;
+		if (direction !== undefined) this.element.setAttribute("data-tooltip", direction);
 		return this;
 	}
 
@@ -95,40 +98,6 @@ export class ElementBuilder<T extends keyof HTMLElementTagNameMap> {
 	}
 }
 
-export class FontAwesomeIcon {
-	protected element: HTMLElement;
-	protected prefix?: string;
-	protected icon?: string;
-
-	constructor(prefix?: string, icon?: string) {
-		this.element = document.createElement("i");
-		this.prefix = prefix;
-		this.icon = icon;
-	}
-
-	animate(animation: string) {
-		this.element.classList.add(`fa-${animation}`);
-		return this;
-	}
-
-	setPrefix(prefix: string) {
-		this.prefix = prefix;
-		return this;
-	}
-
-	setIcon(icon: string) {
-		this.icon = icon;
-		return this;
-	}
-
-	build() {
-		if (!this.prefix || !this.icon) console.warn("FontAwesomeIcon: prefix or icon not set");
-
-		this.element.classList.add(`fa-${this.prefix}`, `fa-${this.icon}`);
-		return this.element;
-	}
-}
-
 export class LinkChip {
 	protected element: ElementBuilder<"a">;
 	protected displayText: ElementBuilder<"span">;
@@ -155,7 +124,7 @@ export class LinkChip {
 	}
 
 	build() {
-		if (this.optionalIcon) this.element.children(this.optionalIcon.build());
+		if (this.optionalIcon) this.element.children(this.optionalIcon);
 		return this.element.children(this.displayText.build()).build();
 	}
 }

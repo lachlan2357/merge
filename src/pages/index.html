@@ -5,26 +5,31 @@
 		<meta charset="UTF-8" />
 		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<link rel="shortcut icon" href="/merge/favicon.ico" type="image/x-icon" />
 		<title>Merge</title>
+
+		<!-- favicons -->
+		<link rel="icon" type="image/png" href="/merge/icons/favicon-96x96.png" sizes="96x96" />
+		<link rel="icon" type="image/svg+xml" href="/merge/icons/favicon.svg" />
+		<link rel="shortcut icon" href="/merge/icons/favicon.ico" />
+		<link rel="apple-touch-icon" sizes="180x180" href="/merge/icons/apple-touch-icon.png" />
+		<meta name="apple-mobile-web-app-title" content="Merge" />
+		<link rel="manifest" href="/merge/app.webmanifest" />
 
 		<!-- stylesheets -->
 		<link rel="stylesheet" href="/merge/styles/base.css" />
 		<link rel="stylesheet" href="/merge/styles/canvas.css" />
 
-		<!-- fontawesome references -->
-		<link href="/merge/fontawesome/css/fontawesome.css" rel="stylesheet" />
-		<link href="/merge/fontawesome/css/brands.css" rel="stylesheet" />
-		<link href="/merge/fontawesome/css/solid.css" rel="stylesheet" />
+		<!-- fontawesome fonts -->
+		<link href="/merge/fontawesome/css/all.min.css" rel="stylesheet" />
 
 		<!-- javascript -->
-		<script type="module" src="/merge/scripts/index.js" defer></script>
+		<script type="module" src="/merge/scripts/index.js"></script>
 	</head>
 
 	<body>
 		<!-- header -->
 		<header>
-			<img src="/merge/icon.png" alt="" />
+			<img src="/merge/merge.png" alt="" />
 			<div>
 				<h1>Merge | A Quality Assurance Tool</h1>
 				<p>
@@ -40,91 +45,156 @@
 
 		<!-- map -->
 		<main id="main">
-			<div id="canvas-container">
-				<!-- map canvas -->
-				<canvas id="canvas"></canvas>
+			<!-- map canvas -->
+			<canvas id="canvas"></canvas>
 
-				<!-- canvas overlay -->
-				<div id="canvas-overlay">
-					<!-- search bar and accompanying buttons -->
-					<form id="search-form">
-						<input
-							type="text"
-							id="relation-name"
-							name="relation"
-							placeholder="Search..."
-						/>
+			<!-- canvas overlay -->
+			<div id="canvas-overlay">
+				<!-- search bar and accompanying buttons -->
+				<form id="search-form">
+					<input
+						id="relation-name"
+						class="map-ui"
+						type="text"
+						name="relation"
+						placeholder="Search..."
+						aria-label="Search"
+					/>
 
-						<button type="submit" tooltip="Search">
-							<i id="search-icon" class="fa-solid fa-magnifying-glass"></i>
-						</button>
+					<button class="map-ui" type="submit" aria-label="Search" data-tooltip="bottom">
+						<fa-icon id="search-icon" icon="magnifying-glass"></fa-icon>
+					</button>
 
-						<button type="button" id="advanced" tooltip="Advanced">
-							<i class="fa-solid fa-arrow-up-right-from-square"></i>
-						</button>
-						<button type="button" id="settings" tooltip="Settings">
-							<i class="fa-solid fa-gear"></i>
-						</button>
-					</form>
+					<button
+						class="map-ui"
+						type="button"
+						id="advanced"
+						aria-label="Advanced"
+						data-tooltip="bottom"
+					>
+						<fa-icon icon="arrow-up-right-from-square"></fa-icon>
+					</button>
+					<button
+						class="map-ui"
+						type="button"
+						id="settings"
+						aria-label="Settings"
+						data-tooltip="bottom"
+					>
+						<fa-icon icon="gear"></fa-icon>
+					</button>
+				</form>
 
-					<!-- left side buttons -->
-					<div id="left-buttons">
-						<button id="zoom-in" tooltip="Zoom In">
-							<i class="fa-solid fa-plus"></i>
-						</button>
-						<button id="zoom-out" tooltip="Zoom Out">
-							<i class="fa-solid fa-minus"></i>
-						</button>
-						<button id="zoom-reset" tooltip="Reset View">
-							<i class="fa-solid fa-rotate-right"></i>
-						</button>
-						<button id="fullscreen" tooltip="Fullscreen">
-							<i class="fa-solid fa-expand"></i>
-						</button>
-						<button id="share" tooltip="Share">
-							<i class="fa-solid fa-share"></i>
-						</button>
-						<button id="help" tooltip="Help">
-							<i class="fa-solid fa-question"></i>
-						</button>
-						<button id="about" tooltip="About">
-							<i class="fa-solid fa-info"></i>
-						</button>
-						<button id="warnings" tooltip="Warnings">
-							<i class="fa-solid fa-triangle-exclamation"></i>
-						</button>
-					</div>
+				<!-- left side buttons -->
+				<div id="left-buttons">
+					<button class="map-ui" id="zoom-in" aria-label="Zoom In">
+						<fa-icon icon="plus"></fa-icon>
+					</button>
+					<button class="map-ui" id="zoom-out" aria-label="Zoom Out">
+						<fa-icon icon="minus"></fa-icon>
+					</button>
+					<button class="map-ui" id="zoom-reset" aria-label="Reset View">
+						<fa-icon icon="rotate-right"></fa-icon>
+					</button>
+					<button class="map-ui" id="fullscreen" aria-label="Fullscreen">
+						<fa-icon icon="expand"></fa-icon>
+					</button>
+					<button class="map-ui" id="share" aria-label="Share">
+						<fa-icon icon="share"></fa-icon>
+					</button>
+					<button class="map-ui" id="help" aria-label="Help">
+						<fa-icon icon="question"></fa-icon>
+					</button>
+					<button class="map-ui" id="about" aria-label="About">
+						<fa-icon icon="info"></fa-icon>
+					</button>
+					<button class="map-ui" id="warnings" aria-label="Warnings">
+						<fa-icon icon="triangle-exclamation"></fa-icon>
+					</button>
+				</div>
 
-					<!-- way info card -->
-
-					<div id="way-info" hidden>
-						<h3 id="wayid"></h3>
-						<div id="edit-in">
-							<button id="edit-id" class="open-with" tooltip="Edit in iD">
-								<i class="fa-solid fa-map"></i>
+				<!-- way info sidebar -->
+				<div id="way-info" hidden>
+					<header class="title-bar">
+						<h2>
+							<span class="h2">Way</span>
+							<a id="wayid-link" class="h2" href="" target="_blank"></a>
+						</h2>
+						<div class="title-bar-buttons">
+							<button
+								id="edit-id"
+								class="open-with"
+								aria-label="Edit in iD"
+								data-tooltip="bottom"
+							>
+								<fa-icon icon="map"></fa-icon>
 							</button>
-							<button id="edit-josm" class="open-with" tooltip="Edit in JOSM">
-								<i class="fa-solid fa-desktop"></i>
+							<button
+								id="edit-josm"
+								class="open-with"
+								aria-label="Edit in JOSM"
+								data-tooltip="bottom"
+							>
+								<fa-icon icon="desktop"></fa-icon>
+							</button>
+							<button
+								id="sidebar-close"
+								class="close-button"
+								aria-label="Close"
+								data-tooltip="bottom"
+							>
+								<fa-icon icon="xmark"></fa-icon>
 							</button>
 						</div>
-						<table id="tags"></table>
-					</div>
+					</header>
 
-					<!-- OSM and Font Awesome Copyright -->
-					<p id="copyright">
-						Data &#169;
-						<a href="https://www.openstreetmap.org/copyright" target="_blank"
-							>OpenStreetMap Contributors</a
-						>. Icons by
-						<a href="http://fontawesome.com" target="_blank">Font Awesome</a>.
-					</p>
+					<!-- tag table -->
+					<main>
+						<table>
+							<!-- tags used for drawing -->
+							<thead class="section-header">
+								<tr>
+									<th class="h3" colspan="2">Drawn Tags</th>
+								</tr>
+							</thead>
+							<thead class="cell-header">
+								<tr>
+									<th>Tag</th>
+									<th>Value</th>
+								</tr>
+							</thead>
+							<tbody id="drawn-tags"></tbody>
 
-					<!-- message box -->
-					<div id="messages"></div>
-
-					<!-- initial statement -->
-					<h2 id="empty-message">Use the search box to select highways.</h2>
+							<!-- all other tags -->
+							<thead class="section-header">
+								<tr>
+									<th class="h3" colspan="2">Other Tags</th>
+								</tr>
+							</thead>
+							<thead class="cell-header">
+								<tr>
+									<th>Tag</th>
+									<th>Value</th>
+								</tr>
+							</thead>
+							<tbody id="other-tags"></tbody>
+						</table>
+					</main>
 				</div>
+
+				<!-- OSM and Font Awesome Copyright -->
+				<p id="copyright">
+					Data &#169;
+					<a href="https://www.openstreetmap.org/copyright" target="_blank">
+						OpenStreetMap Contributors </a
+					>. Icons by <a href="http://fontawesome.com" target="_blank">Font Awesome</a>.
+				</p>
+
+				<!-- message box -->
+				<div id="messages"></div>
+
+				<!-- initial statement -->
+				<p id="empty-message" class="h2">Use the search box to select highways.</p>
 			</div>
 
 			<noscript>
@@ -136,7 +206,5 @@
 
 		<!-- boilerplate popup container -->
 		<dialog id="popup"></dialog>
-		<!-- custom popup backdrop as modal::backdrop isn't widely supported -->
-		<div id="popup-backdrop"></div>
 	</body>
 </html>

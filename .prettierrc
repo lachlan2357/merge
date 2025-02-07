@@ -10,5 +10,20 @@
 	"semi": true,
 	"tabWidth": 4,
 	"trailingComma": "none",
-	"useTabs": true
+	"useTabs": true,
+	"overrides": [
+		{
+			"files": "*.ts",
+			"options": {
+				"parser": "babel-ts"
+			}
+		},
+		{
+			"files": "*.json",
+			"options": {
+				"tabWidth": 2,
+				"useTabs": false
+			}
+		}
+	]
 }

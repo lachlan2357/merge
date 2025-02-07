@@ -33,7 +33,7 @@ const settingsStorage = {
 		window.matchMedia("(prefers-color-scheme: dark)").matches,
 		true,
 		true,
-		value => document.documentElement.setAttribute("darkmode", value.toString())
+		value => document.documentElement.setAttribute("data-dark-mode", value.toString())
 	),
 	firstLaunch: new BooleanSetting(
 		"First Launch",

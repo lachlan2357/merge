@@ -1,0 +1,58 @@
+@use "mixins";
+
+#popup {
+	@include mixins.flexbox(column, 0);
+
+	margin: auto;
+	max-block-size: calc(100svh - 2rem);
+	width: min(95vw, 80ch);
+	max-height: min(80%, 1280px);
+	z-index: 100;
+
+	background-color: var(--background-colour);
+	border: none;
+	border-radius: var(--radius);
+
+	&:not([open]) {
+		display: none;
+	}
+
+	&::backdrop {
+		background-color: var(--background-colour);
+		opacity: 0.8;
+	}
+}
+
+#popup > main {
+	@include mixins.flexbox(column);
+
+	margin: 1em;
+	overflow: auto;
+}
+
+#popup .container {
+	background-color: var(--midground-colour);
+	border-radius: 5px;
+
+	& header {
+		@include mixins.flexbox(row);
+		@include mixins.flexbox-align(space-between, center);
+
+		width: 100%;
+		padding: 0.5em 1em;
+
+		background-color: var(--foreground-colour);
+		border-radius: var(--radius) var(--radius) 0 0;
+	}
+
+	& main {
+		@include mixins.flexbox(row);
+		@include mixins.flexbox-align(space-between, center);
+
+		margin: 1em;
+	}
+
+	&.vertical {
+		flex-direction: column;
+	}
+}
