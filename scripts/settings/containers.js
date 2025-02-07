@@ -102,10 +102,12 @@ export class Setting {
         if (hasDuplicateKey)
             throw SettingError.duplicateSettingKey(name);
         Setting.#registeredKeys.add(name);
-        // set initial value
+        // set initial value and run callback
         this.#defaultValue = defaultValue;
         this.#currentValue = defaultValue;
         this.load();
+        this.save();
+        this.#onChange(this.#currentValue);
         // build input element
         this.inputElement = this.buildInputElement();
         this.setInputValue();

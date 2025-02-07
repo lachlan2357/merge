@@ -1,0 +1,25 @@
+.title-bar {
+  display: flex;
+  flex-direction: row;
+  gap: 2em;
+  align-items: center;
+  justify-content: space-between;
+  padding-block: 2em 1.5em;
+  padding-inline: 2em;
+  background-color: var(--foreground-colour);
+}
+.title-bar * {
+  margin: 0;
+}
+.title-bar .title-bar-buttons {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5em;
+}
+.title-bar .title-bar-buttons > * {
+  width: 3em;
+  height: 3em;
+}
+.title-bar .close-button {
+  background-color: var(--midground-colour);
+}

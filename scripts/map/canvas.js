@@ -1,6 +1,6 @@
 import { laneLength, metresToPixels } from "../conversions.js";
 import { drawArrow, drawLine, drawPolygon, getSurfaceColour } from "../drawing.js";
-import { WAY_INFO, displaySidebar } from "../popup/index.js";
+import sidebar from "./sidebar.js";
 import * as Settings from "../settings/index.js";
 import { Effect, State } from "../state/index.js";
 import { getElement } from "../supplement/elements.js";
@@ -17,20 +17,15 @@ class Canvas {
      */
     container;
     /**
-     * Reference to the parent element of the {@link container}.
-     */
-    containerParent;
-    /**
      * Attach a canvas controller to a {@link HTMLCanvasElement}.
      *
      * @param id The ID of the {@link HTMLCanvasElement} to attach to.
      * @param containerId The ID of the canvas container to attach to.
      */
-    constructor(id, containerId, containerParentId) {
+    constructor(id, containerId) {
         // fetch elements
         this.element = getElement(id, HTMLCanvasElement);
-        this.container = getElement(containerId, HTMLDivElement);
-        this.containerParent = getElement(containerParentId, HTMLElement);
+        this.container = getElement(containerId, HTMLElement);
         // setup event listeners
         this.element.addEventListener("mousedown", e => {
             e.preventDefault();
@@ -47,7 +42,7 @@ class Canvas {
             if (!State.data.get())
                 return;
             if (!State.mouseMoved.get() && !this.checkHover()) {
-                WAY_INFO.setAttribute("hidden", "");
+                sidebar.hide();
                 State.selectedWay.set(-1);
             }
             State.mouseDown.set(false);
@@ -72,7 +67,7 @@ class Canvas {
             this.zoom(inOut, "mouse");
         });
         // setup resize triggers
-        new ResizeObserver(() => this.resize()).observe(this.container);
+        new ResizeObserver(() => this.setResolution()).observe(this.container);
     }
     /**
      * Re-centre the canvas back to origin, resetting offset and zoom.
@@ -278,13 +273,10 @@ class Canvas {
     /**
      * Resize the canvas to fit it's container.
      */
-    resize() {
-        const dimensions = ScreenCoordinate.ofElementDimensions(this.container);
-        const localOffset = ScreenCoordinate.ofElementOffset(this.container);
-        const containerOffset = ScreenCoordinate.ofElementOffset(this.containerParent);
-        const offset = containerOffset.add(localOffset);
-        this.element.setAttribute("width", dimensions.x.toString());
-        this.element.setAttribute("height", dimensions.y.toString());
+    setResolution() {
+        const offset = ScreenCoordinate.ofElementOffset(this.container);
+        const dimensions = ScreenCoordinate.ofElementDimensions(this.element);
+        [this.element.width, this.element.height] = dimensions.get();
         State.canvasOffset.set(offset);
         State.canvasDimensions.set(dimensions);
     }
@@ -316,7 +308,7 @@ class Canvas {
             if (way === undefined)
                 continue;
             if (clicked)
-                displaySidebar(element.wayId);
+                sidebar.show(element.wayId);
         }
         return anyHovered;
     }
@@ -333,6 +325,6 @@ class Canvas {
     }
 }
 // canvas instance
-export const CANVAS = new Canvas("canvas", "canvas-container", "main");
+export const CANVAS = new Canvas("canvas", "main");
 // canvas effects
 new Effect(() => CANVAS.draw());

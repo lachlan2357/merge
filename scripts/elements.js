@@ -32,8 +32,10 @@ export class ElementBuilder {
         this.element.textContent = text;
         return this;
     }
-    tooltip(text) {
-        this.element.setAttribute("tooltip", text);
+    tooltip(text, direction) {
+        this.element.ariaLabel = text;
+        if (direction !== undefined)
+            this.element.setAttribute("data-tooltip", direction);
         return this;
     }
     // anchor (requires "a")
@@ -72,34 +74,6 @@ export class ElementBuilder {
         return this.element;
     }
 }
-export class FontAwesomeIcon {
-    element;
-    prefix;
-    icon;
-    constructor(prefix, icon) {
-        this.element = document.createElement("i");
-        this.prefix = prefix;
-        this.icon = icon;
-    }
-    animate(animation) {
-        this.element.classList.add(`fa-${animation}`);
-        return this;
-    }
-    setPrefix(prefix) {
-        this.prefix = prefix;
-        return this;
-    }
-    setIcon(icon) {
-        this.icon = icon;
-        return this;
-    }
-    build() {
-        if (!this.prefix || !this.icon)
-            console.warn("FontAwesomeIcon: prefix or icon not set");
-        this.element.classList.add(`fa-${this.prefix}`, `fa-${this.icon}`);
-        return this.element;
-    }
-}
 export class LinkChip {
     element;
     displayText;
@@ -122,7 +96,7 @@ export class LinkChip {
     }
     build() {
         if (this.optionalIcon)
-            this.element.children(this.optionalIcon.build());
+            this.element.children(this.optionalIcon);
         return this.element.children(this.displayText.build()).build();
     }
 }

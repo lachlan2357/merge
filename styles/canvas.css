@@ -1,29 +1,148 @@
-.setting-container {
-  align-items: center;
-  background-color: var(--accent);
-  border-radius: 5px;
-  display: flex;
-  gap: 1em;
-  justify-content: space-between;
-  padding: 1em;
-}
-.setting-container h3 {
-  font-size: 1em;
-}
-.setting-container input {
-  flex-grow: 0;
-  overflow: hidden;
-}
-.setting-container button {
-  flex-grow: 0;
-}
-.setting-container .setting-text {
-  flex-grow: 1;
-}
-
 canvas {
+  width: 100%;
+  height: 100%;
   background-color: var(--canvas);
   border-radius: var(--radius);
+}
+canvas:has([fullscreen]) {
+  border-radius: 0;
+}
+
+#canvas-overlay {
+  --gap: 0.25em;
+  display: grid;
+  grid-template-columns: min-content min-content 1fr max-content;
+  grid-template-rows: min-content min-content 1fr min-content;
+  column-gap: 1em;
+  row-gap: var(--gap);
+  inset: 0.5em;
+  pointer-events: none;
+  position: absolute;
+}
+#canvas-overlay * {
+  pointer-events: auto;
+}
+
+#canvas-overlay .map-ui {
+  height: 2.5em;
+  padding-inline: 0.875em;
+  border-radius: 100vw;
+  box-shadow: var(--box-shadow);
+}
+#canvas-overlay .map-uibutton {
+  width: 2.5em;
+}
+
+#search-form {
+  display: flex;
+  flex-direction: row;
+  gap: var(--gap);
+  grid-column: 1/3;
+  grid-row: 1;
+}
+
+#left-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  grid-column: 1;
+  grid-row: 2/4;
+}
+
+#way-info {
+  grid-column: 4;
+  grid-row: 1/5;
+  overflow-y: scroll;
+  background-color: var(--background-colour);
+  border-radius: var(--radius);
+  box-shadow: var(--box-shadow);
+}
+#way-info[hidden] {
+  display: none;
+}
+#way-info > main {
+  padding: 1em;
+}
+#way-info table {
+  width: 100%;
+  border: none;
+  border-collapse: collapse;
+}
+#way-info table > :first-child .h3 {
+  margin-block-start: 0;
+}
+#way-info table thead.section-header th {
+  display: block;
+  text-align: left;
+}
+#way-info table thead.cell-header th {
+  background-color: var(--foreground-colour);
+  padding: 0.5em 1em;
+}
+#way-info table tbody td {
+  padding: 0.5em 1em;
+}
+#way-info table tbody td:nth-child(2) {
+  display: flex;
+  flex-direction: row;
+  gap: 1ch;
+  align-items: center;
+  justify-content: space-between;
+}
+#way-info table tr td:first-child {
+  text-align: right;
+}
+#way-info table tr:nth-child(2n-1) td {
+  background-color: var(--background-colour);
+}
+#way-info table tr:nth-child(2n) td {
+  background-color: var(--midground-colour);
+}
+#way-info .inference-icon {
+  display: flex;
+  flex-direction: row;
+  gap: 1em;
+  align-items: center;
+  justify-content: center;
+}
+
+#messages {
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+  grid-column: 3;
+  grid-row: 1/-1;
+  overflow-y: hidden;
+  pointer-events: none;
+}
+#messages .message-box {
+  display: none;
+  width: 100%;
+  padding: 1em;
+  background-color: var(--background-colour);
+  border-radius: var(--radius);
+  text-align: center;
+}
+#messages .message-box[visible] {
+  animation: fade-in 0.25s;
+  display: revert;
+}
+#messages .message-box[closing] {
+  animation: fade-out-and-shrink 0.25s;
+  overflow: hidden;
+}
+
+#copyright {
+  grid-column: 1/-1;
+  grid-row: 5;
+  width: fit-content;
+  margin-inline-start: auto;
+  padding: 0.5em;
+  background-color: var(--background-colour);
+  border-radius: var(--radius);
+  box-shadow: var(--box-shadow);
+  font-size: 0.75em;
+  text-align: right;
 }
 
 #open-with-container {
@@ -33,197 +152,32 @@ canvas {
   align-items: center;
   justify-content: center;
 }
-#open-with-container button {
-  background-color: var(--open-with);
-  aspect-ratio: 1;
-  padding: 1em;
-}
-#open-with-container button:hover {
-  background-color: var(--open-with-hover);
-}
-#open-with-container button:active {
-  background-color: var(--open-with-active);
-}
-
-#settings-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1em;
-}
-
-#canvas-container {
-  background-color: var(--canvas);
-  border-radius: var(--radius);
-  height: 100%;
-  position: relative;
-  width: 100%;
-}
-#canvas-container[fullscreen] {
-  height: 100dvh;
-  inset: 0;
-  position: fixed;
-  width: 100dvw;
-}
-#canvas-container[fullscreen] canvas {
-  border-radius: 0;
-}
 
 #copy-container {
-  background-color: var(--accent);
+  display: flex;
+  flex-direction: row;
+  gap: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  background-color: var(--midground-colour);
   border-radius: var(--radius);
   height: 40px;
 }
 #copy-container span {
   padding: 0.5em;
-}
-#copy-container button {
-  background-color: var(--copy);
-  aspect-ratio: 1;
-  height: 100%;
-}
-#copy-container button:hover {
-  background-color: var(--copy-hover);
-}
-#copy-container button:active {
-  background-color: var(--copy-active);
+  align-self: center;
 }
 
-#canvas-overlay {
-  display: grid;
-  gap: 0.25em;
-  grid-template-columns: max-content max-content auto max-content;
-  grid-template-rows: min-content min-content min-content auto min-content;
-  inset: 0.5em;
-  overflow: visible;
-  pointer-events: none;
-  position: absolute;
-}
-#canvas-overlay * {
-  pointer-events: initial;
-}
-#canvas-overlay input,
-#canvas-overlay button {
-  border-radius: 100vw;
-  height: 2.5em;
-  padding-inline: 0.875em;
-}
-#canvas-overlay button {
-  display: flex;
-  flex-direction: row;
-  gap: 0.25em;
-  align-items: center;
-  justify-content: center;
-  aspect-ratio: 1;
-  overflow: hidden;
-}
-#canvas-overlay #search-form {
-  display: flex;
-  flex-direction: row;
-  gap: 0.25em;
-  grid-column: 1/3;
-  grid-row: 1;
-}
-#canvas-overlay #left-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25em;
-  grid-column: 1;
-  grid-row: 2;
-}
-#canvas-overlay #way-info {
-  display: flex;
-  flex-direction: column;
-  gap: 1em;
-  background-color: var(--foreground-colour);
-  border-radius: var(--radius);
-  box-shadow: var(--box-shadow);
-  grid-column: 4;
-  grid-row: 1/5;
-  max-height: calc(var(--height) - 2em);
-  overflow-y: auto;
-  padding: 2em 1em;
-}
-#canvas-overlay #way-info[hidden] {
-  display: none;
-}
-#canvas-overlay #way-info #edit-in {
-  display: flex;
-  flex-direction: row;
-  gap: 0.5em;
-}
-#canvas-overlay #way-info #edit-in button {
+button.open-with {
   background-color: var(--open-with);
-  border-radius: var(--radius);
 }
-#canvas-overlay #way-info #edit-in button:hover {
-  background-color: var(--open-with-hover);
-}
-#canvas-overlay #way-info #edit-in button:active {
-  background-color: var(--open-with-active);
-}
-#canvas-overlay #way-info h3,
-#canvas-overlay #way-info a {
-  font-weight: 700;
-}
-#canvas-overlay #way-info table {
-  border: none;
-  border-collapse: collapse;
-  border-spacing: 0;
-  color: white;
-}
-#canvas-overlay #way-info table tr * {
-  padding: 0.5em 1em;
-}
-#canvas-overlay #way-info table tr th {
-  background-color: var(--background-colour);
-}
-#canvas-overlay #way-info table tr:nth-child(2n-1) td {
-  background-color: var(--foreground-colour);
-}
-#canvas-overlay #way-info table tr:nth-child(2n) td {
-  background-color: var(--accent);
-}
-#canvas-overlay #messages {
-  display: flex;
-  flex-direction: column;
-  gap: 1em;
-  grid-column: 3;
-  grid-row: 1/-1;
-  overflow-y: hidden;
-  pointer-events: none;
-}
-#canvas-overlay #messages .message-box {
-  background-color: var(--foreground-colour);
-  border-radius: var(--radius);
-  display: none;
-  padding: 1em;
-  text-align: center;
-  width: 100%;
-}
-#canvas-overlay #messages .message-box[visible] {
-  animation: fade-in 0.25s;
-  display: revert;
-}
-#canvas-overlay #messages .message-box[closing] {
-  animation: fade-out-and-shrink 0.25s;
-  overflow: hidden;
-}
-#canvas-overlay #copyright {
-  background-color: var(--foreground-colour);
-  border-radius: var(--radius);
-  font-size: 0.75em;
-  grid-column: 1/-1;
-  grid-row: 5;
-  margin-inline-start: auto;
-  padding: 0.5em;
-  text-align: right;
-  width: fit-content;
+
+button#copy-button {
+  background-color: var(--copy);
 }
 
 #empty-message {
-  left: 50%;
   position: absolute;
-  text-align: center;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  justify-self: center;
+  align-self: center;
 }

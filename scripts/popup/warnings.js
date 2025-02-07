@@ -1,27 +1,39 @@
-import { ElementBuilder, FontAwesomeIcon } from "../elements.js";
+import { FontAwesomeIcon } from "../components/icon.js";
+import { PopupContainer } from "../components/popup.js";
+import { ElementBuilder } from "../elements.js";
 import { State } from "../state/index.js";
-import { Popup, displaySidebar } from "./index.js";
+import { createCustomElement } from "../supplement/elements.js";
+import { POPUP_DIALOG, Popup } from "./index.js";
+import sidebar from "../map/sidebar.js";
 export class WarningsPopup extends Popup {
+    title = "Warnings";
     build() {
-        const heading = new ElementBuilder("h2").text("Warnings").build();
         const emptyText = new ElementBuilder("p")
             .text("There are no warnings for the data on the map.")
             .build();
         // ensure data exists
         const dataCache = State.data.get();
-        if (dataCache === undefined) {
-            return [heading, emptyText];
-        }
-        // display all warnings
-        const entries = new Array();
+        if (dataCache === undefined)
+            return [emptyText];
+        // display all warnings for each way
+        const containers = new Array();
         for (const way of dataCache.values()) {
+            // don't show container if there are no warnings
+            if (way.warnings.size === 0)
+                continue;
+            // header
             const id = way.originalWay.id;
-            const subHeading = new ElementBuilder("h3").text(`Way ${id.toString()}`).build();
-            const icon = new FontAwesomeIcon("solid", "arrow-up-right-from-square").build();
-            const subHeadingLink = new ElementBuilder("button")
-                .event("click", () => displaySidebar(id))
+            const heading = new ElementBuilder("h3").text(`Way ${id.toString()}`).build();
+            const icon = createCustomElement(FontAwesomeIcon).setIcon("arrow-up-right-from-square");
+            const button = new ElementBuilder("button")
+                .tooltip("Inspect Way", "left")
+                .event("click", () => {
+                POPUP_DIALOG.close();
+                sidebar.show(id);
+            })
                 .children(icon)
                 .build();
+            // main
             const list = new ElementBuilder("ul");
             for (const [tag, warnings] of way.warnings) {
                 for (const warning of warnings) {
@@ -31,15 +43,17 @@ export class WarningsPopup extends Popup {
                     list.children(listItem);
                 }
             }
-            const listElement = list.build();
-            if (listElement.children.length > 0)
-                entries.push(subHeading, subHeadingLink, listElement);
+            // append children
+            const container = createCustomElement(PopupContainer)
+                .appendToHeader(heading, button)
+                .appendToMain(list.build());
+            containers.push(container);
         }
         // display warnings if present
-        if (entries.length === 0)
-            return [heading, emptyText];
+        if (containers.length === 0)
+            return [emptyText];
         else
-            return [heading, ...entries];
+            return containers;
     }
 }
 export const WARNINGS_POPUP = new WarningsPopup();

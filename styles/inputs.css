@@ -1,3 +1,18 @@
+input {
+  border: none;
+  border-radius: var(--radius);
+}
+input:invalid {
+  outline: 2px solid var(--error);
+}
+
+input[type=text],
+input[type=url] {
+  height: 2.5em;
+  padding-inline: 10px;
+  background-color: var(--background-colour);
+}
+
 input[type=checkbox] {
   appearance: none;
   background-color: var(--background-colour);
@@ -13,7 +28,7 @@ input[type=checkbox]:hover {
   background-color: var(--foreground-colour);
 }
 input[type=checkbox]:active, input[type=checkbox]:checked {
-  background-color: var(--link);
+  background-color: var(--accent);
 }
 input[type=checkbox]:after {
   opacity: 0;

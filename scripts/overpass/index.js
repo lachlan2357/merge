@@ -27,6 +27,7 @@ export async function overpassSearch(searchTerm) {
     const transformedData = transform(response);
     const processedData = process(transformedData.nodes, transformedData.ways);
     // set map data
+    State.currentRelationId.set(transformedData.relations[0].id);
     State.data.set(processedData);
     State.allWays.set(transformedData.ways);
     CANVAS.centre();
