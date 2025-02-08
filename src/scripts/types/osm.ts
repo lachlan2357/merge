@@ -212,6 +212,25 @@ export class OsmArray<T extends OsmValue<ToString>>
 		return values;
 	}
 
+	fill(creator: (() => T) | T) {
+		if (typeof creator === "function") {
+			for (let i = 0; i < this.inner.length; i++) this.inner[0] = creator();
+		} else {
+			this.inner.fill(creator);
+		}
+	}
+
+	static ofLength<T extends OsmValue<ToString>>(
+		length: number,
+		value: string,
+		constructor: OsmConstructor<T>
+	) {
+		const arr = new Array<T>(length);
+		const osmArr = new OsmArray(arr, constructor);
+		osmArr.fill(() => new constructor(value));
+		return osmArr;
+	}
+
 	toString(): string {
 		return this.inner.map(value => value.toString()).join(this.delimiter);
 	}
@@ -255,6 +274,26 @@ export class OsmDoubleArray<T extends OsmValue<ToString>>
 	): OsmDoubleArray<Out> {
 		const array = this.inner.map(mapFn);
 		return new OsmDoubleArray(array, constructor, this.innerDelimiter, this.outerDelimiter);
+	}
+
+	fill(creator: (() => OsmArray<T>) | OsmArray<T>) {
+		if (typeof creator === "function") {
+			for (let i = 0; i < this.inner.length; i++) this.inner[0] = creator();
+		} else {
+			this.inner.fill(creator);
+		}
+	}
+
+	static ofLength<T extends OsmValue<ToString>>(
+		length: number,
+		value: string,
+		constructor: OsmConstructor<T>
+	) {
+		const arr = new Array<OsmArray<T>>();
+		for (let i = 0; i < length; i++) arr.push(OsmArray.ofLength(1, value, constructor));
+
+		const osmArr = new OsmDoubleArray(arr, constructor);
+		return osmArr;
 	}
 
 	protected static process<T extends OsmValue<ToString>>(

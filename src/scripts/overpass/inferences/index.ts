@@ -307,8 +307,8 @@ const allInferences = {
 			// lanes:forward set
 			InferenceDsl.new("turnLanesForward")
 				.assertIsSet("lanesForward")
-				.setInferenceFn(
-					tags => new OsmDoubleArray(new Array(tags.lanesForward.get()), OsmString)
+				.setInferenceFn(tags =>
+					OsmDoubleArray.ofLength(tags.lanesForward.get(), "", OsmString)
 				)
 		],
 		new OsmDoubleArray([], OsmString),
@@ -346,8 +346,8 @@ const allInferences = {
 			// lanes:backward set
 			InferenceDsl.new("turnLanesBackward")
 				.assertIsSet("lanesBackward")
-				.setInferenceFn(
-					tags => new OsmDoubleArray(new Array(tags.lanesBackward.get()), OsmString)
+				.setInferenceFn(tags =>
+					OsmDoubleArray.ofLength(tags.lanesBackward.get(), "", OsmString)
 				)
 		],
 		new OsmDoubleArray([], OsmString),
