@@ -1,17 +1,5 @@
-import { MergeWayTag, MergeWayTags, MergeWayTagsIn } from "../../types/processed.js";
+import { MergeWayTag, MergeWayTags } from "../../types/processed.js";
 import { TagWarning } from "../warnings.js";
-
-/**
- * Function signature for inference functions.
- */
-export type InferenceFn<Tag extends MergeWayTag> = (
-	tags: MergeWayTagsIn
-) => MergeWayTags[Tag] | void;
-
-/**
- * NOP function to be used when there are no inferences available for a tag.
- */
-export function noInference() {}
 
 /**
  * Function signature for transform functions.

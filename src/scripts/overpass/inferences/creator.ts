@@ -7,7 +7,8 @@ import {
 	MergeWayTagsIn
 } from "../../types/processed.js";
 import { TagWarning } from "../warnings.js";
-import { InferenceFn, TransformFn, ValidationFn } from "./interfaces.js";
+import { UnknownInference } from "./dsl.js";
+import { TransformFn, ValidationFn } from "./interfaces.js";
 
 /**
  * Collection of methods to perform inferences on a certain tag.
@@ -131,8 +132,8 @@ export function inferenceCreator<
 	OsmType extends MergeWayTags[Tag] = MergeWayTags[Tag]
 >(
 	tag: Tag,
-	calculations: InferenceFn<Tag>,
-	fallbacks: InferenceFn<Tag>,
+	calculations: Array<UnknownInference<Tag>>,
+	fallbacks: Array<UnknownInference<Tag>>,
 	defaultValue: MergeWayTags[Tag],
 	format: TransformFn<Tag>,
 	validate: ValidationFn<Tag>
@@ -147,13 +148,15 @@ export function inferenceCreator<
 		if (oldValue.isSet()) return;
 
 		// try to infer value
-		const newValue = calculations(tags);
-		if (newValue === undefined) return;
+		for (const calculation of calculations) {
+			const newValue = calculation.exec(tags);
+			if (newValue === undefined) continue;
 
-		// make and record changes
-		(tags[tag] as OsmMaybe<OsmType>) = newValue.maybe() as OsmMaybe<OsmType>;
-		inferredTags.add(tag);
-		hasChanged.set(true);
+			// make and record changes
+			(tags[tag] as OsmMaybe<OsmType>) = newValue.maybe() as OsmMaybe<OsmType>;
+			inferredTags.add(tag);
+			hasChanged.set(true);
+		}
 	};
 
 	const tryFallback = (
@@ -166,13 +169,15 @@ export function inferenceCreator<
 		if (oldValue.isSet()) return;
 
 		// try to perform fallbacks
-		const newValue = fallbacks(tags);
-		if (newValue === undefined) return;
+		for (const fallback of fallbacks) {
+			const newValue = fallback.exec(tags);
+			if (newValue === undefined) return;
 
-		// make and record changes
-		(tags[tag] as OsmMaybe<OsmType>) = newValue.maybe() as OsmMaybe<OsmType>;
-		inferredTags.add(tag);
-		hasChanged.set(true);
+			// make and record changes
+			(tags[tag] as OsmMaybe<OsmType>) = newValue.maybe() as OsmMaybe<OsmType>;
+			inferredTags.add(tag);
+			hasChanged.set(true);
+		}
 	};
 
 	const setDefault = (tags: MergeWayTagsIn, inferredTags: InferencesMade) => {

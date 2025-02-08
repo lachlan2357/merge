@@ -7,10 +7,10 @@ import {
 	OsmUnsignedInteger
 } from "../../types/osm.js";
 import { MergeWayTag, MergeWayTags, MergeWayTagsIn } from "../../types/processed.js";
-import { isEq } from "../process.js";
 import { TagWarning, WarningMap } from "../warnings.js";
 import { inferenceCreator } from "./creator.js";
-import { noInference, noTransform, noValidation } from "./interfaces.js";
+import { InferenceDsl } from "./dsl.js";
+import { noTransform, noValidation } from "./interfaces.js";
 
 /**
  * Perform all available {@link inferences} on {@link tags}.
@@ -106,12 +106,14 @@ const allInferences = {
 	 */
 	inferOneway: inferenceCreator(
 		"oneway",
-		tags => {
+		[
 			// lanes:backward === 0
-			if (isEq(tags.lanesBackward, 0)) return OsmBoolean.TRUE;
-		},
-		noInference,
-		OsmBoolean.FALSE,
+			InferenceDsl.new("oneway")
+				.assertIsEq("lanesBackward", 0)
+				.setInferenceFn(() => new OsmBoolean(true))
+		],
+		[],
+		new OsmBoolean(false),
 		noTransform<"oneway">,
 		(oneway, { lanesBackward }, warnings) => {
 			// oneway === true && lanes:backward !== 0
@@ -136,8 +138,8 @@ const allInferences = {
 	 */
 	inferJunction: inferenceCreator(
 		"junction",
-		() => {},
-		() => {},
+		[],
+		[],
 		new OsmString("no"),
 		noTransform<"junction">,
 		noValidation
@@ -155,8 +157,8 @@ const allInferences = {
 	 */
 	inferSurface: inferenceCreator(
 		"surface",
-		() => {},
-		() => {},
+		[],
+		[],
 		new OsmString("unknown"),
 		noTransform<"surface">,
 		noValidation
@@ -171,20 +173,26 @@ const allInferences = {
 	 */
 	inferLanes: inferenceCreator(
 		"lanes",
-		tags => {
+		[
 			// oneway === true && lanes:forward set
-			if (isEq(tags.oneway, true) && tags.lanesForward.isSet())
-				return tags.lanesForward.get();
+			InferenceDsl.new("lanes")
+				.assertIsEq("oneway", true)
+				.assertIsSet("lanesForward")
+				.setInferenceFn(tags => tags.lanesForward),
 
 			// oneway === false && lanes:forward set && lanes:backward set
-			if (isEq(tags.oneway, false) && tags.lanesForward.isSet() && tags.lanesBackward.isSet())
-				return tags.lanesForward.get().add(tags.lanesBackward.get());
-		},
-		tags => {
+			InferenceDsl.new("lanes")
+				.assertIsEq("oneway", false)
+				.assertIsSet("lanesForward")
+				.assertIsSet("lanesBackward")
+				.setInferenceFn(tags => tags.lanesForward.add(tags.lanesBackward))
+		],
+		[
 			// tags.oneway set
-			if (tags.oneway.isSet())
-				return new OsmUnsignedInteger(tags.oneway.get().eq(true) ? 1 : 2);
-		},
+			InferenceDsl.new("lanes")
+				.assertIsSet("oneway")
+				.setInferenceFn(tags => new OsmUnsignedInteger(tags.oneway.eq(true) ? 1 : 2))
+		],
 		new OsmUnsignedInteger(2),
 		noTransform<"lanes">,
 		(lanes, { lanesForward, lanesBackward }, warnings) => {
@@ -208,19 +216,27 @@ const allInferences = {
 	 */
 	inferLanesForward: inferenceCreator(
 		"lanesForward",
-		tags => {
-			// oneway === true && lanes:forward set
-			if (isEq(tags.oneway, true) && tags.lanes.isSet()) return tags.lanes.get();
+		[
+			// oneway === true && lanes set
+			InferenceDsl.new("lanesForward")
+				.assertIsEq("oneway", true)
+				.assertIsSet("lanes")
+				.setInferenceFn(tags => tags.lanes),
 
-			// oneway === false && tags.lanes set && tags.lanesBackwardSet
-			if (isEq(tags.oneway, false) && tags.lanes.isSet() && tags.lanesBackward.isSet())
-				return tags.lanes.get().subtract(tags.lanesBackward.get());
-		},
-		tags => {
-			// oneway === false && tags.lanes % 2 === 0
-			if (isEq(tags.oneway, false) && tags.lanes.isSet() && isEq(tags.lanes.get().mod(2), 0))
-				return tags.lanes.get().divide(2);
-		},
+			// oneway === false && lanes set && lanes:backward set
+			InferenceDsl.new("lanesForward")
+				.assertIsEq("oneway", false)
+				.assertIsSet("lanes")
+				.assertIsSet("lanesBackward")
+				.setInferenceFn(tags => tags.lanes.subtract(tags.lanesBackward))
+		],
+		[
+			// oneway === false && lanes % 2 === 0
+			InferenceDsl.new("lanesForward")
+				.assertIsEq("oneway", false)
+				.assertIs("lanes", lanes => lanes.mod(2).eq(0))
+				.setInferenceFn(tags => tags.lanes.divide(2))
+		],
 		new OsmUnsignedInteger(1),
 		noTransform<"lanesForward">,
 		(lanesForward, _tags, warnings) => {
@@ -238,19 +254,26 @@ const allInferences = {
 	 */
 	inferLanesBackward: inferenceCreator(
 		"lanesBackward",
-		tags => {
+		[
 			// oneway === true
-			if (isEq(tags.oneway, true)) return new OsmUnsignedInteger(0);
+			InferenceDsl.new("lanesBackward")
+				.assertIsEq("oneway", true)
+				.setInferenceFn(() => new OsmUnsignedInteger(0)),
 
-			// oneway === false && tags.lanes set && tags.lanesForward set
-			if (isEq(tags.oneway, false) && tags.lanes.isSet() && tags.lanesForward.isSet())
-				return tags.lanes.get().subtract(tags.lanesForward.get());
-		},
-		tags => {
-			// oneway === false && tags.lanes % 2 === 0
-			if (isEq(tags.oneway, false) && tags.lanes.isSet() && isEq(tags.lanes.get().mod(2), 0))
-				return tags.lanes.get().divide(2);
-		},
+			// oneway === false && lanes set && lanes:forward set
+			InferenceDsl.new("lanesBackward")
+				.assertIsEq("oneway", false)
+				.assertIsSet("lanes")
+				.assertIsSet("lanesForward")
+				.setInferenceFn(tags => tags.lanes.subtract(tags.lanesForward))
+		],
+		[
+			// oneway === false && lanes % 2 === 0
+			InferenceDsl.new("lanesBackward")
+				.assertIsEq("oneway", false)
+				.assertIs("lanes", lanes => lanes.mod(2).eq(0))
+				.setInferenceFn(tags => tags.lanes.divide(2))
+		],
 		new OsmUnsignedInteger(1),
 		noTransform<"lanesBackward">,
 		(lanesBackward, tags, warnings) => {
@@ -273,15 +296,22 @@ const allInferences = {
 	 */
 	inferTurnLanesForward: inferenceCreator(
 		"turnLanesForward",
-		tags => {
+		[
 			// oneway === true && turn:lanes set
-			if (isEq(tags.oneway, true) && tags.turnLanes.isSet()) return tags.turnLanes.get();
-		},
-		tags => {
+			InferenceDsl.new("turnLanesForward")
+				.assertIsEq("oneway", true)
+				.assertIsSet("turnLanes")
+				.setInferenceFn(tags => tags.turnLanes)
+		],
+		[
 			// lanes:forward set
-			if (tags.lanesForward.isSet()) return new OsmDoubleArray("", OsmString);
-		},
-		new OsmDoubleArray("", OsmString),
+			InferenceDsl.new("turnLanesForward")
+				.assertIsSet("lanesForward")
+				.setInferenceFn(
+					tags => new OsmDoubleArray(new Array(tags.lanesForward.get()), OsmString)
+				)
+		],
+		new OsmDoubleArray([], OsmString),
 		formatters.turnLanes,
 		(turnLanesForward, tags, warnings) => {
 			// length turn:lanes:forward !== lanes:forward
@@ -306,19 +336,21 @@ const allInferences = {
 	 */
 	inferTurnLanesBackward: inferenceCreator(
 		"turnLanesBackward",
-		tags => {
+		[
 			// oneway === true
-			if (isEq(tags.oneway, true)) return new OsmDoubleArray(new Array(), OsmString);
-		},
-		tags => {
+			InferenceDsl.new("turnLanesBackward")
+				.assertIsEq("oneway", true)
+				.setInferenceFn(() => new OsmDoubleArray([], OsmString))
+		],
+		[
 			// lanes:backward set
-			if (tags.lanesBackward.isSet())
-				return new OsmDoubleArray(
-					new Array(tags.lanesBackward.get().get()).fill(new OsmArray("", OsmString)),
-					OsmString
-				);
-		},
-		new OsmDoubleArray(new Array(), OsmString),
+			InferenceDsl.new("turnLanesBackward")
+				.assertIsSet("lanesBackward")
+				.setInferenceFn(
+					tags => new OsmDoubleArray(new Array(tags.lanesBackward.get()), OsmString)
+				)
+		],
+		new OsmDoubleArray([], OsmString),
 		formatters.turnLanes,
 		(turnLanesBackward, tags, warnings) => {
 			// length turn:lanes:backward !== lanes:backward

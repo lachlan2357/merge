@@ -1,4 +1,5 @@
 import { MessageBoxError } from "../messages.js";
+import { Maybe, MergeWayTagIn, MergeWayTagsIn } from "./processed.js";
 
 export interface ToString {
 	toString(): string;
@@ -11,6 +12,11 @@ export interface ArrayLike<T extends ToString> {
 }
 
 export type OsmConstructor<Value extends OsmValue<ToString>> = new (value: string) => Value;
+
+export type OsmInner<OsmType> = OsmType extends OsmValue<infer T> ? T : never;
+
+export type OsmValueForTag<Tag extends MergeWayTagIn> =
+	MergeWayTagsIn[Tag] extends Maybe<infer OsmType extends OsmValue<ToString>> ? OsmType : never;
 
 export abstract class OsmValue<T extends ToString> {
 	protected readonly inner: T;
@@ -90,9 +96,6 @@ export class OsmMaybe<
 }
 
 export class OsmBoolean extends OsmValue<boolean> {
-	static readonly TRUE = new OsmBoolean(true);
-	static readonly FALSE = new OsmBoolean(false);
-
 	constructor(value: boolean | string) {
 		if (typeof value === "boolean") super(value);
 		else super(OsmBoolean.process(value));
