@@ -8,14 +8,14 @@ import {
 } from "../../types/osm.js";
 import { MergeWayTag, MergeWayTags, MergeWayTagsIn } from "../../types/processed.js";
 import { TagWarning, WarningMap } from "../warnings.js";
-import { inferenceCreator } from "./creator.js";
+import { InferenceCollection } from "./creator.js";
 import { InferenceDsl } from "./dsl.js";
 import { noTransform, noValidation } from "./interfaces.js";
 
 /**
  * Perform all available {@link inferences} on {@link tags}.
  *
- * Inferences will be performed as specified under {@link inferenceCreator()} on {@link tags}.
+ * Inferences will be performed as specified under {@link InferenceCollection} on {@link tags}.
  *
  * @param tags The tags to perform inferences on.
  * @param inferences The inferences to perform.
@@ -104,7 +104,7 @@ const allInferences = {
 	 * @param hasChanged State to change when a change has been made.
 	 * @param inferredTags Set of tags which have been inferred to add this tag to if changes are made.
 	 */
-	inferOneway: inferenceCreator(
+	inferOneway: new InferenceCollection(
 		"oneway",
 		[
 			// lanes:backward === 0
@@ -136,7 +136,7 @@ const allInferences = {
 	 * @param hasChanged State to change when a change has been made.
 	 * @param inferredTags Set of tags which have been inferred to add this tag to if changes are made.
 	 */
-	inferJunction: inferenceCreator(
+	inferJunction: new InferenceCollection(
 		"junction",
 		[],
 		[],
@@ -155,7 +155,7 @@ const allInferences = {
 	 * @param hasChanged State to change when a change has been made.
 	 * @param inferredTags Set of tags which have been inferred to add this tag to if changes are made.
 	 */
-	inferSurface: inferenceCreator(
+	inferSurface: new InferenceCollection(
 		"surface",
 		[],
 		[],
@@ -171,7 +171,7 @@ const allInferences = {
 	 * @param hasChanged State to change when a change has been made.
 	 * @param inferredTags Set of tags which have been inferred to add this tag to if changes are made.
 	 */
-	inferLanes: inferenceCreator(
+	inferLanes: new InferenceCollection(
 		"lanes",
 		[
 			// oneway === true && lanes:forward set
@@ -214,7 +214,7 @@ const allInferences = {
 	 * @param hasChanged State to change when a change has been made.
 	 * @param inferredTags Set of tags which have been inferred to add this tag to if changes are made.
 	 */
-	inferLanesForward: inferenceCreator(
+	inferLanesForward: new InferenceCollection(
 		"lanesForward",
 		[
 			// oneway === true && lanes set
@@ -252,7 +252,7 @@ const allInferences = {
 	 * @param hasChanged State to change when a change has been made.
 	 * @param inferredTags Set of tags which have been inferred to add this tag to if changes are made.
 	 */
-	inferLanesBackward: inferenceCreator(
+	inferLanesBackward: new InferenceCollection(
 		"lanesBackward",
 		[
 			// oneway === true
@@ -294,7 +294,7 @@ const allInferences = {
 	 * @param hasChanged State to change when a change has been made.
 	 * @param inferredTags Set of tags which have been inferred to add this tag to if changes are made.
 	 */
-	inferTurnLanesForward: inferenceCreator(
+	inferTurnLanesForward: new InferenceCollection(
 		"turnLanesForward",
 		[
 			// oneway === true && turn:lanes set
@@ -334,7 +334,7 @@ const allInferences = {
 	 * @param hasChanged State to change when a change has been made.
 	 * @param inferredTags Set of tags which have been inferred to add this tag to if changes are made.
 	 */
-	inferTurnLanesBackward: inferenceCreator(
+	inferTurnLanesBackward: new InferenceCollection(
 		"turnLanesBackward",
 		[
 			// oneway === true

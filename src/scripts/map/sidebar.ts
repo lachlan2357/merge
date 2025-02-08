@@ -92,7 +92,7 @@ function show(wayId: number) {
 		const inferredValue = inferredValueRaw === "" ? undefined : inferredValueRaw;
 
 		// create children
-		const valueString = originalValue ?? inferredValue ?? "<no value>";
+		const valueString = inferredValue ?? originalValue ?? "<no value>";
 
 		// build row
 		const tagCell = new ElementBuilder("td").class("code").text(tag.toString()).build();

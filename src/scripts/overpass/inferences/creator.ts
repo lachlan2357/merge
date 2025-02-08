@@ -11,77 +11,6 @@ import { UnknownInference } from "./dsl.js";
 import { TransformFn, ValidationFn } from "./interfaces.js";
 
 /**
- * Collection of methods to perform inferences on a certain tag.
- */
-export interface InferenceObject {
-	/**
-	 * The {@link MergeWayTag} this inference object is declared for.
-	 */
-	tag: MergeWayTag;
-
-	/**
-	 * Attempt to calculate the value for this tag based on other existing tags.
-	 *
-	 * Calculations will only be attempted if the value of the tag is unset. In the case where no
-	 * inferences can be made, no changes will occur. In the case where changes are made however,
-	 * {@link hasChanged} will be set to `true` and the tag being inferred will be added to
-	 * {@link inferredTags}.
-	 *
-	 * @param tags The current state of the existing tags.
-	 * @param hasChanged State value to set if changes are made in this method.
-	 * @param inferredTags Set to keep track of tags which have had their values inferred.
-	 */
-	tryCalculate: (
-		tags: MergeWayTagsIn,
-		hasChanged: Atomic<boolean>,
-		inferredTags: InferencesMade
-	) => void;
-
-	/**
-	 * Attempt to fallback the value for this tag based on other existing tags.
-	 *
-	 * Fallbacks will only be attempted if the value of the tag is unset. In the case where no
-	 * inferences can be made, no changes will occur. In the case where changes are made however,
-	 * {@link hasChanged} will be set to `true` and the tag being inferred will be added to
-	 * {@link inferredTags}.
-	 *
-	 * @param tags The current state of the existing tags.
-	 * @param hasChanged State value to set if changes are made in this method.
-	 * @param inferredTags Set to keep track of tags which have had their values inferred.
-	 */
-	tryFallback: (
-		tags: MergeWayTagsIn,
-		hasChanged: Atomic<boolean>,
-		inferredTags: InferencesMade
-	) => void;
-
-	/**
-	 * Default the value of this tag to its default value.
-	 *
-	 * The value will only defaulted if the tag is unset.
-	 *
-	 * @param tags The current state of the existing tags.
-	 * @param inferredTags Set to keep track of tags which have had their values inferred.
-	 */
-	setDefault: (tags: MergeWayTagsIn, inferredTags: InferencesMade) => void;
-
-	/**
-	 * Format the value in this tag to be the most explicit representation of the data.
-	 *
-	 * @param tags The final values of all tags.
-	 */
-	formatValue: (tags: MergeWayTags) => void;
-
-	/**
-	 * Validate the current tag to ensure it makes sense in the context of all other tags.
-	 *
-	 * @param tags The final values of all tags.
-	 * @param warnings Set to keep track of warnings for all tags.
-	 */
-	validateValue: (tags: MergeWayTags, warnings: Set<TagWarning>) => void;
-}
-
-/**
  * Define how a certain tag can be inferred.
  *
  * There are five stages to the inference process, where each stage is performed on all the tags
@@ -104,12 +33,12 @@ export interface InferenceObject {
  * completely missing with no chance of any reasonably guess to what the value should be. These
  * values are not based on any data, acting as a pure default value.
  *
- * 4. {@link format} is designed to ensure the final tag's value is the most canonical version of
+ * 4. {@link formatFn} is designed to ensure the final tag's value is the most canonical version of
  * itself it can be. Sometimes, values for tags, or partial values in the case of arrays, can use
  * shortcuts in the way they are written to make it easier for mappers. The goal of format is to
  * reverse these changes to make it clearest what different values are referring to.
  *
- * 5. {@link validate} is used to check that the value makes sense in the context of all the other
+ * 5. {@link validateFn} is used to check that the value makes sense in the context of all the other
  * tags. This is not the correct place to ensure values are "proper" (i.e., a surface is specified)
  * as a valid surface, these checks should be made in a class extending from {@link OsmValue},
  * restricting possible inner values to the "proper" ones.
@@ -119,93 +48,149 @@ export interface InferenceObject {
  *
  * Note: since each inference stage is completely separate, checks made in later stages cannot rely
  * on inferences made from earlier ones.
- *
- * @param tag The tag these inferences apply to.
- * @param calculations A method containing each calculation available for this tag.
- * @param fallbacks A method containing each fallback available for this tag.
- * @param defaultValue The value to set for this tag as a last resort.
- * @param format A method specifying how to properly format this tag.
- * @param validate A method specifying validations checks for this tag.
  */
-export function inferenceCreator<
+export class InferenceCollection<
 	Tag extends MergeWayTag,
 	OsmType extends MergeWayTags[Tag] = MergeWayTags[Tag]
->(
-	tag: Tag,
-	calculations: Array<UnknownInference<Tag>>,
-	fallbacks: Array<UnknownInference<Tag>>,
-	defaultValue: MergeWayTags[Tag],
-	format: TransformFn<Tag>,
-	validate: ValidationFn<Tag>
-): InferenceObject {
-	const tryCalculate = (
-		tags: MergeWayTagsIn,
-		hasChanged: Atomic<boolean>,
-		inferredTags: InferencesMade
-	) => {
+> {
+	/**
+	 * The {@link MergeWayTag} this inference object is declared for.
+	 */
+	readonly tag: Tag;
+
+	private readonly calculations: Array<UnknownInference<Tag>>;
+	private readonly fallbacks: Array<UnknownInference<Tag>>;
+	private readonly defaultValue: MergeWayTags[Tag];
+	private readonly formatFn: TransformFn<Tag>;
+	private readonly validateFn: ValidationFn<Tag>;
+
+	/**
+	 * Define how a certain {@link tag} can be inferred.
+	 *
+	 * @param tag The tag these inferences apply to.
+	 * @param calculations A method containing each calculation available for this tag.
+	 * @param fallbacks A method containing each fallback available for this tag.
+	 * @param defaultValue The value to set for this tag as a last resort.
+	 * @param formatFn A method specifying how to properly format this tag.
+	 * @param validateFn A method specifying validations checks for this tag.
+	 */
+	constructor(
+		tag: Tag,
+		calculations: Array<UnknownInference<Tag>>,
+		fallbacks: Array<UnknownInference<Tag>>,
+		defaultValue: MergeWayTags[Tag],
+		formatFn: TransformFn<Tag>,
+		validateFn: ValidationFn<Tag>
+	) {
+		this.tag = tag;
+		this.calculations = calculations;
+		this.fallbacks = fallbacks;
+		this.defaultValue = defaultValue;
+		this.formatFn = formatFn;
+		this.validateFn = validateFn;
+	}
+
+	/**
+	 * Attempt to calculate the value for this tag based on other existing tags.
+	 *
+	 * Calculations will only be attempted if the value of the tag is unset. In the case where no
+	 * inferences can be made, no changes will occur. In the case where changes are made however,
+	 * {@link hasChanged} will be set to `true` and the tag being inferred will be added to
+	 * {@link inferredTags}.
+	 *
+	 * @param tags The current state of the existing tags.
+	 * @param hasChanged State value to set if changes are made in this method.
+	 * @param inferredTags Set to keep track of tags which have had their values inferred.
+	 */
+	tryCalculate(tags: MergeWayTagsIn, hasChanged: Atomic<boolean>, inferredTags: InferencesMade) {
 		// ensure value doesn't already exist
-		const oldValue = tags[tag];
+		const oldValue = tags[this.tag];
 		if (oldValue.isSet()) return;
 
 		// try to infer value
-		for (const calculation of calculations) {
+		for (const calculation of this.calculations) {
 			const newValue = calculation.exec(tags);
 			if (newValue === undefined) continue;
 
 			// make and record changes
-			(tags[tag] as OsmMaybe<OsmType>) = newValue.maybe() as OsmMaybe<OsmType>;
-			inferredTags.add(tag);
+			(tags[this.tag] as OsmMaybe<OsmType>) = newValue.maybe() as OsmMaybe<OsmType>;
+			inferredTags.add(this.tag);
 			hasChanged.set(true);
 		}
-	};
+	}
 
-	const tryFallback = (
-		tags: MergeWayTagsIn,
-		hasChanged: Atomic<boolean>,
-		inferredTags: InferencesMade
-	) => {
+	/**
+	 * Attempt to fallback the value for this tag based on other existing tags.
+	 *
+	 * Fallbacks will only be attempted if the value of the tag is unset. In the case where no
+	 * inferences can be made, no changes will occur. In the case where changes are made however,
+	 * {@link hasChanged} will be set to `true` and the tag being inferred will be added to
+	 * {@link inferredTags}.
+	 *
+	 * @param tags The current state of the existing tags.
+	 * @param hasChanged State value to set if changes are made in this method.
+	 * @param inferredTags Set to keep track of tags which have had their values inferred.
+	 */
+	tryFallback(tags: MergeWayTagsIn, hasChanged: Atomic<boolean>, inferredTags: InferencesMade) {
 		// ensure value already hasn't been inferred
-		const oldValue = tags[tag];
+		const oldValue = tags[this.tag];
 		if (oldValue.isSet()) return;
 
 		// try to perform fallbacks
-		for (const fallback of fallbacks) {
+		for (const fallback of this.fallbacks) {
 			const newValue = fallback.exec(tags);
 			if (newValue === undefined) return;
 
 			// make and record changes
-			(tags[tag] as OsmMaybe<OsmType>) = newValue.maybe() as OsmMaybe<OsmType>;
-			inferredTags.add(tag);
+			(tags[this.tag] as OsmMaybe<OsmType>) = newValue.maybe() as OsmMaybe<OsmType>;
+			inferredTags.add(this.tag);
 			hasChanged.set(true);
 		}
-	};
+	}
 
-	const setDefault = (tags: MergeWayTagsIn, inferredTags: InferencesMade) => {
+	/**
+	 * Default the value of this tag to its default value.
+	 *
+	 * The value will only defaulted if the tag is unset.
+	 *
+	 * @param tags The current state of the existing tags.
+	 * @param inferredTags Set to keep track of tags which have had their values inferred.
+	 */
+	setDefault(tags: MergeWayTagsIn, inferredTags: InferencesMade) {
 		// ensure value already hasn't been inferred
-		const oldValue = tags[tag];
+		const oldValue = tags[this.tag];
 		if (oldValue.isSet()) return;
 
 		// make and record changes
-		(tags[tag] as OsmMaybe<OsmType>) = defaultValue.maybe() as OsmMaybe<OsmType>;
-		inferredTags.add(tag);
-	};
+		(tags[this.tag] as OsmMaybe<OsmType>) = this.defaultValue.maybe() as OsmMaybe<OsmType>;
+		inferredTags.add(this.tag);
+	}
 
-	const formatValue = (tags: MergeWayTags) => {
+	/**
+	 * Format the value in this tag to be the most explicit representation of the data.
+	 *
+	 * @param tags The final values of all tags.
+	 */
+	formatValue(tags: MergeWayTags) {
 		// ensure tag value exists
-		const value = tags[tag];
+		const value = tags[this.tag];
 
 		// format value
-		const formattedValue = format(tag, value, tags);
+		const formattedValue = this.formatFn(this.tag, value, tags);
 		if (formattedValue === undefined) return;
-		tags[tag] = formattedValue;
-	};
+		tags[this.tag] = formattedValue;
+	}
 
-	const validateValue = (tags: MergeWayTags, warnings: Set<TagWarning>) => {
-		const value = tags[tag];
+	/**
+	 * Validate the current tag to ensure it makes sense in the context of all other tags.
+	 *
+	 * @param tags The final values of all tags.
+	 * @param warnings Set to keep track of warnings for all tags.
+	 */
+	validateValue = (tags: MergeWayTags, warnings: Set<TagWarning>) => {
+		const value = tags[this.tag];
 
 		// validate value
-		validate(value, tags, warnings);
+		this.validateFn(value, tags, warnings);
 	};
-
-	return { tag, tryCalculate, tryFallback, setDefault, formatValue, validateValue };
 }
