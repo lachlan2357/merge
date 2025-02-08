@@ -1,6 +1,16 @@
 import { TagWarning } from "../overpass/warnings.js";
-import { OsmBoolean, OsmDoubleArray, OsmString, OsmUnsignedInteger } from "./osm.js";
+import {
+	OsmBoolean,
+	OsmDoubleArray,
+	OsmMaybe,
+	OsmString,
+	OsmUnsignedInteger,
+	OsmValue,
+	ToString
+} from "./osm.js";
 import { OverpassNode, OverpassWay } from "./overpass.js";
+
+export type MergePartial<T> = { [Key in keyof T]: Maybe<T[Key]> };
 
 /**
  * Format for processed way data.
@@ -38,6 +48,8 @@ export interface MergeWayTags {
  */
 export type MergeWayTag = keyof MergeWayTags;
 
+export type Maybe<OsmType> = OsmType extends OsmValue<ToString> ? OsmMaybe<OsmType> : never;
+
 /**
  * Tags not required for each {@link MergeWay}, but are required for inferring other tags.
  */
@@ -49,7 +61,7 @@ export interface MergeWayTagsHelper {
  * Union of {@link MergeWayTags} and {@link WayDataTAgsHelper} to represent the in-tags for
  * processing.
  */
-export type MergeWayTagsIn = Partial<MergeWayTags> & Partial<MergeWayTagsHelper>;
+export type MergeWayTagsIn = MergePartial<MergeWayTags & MergeWayTagsHelper>;
 
 /**
  * All imported data represented as a map between the Way ID and its {@link MergeWay}.

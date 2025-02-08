@@ -1,11 +1,11 @@
 import { Atomic } from "../../state/index.js";
+import { OsmMaybe } from "../../types/osm.js";
 import {
 	InferencesMade,
 	MergeWayTag,
 	MergeWayTags,
 	MergeWayTagsIn
 } from "../../types/processed.js";
-import { isSet } from "../process.js";
 import { TagWarning } from "../warnings.js";
 import { InferenceFn, TransformFn, ValidationFn } from "./interfaces.js";
 
@@ -126,7 +126,10 @@ export interface InferenceObject {
  * @param format A method specifying how to properly format this tag.
  * @param validate A method specifying validations checks for this tag.
  */
-export function inferenceCreator<Tag extends MergeWayTag>(
+export function inferenceCreator<
+	Tag extends MergeWayTag,
+	OsmType extends MergeWayTags[Tag] = MergeWayTags[Tag]
+>(
 	tag: Tag,
 	calculations: InferenceFn<Tag>,
 	fallbacks: InferenceFn<Tag>,
@@ -141,14 +144,14 @@ export function inferenceCreator<Tag extends MergeWayTag>(
 	) => {
 		// ensure value doesn't already exist
 		const oldValue = tags[tag];
-		if (isSet(oldValue)) return;
+		if (oldValue.isSet()) return;
 
 		// try to infer value
 		const newValue = calculations(tags);
 		if (newValue === undefined) return;
 
 		// make and record changes
-		tags[tag] = newValue;
+		(tags[tag] as OsmMaybe<OsmType>) = newValue.maybe() as OsmMaybe<OsmType>;
 		inferredTags.add(tag);
 		hasChanged.set(true);
 	};
@@ -160,14 +163,14 @@ export function inferenceCreator<Tag extends MergeWayTag>(
 	) => {
 		// ensure value already hasn't been inferred
 		const oldValue = tags[tag];
-		if (isSet(oldValue)) return;
+		if (oldValue.isSet()) return;
 
 		// try to perform fallbacks
 		const newValue = fallbacks(tags);
 		if (newValue === undefined) return;
 
 		// make and record changes
-		tags[tag] = newValue;
+		(tags[tag] as OsmMaybe<OsmType>) = newValue.maybe() as OsmMaybe<OsmType>;
 		inferredTags.add(tag);
 		hasChanged.set(true);
 	};
@@ -175,10 +178,10 @@ export function inferenceCreator<Tag extends MergeWayTag>(
 	const setDefault = (tags: MergeWayTagsIn, inferredTags: InferencesMade) => {
 		// ensure value already hasn't been inferred
 		const oldValue = tags[tag];
-		if (isSet(oldValue)) return;
+		if (oldValue.isSet()) return;
 
 		// make and record changes
-		tags[tag] = defaultValue;
+		(tags[tag] as OsmMaybe<OsmType>) = defaultValue.maybe() as OsmMaybe<OsmType>;
 		inferredTags.add(tag);
 	};
 

@@ -23,6 +23,10 @@ export abstract class OsmValue<T extends ToString> {
 		return this.inner;
 	}
 
+	maybe() {
+		return new OsmMaybe<typeof this>(this);
+	}
+
 	eq(other: this | T) {
 		if (other instanceof OsmValue) return this.cmp(other);
 		return this.inner === other;
@@ -34,21 +38,21 @@ export abstract class OsmValue<T extends ToString> {
 
 	abstract toString(): string;
 
-	static from<C extends OsmValue<T>, T extends ToString>(
+	static from<OsmType extends OsmValue<ToString>>(
 		value: string | undefined,
-		constructor: OsmConstructor<C>
-	): C | undefined {
-		if (value === undefined) return undefined;
-		return new constructor(value);
+		constructor: OsmConstructor<OsmType>
+	): OsmMaybe<OsmType> {
+		if (value === undefined) return OsmMaybe.unset();
+		else return new constructor(value).maybe();
 	}
 
 	static fromArray<T extends OsmValue<ToString>>(
 		value: string | undefined,
 		constructor: OsmConstructor<T>,
 		delimiter: string = ";"
-	): OsmArray<T> | undefined {
-		if (value === undefined) return undefined;
-		return new OsmArray(value, constructor, delimiter);
+	): OsmMaybe<OsmArray<T>> {
+		if (value === undefined) return OsmMaybe.unset();
+		return new OsmArray(value, constructor, delimiter).maybe();
 	}
 
 	static fromDoubleArray<T extends OsmValue<ToString>>(
@@ -56,9 +60,32 @@ export abstract class OsmValue<T extends ToString> {
 		constructor: OsmConstructor<T>,
 		innerDelimiter?: string,
 		outerDelimiter?: string
-	): OsmDoubleArray<T> | undefined {
-		if (value === undefined) return undefined;
-		return new OsmDoubleArray(value, constructor, innerDelimiter, outerDelimiter);
+	): OsmMaybe<OsmDoubleArray<T>> {
+		if (value === undefined) return OsmMaybe.unset();
+		return new OsmDoubleArray(value, constructor, innerDelimiter, outerDelimiter).maybe();
+	}
+}
+
+export class OsmMaybe<
+	OsmType extends OsmValue<ToString>,
+	OsmMaybeType extends OsmValue<ToString> | undefined = OsmType | undefined
+> {
+	private readonly inner: OsmMaybeType;
+
+	constructor(value: OsmMaybeType) {
+		this.inner = value;
+	}
+
+	isSet(): this is OsmMaybe<OsmType, OsmType> {
+		return this.inner !== undefined;
+	}
+
+	get(this: OsmMaybe<OsmType, OsmType>) {
+		return this.inner;
+	}
+
+	static unset<OsmType extends OsmValue<ToString>>() {
+		return new OsmMaybe<OsmType>(undefined);
 	}
 }
 

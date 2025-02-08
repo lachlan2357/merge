@@ -7,7 +7,7 @@ import {
 	OsmUnsignedInteger
 } from "../../types/osm.js";
 import { MergeWayTag, MergeWayTags, MergeWayTagsIn } from "../../types/processed.js";
-import { isEq, isSet } from "../process.js";
+import { isEq } from "../process.js";
 import { TagWarning, WarningMap } from "../warnings.js";
 import { inferenceCreator } from "./creator.js";
 import { noInference, noTransform, noValidation } from "./interfaces.js";
@@ -113,13 +113,13 @@ const allInferences = {
 		noInference,
 		OsmBoolean.FALSE,
 		noTransform<"oneway">,
-		(oneway, tags, warnings) => {
+		(oneway, { lanesBackward }, warnings) => {
 			// oneway === true && lanes:backward !== 0
-			if (oneway.eq(true) && !tags.lanesBackward.eq(0))
-				warnings.add(TagWarning.onewayWithBackwardLanes(tags.lanesBackward));
+			if (oneway.eq(true) && !lanesBackward.eq(0))
+				warnings.add(TagWarning.onewayWithBackwardLanes(lanesBackward));
 
 			// oneway === false && lanes:backward === 0
-			if (oneway.eq(false) && tags.lanesBackward.eq(0))
+			if (oneway.eq(false) && lanesBackward.eq(0))
 				warnings.add(TagWarning.notOnewayWithNoBackwardLanes());
 		}
 	),
@@ -173,30 +173,28 @@ const allInferences = {
 		"lanes",
 		tags => {
 			// oneway === true && lanes:forward set
-			if (isEq(tags.oneway, true) && isSet(tags.lanesForward)) return tags.lanesForward;
+			if (isEq(tags.oneway, true) && tags.lanesForward.isSet())
+				return tags.lanesForward.get();
 
 			// oneway === false && lanes:forward set && lanes:backward set
-			if (isEq(tags.oneway, false) && isSet(tags.lanesForward) && isSet(tags.lanesBackward))
-				return tags.lanesForward.add(tags.lanesBackward);
+			if (isEq(tags.oneway, false) && tags.lanesForward.isSet() && tags.lanesBackward.isSet())
+				return tags.lanesForward.get().add(tags.lanesBackward.get());
 		},
 		tags => {
 			// tags.oneway set
-			if (isSet(tags)) return new OsmUnsignedInteger(tags.oneway ? 1 : 2);
+			if (tags.oneway.isSet())
+				return new OsmUnsignedInteger(tags.oneway.get().eq(true) ? 1 : 2);
 		},
 		new OsmUnsignedInteger(2),
 		noTransform<"lanes">,
-		(lanes, tags, warnings) => {
+		(lanes, { lanesForward, lanesBackward }, warnings) => {
 			// lanes === 0
 			if (lanes.eq(0)) warnings.add(TagWarning.lanesEqualZero("lanes"));
 
 			// lanes !== lanes:forward + lanes:backward
-			if (!lanes.eq(tags.lanesForward.add(tags.lanesBackward)))
+			if (!lanes.eq(lanesForward.add(lanesBackward)))
 				warnings.add(
-					TagWarning.lanesUnequalToForwardBackward(
-						lanes,
-						tags.lanesForward,
-						tags.lanesBackward
-					)
+					TagWarning.lanesUnequalToForwardBackward(lanes, lanesForward, lanesBackward)
 				);
 		}
 	),
@@ -212,20 +210,20 @@ const allInferences = {
 		"lanesForward",
 		tags => {
 			// oneway === true && lanes:forward set
-			if (isEq(tags.oneway, true) && isSet(tags.lanes)) return tags.lanes;
+			if (isEq(tags.oneway, true) && tags.lanes.isSet()) return tags.lanes.get();
 
 			// oneway === false && tags.lanes set && tags.lanesBackwardSet
-			if (isEq(tags.oneway, false) && isSet(tags.lanes) && isSet(tags.lanesBackward))
-				return tags.lanes.subtract(tags.lanesBackward);
+			if (isEq(tags.oneway, false) && tags.lanes.isSet() && tags.lanesBackward.isSet())
+				return tags.lanes.get().subtract(tags.lanesBackward.get());
 		},
 		tags => {
 			// oneway === false && tags.lanes % 2 === 0
-			if (isEq(tags.oneway, false) && isSet(tags.lanes) && isEq(tags.lanes.mod(2), 0))
-				return tags.lanes?.divide(2);
+			if (isEq(tags.oneway, false) && tags.lanes.isSet() && isEq(tags.lanes.get().mod(2), 0))
+				return tags.lanes.get().divide(2);
 		},
 		new OsmUnsignedInteger(1),
 		noTransform<"lanesForward">,
-		(lanesForward, tags, warnings) => {
+		(lanesForward, _tags, warnings) => {
 			// lanes:forward === 0
 			if (lanesForward.eq(0)) warnings.add(TagWarning.lanesEqualZero("lanesForward"));
 		}
@@ -245,13 +243,13 @@ const allInferences = {
 			if (isEq(tags.oneway, true)) return new OsmUnsignedInteger(0);
 
 			// oneway === false && tags.lanes set && tags.lanesForward set
-			if (isEq(tags.oneway, false) && isSet(tags.lanes) && isSet(tags.lanesForward))
-				return tags.lanes.subtract(tags.lanesForward);
+			if (isEq(tags.oneway, false) && tags.lanes.isSet() && tags.lanesForward.isSet())
+				return tags.lanes.get().subtract(tags.lanesForward.get());
 		},
 		tags => {
 			// oneway === false && tags.lanes % 2 === 0
-			if (isEq(tags.oneway, false) && isSet(tags.lanes) && isEq(tags.lanes.mod(2), 0))
-				return tags.lanes.divide(2);
+			if (isEq(tags.oneway, false) && tags.lanes.isSet() && isEq(tags.lanes.get().mod(2), 0))
+				return tags.lanes.get().divide(2);
 		},
 		new OsmUnsignedInteger(1),
 		noTransform<"lanesBackward">,
@@ -277,11 +275,11 @@ const allInferences = {
 		"turnLanesForward",
 		tags => {
 			// oneway === true && turn:lanes set
-			if (isEq(tags.oneway, true) && isSet(tags.turnLanes)) return tags.turnLanes;
+			if (isEq(tags.oneway, true) && tags.turnLanes.isSet()) return tags.turnLanes.get();
 		},
 		tags => {
 			// lanes:forward set
-			if (isSet(tags.lanesForward)) return new OsmDoubleArray("", OsmString);
+			if (tags.lanesForward.isSet()) return new OsmDoubleArray("", OsmString);
 		},
 		new OsmDoubleArray("", OsmString),
 		formatters.turnLanes,
@@ -314,9 +312,9 @@ const allInferences = {
 		},
 		tags => {
 			// lanes:backward set
-			if (isSet(tags.lanesBackward))
+			if (tags.lanesBackward.isSet())
 				return new OsmDoubleArray(
-					new Array(tags.lanesBackward.get()).fill(new OsmArray("", OsmString)),
+					new Array(tags.lanesBackward.get().get()).fill(new OsmArray("", OsmString)),
 					OsmString
 				);
 		},
