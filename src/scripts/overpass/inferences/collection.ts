@@ -7,7 +7,7 @@ import {
 	MergeWayTagsIn
 } from "../../types/processed.js";
 import { TagWarning } from "../warnings.js";
-import { UnknownInference } from "./dsl.js";
+import { UnknownInference } from "./builder.js";
 import { TransformFn, ValidationFn } from "./interfaces.js";
 
 /**
