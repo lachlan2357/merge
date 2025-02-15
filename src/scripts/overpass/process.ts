@@ -83,8 +83,8 @@ export function process(allNodes: Map<number, OverpassNode>, allWays: Map<number
  *
  * @param tags The object containing the {@link Partial} tags.
  * @param tag The specific tag to compile.
- * @throws {TagError} If the tag could not be compiled.
  * @returns The compiled tag.
+ * @throws {TagError} If the tag could not be compiled.
  */
 function compile<Tag extends MergeWayTag, Value extends MergeWayTags[Tag]>(
 	tags: MergePartial<MergeWayTags>,

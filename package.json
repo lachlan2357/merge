@@ -11,7 +11,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "lint": "eslint ./src",
+    "lint": "eslint ./src --max-warnings 0",
     "serve": "serve",
     "format": "prettier --write src/",
     "merge": "node cli/index.js",

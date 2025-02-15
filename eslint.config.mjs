@@ -10,7 +10,12 @@ const jsdocConfig = [
 		files: ["**/*.ts"],
 		plugins: { jsdoc },
 		rules: {
-			"jsdoc/tag-lines": "off"
+			"jsdoc/tag-lines": "off",
+			"jsdoc/require-throws": "warn",
+			"jsdoc/require-description": "warn",
+			"jsdoc/require-description-complete-sentence": "warn",
+			"jsdoc/check-indentation": "warn",
+			"jsdoc/sort-tags": "warn"
 		}
 	}
 ];

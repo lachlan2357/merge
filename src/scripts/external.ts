@@ -15,7 +15,7 @@ function openUrl(url: URL) {
 const JOSM_BASE_URL = new URL("http://127.0.0.1:8111/load_and_zoom");
 
 /**
- * Open a URL in JOSM
+ * Open a URL in JOSM.
  *
  * @param url The URL to open.
  */

@@ -75,7 +75,7 @@ export class Atomic<T> extends Store<T> {
 	 *
 	 * This method discards whatever value is previously stored, overwriting it with whatever value
 	 * is passed to it. In cases where the value should be modified instead of overwritten, see
-	 * {@link Atomic.setDynamic()}
+	 * {@link Atomic.setDynamic()}.
 	 *
 	 * @param value The new value to store.
 	 */

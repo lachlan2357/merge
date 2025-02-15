@@ -211,17 +211,17 @@ export abstract class Setting<T extends ToString> {
 	/**
 	 * Process an incoming `string` from {@link localStorage} into the correct setting type.
 	 *
-	 * @param valueString The `string` value to process
-	 * @throws {SettingTypeError} If the value could not be processed.
+	 * @param valueString The `string` value to process.
 	 * @returns The processed value.
+	 * @throws {SettingTypeError} If the value could not be processed.
 	 */
 	protected abstract process(input: string): T;
 
 	/**
 	 * Retrieve a new value for this container from a {@link HTMLInputElement}.
 	 *
-	 * @throws {SettingTypeError} If the value of the input field is not valid for this setting.
 	 * @param input The {@link HTMLInputField} to retrieve the value from.
+	 * @throws {SettingTypeError} If the value of the input field is not valid for this setting.
 	 */
 	protected abstract getValueFromInput(input: HTMLInputElement): T;
 

@@ -11,6 +11,7 @@ export type ElementConstructor<E extends HTMLElement> = new () => E;
  *
  * @param constructor The constructor for the class of the element to create.
  * @returns The created element.
+ * @throws {ElementError} If the element could not be created.
  */
 export function createCustomElement<const CustomElement extends typeof HTMLElement>(
 	constructor: CustomElement
@@ -34,8 +35,8 @@ export function createCustomElement<const CustomElement extends typeof HTMLEleme
  *
  * @param id The ID of the element to retrieve.
  * @param constructor The expected type of the element.
- * @throws {ElementError} If the retrieval was unsuccessful.
  * @returns The element if successfully found.
+ * @throws {ElementError} If the retrieval was unsuccessful.
  */
 export function getElement<E extends HTMLElement>(id: string, constructor: ElementConstructor<E>) {
 	// find element

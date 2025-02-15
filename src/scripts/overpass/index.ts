@@ -49,6 +49,7 @@ export async function overpassSearch(searchTerm: string) {
  *
  * @param searchTerm The search term to build the query for.
  * @returns The query string.
+ * @throws {OverpassError} If the query could not be built.
  */
 function buildQuery(searchTerm: string) {
 	const roadName = searchTerm;
@@ -75,6 +76,7 @@ function buildQuery(searchTerm: string) {
  * @param response The {@link OverpassResponse} direct from an API or Database call.
  * @returns The sorted {@link OverpassNode Nodes}, {@link OverpassWay Ways} and
  * {@link OverpassRelation Relations}.
+ * @throws {OverpassError} If the {@link response} is not valid for this application's purpose.
  */
 function transform(response: OverpassResponse) {
 	const nodes = new Map<number, OverpassNode>();
@@ -112,8 +114,8 @@ function transform(response: OverpassResponse) {
  * Perform a fetch request to the Overpass API.
  *
  * @param queryString The query string to request from the API.
- * @throws {OverpassError} If the request was unsuccessful.
  * @returns The response from this query.
+ * @throws {OverpassError} If the request was unsuccessful.
  */
 async function fetchFromApi(queryString: string) {
 	MESSAGE_BOX.display("overpassDownload");

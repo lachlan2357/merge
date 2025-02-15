@@ -47,8 +47,8 @@ export class Database {
 	/**
 	 * Retrieve a connection to the {@link Database} and {@link IDBDatabase}.
 	 *
-	 * @throws {DatabaseError} If a connection to the database could not be retrieved.
 	 * @returns A connection to the database.
+	 * @throws {DatabaseError} If a connection to the database could not be retrieved.
 	 */
 	static async connect() {
 		const database = await new Promise<IDBDatabase>(resolve => {
@@ -118,8 +118,8 @@ export class Database {
 	 * Retrieve cached data from the database.
 	 *
 	 * @param key The key of the cached data.
-	 * @throws {DatabaseError} If the data could not be retrieved.
 	 * @returns The cached data from the database, if it exists.
+	 * @throws {DatabaseError} If the data could not be retrieved.
 	 */
 	async get(key: string) {
 		return this.transact<OverpassResponse | null>("readonly", (store, resolve) => {
@@ -143,8 +143,8 @@ export class Database {
 	 * Cache data into the database.
 	 *
 	 * @param data The data to cache.
-	 * @throws {DatabaseError} If the data could not be cached.
 	 * @returns Whether the value was successfully set.
+	 * @throws {DatabaseError} If the data could not be cached.
 	 */
 	async set(data: CachedQuery) {
 		return this.transact<boolean>("readwrite", (store, resolve) => {

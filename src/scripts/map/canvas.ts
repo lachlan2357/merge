@@ -404,6 +404,7 @@ class Canvas {
 	 * Retrieve the drawing context for this canvas.
 	 *
 	 * @returns The drawing context.
+	 * @throws {Error} If the canvas rending context could not be retrieved.
 	 */
 	getContext() {
 		const context = this.element.getContext("2d");

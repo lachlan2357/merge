@@ -19,25 +19,25 @@ import { TransformFn, ValidationFn } from "./interfaces.js";
  *
  * The five stages of inference are:
  *
- * 1. {@link calculations} are computations that can be made for the value of a tag based on the
+ * 1. {@link calculations}: computations that can be made for the value of a tag based on the
  * values of other tags. It is crucial that these inferences, if run on the same tags object, will
  * either infer the same value or not make an inference, as absolute precision is a requirement for
  * this level of inference.
  *
- * 2. {@link fallbacks} are instructions for how to create a default value based on the values of
+ * 2. {@link fallbacks}: instructions for how to create a default value based on the values of
  * other tags. Fallbacks do not have the strict requirement for being precise like calculations,
  * thus they should be ordered in descending order of desirability.
  *
- * 3. {@link default} is the final chance for a value to be set, indicating that a tag's value is
+ * 3. {@link default}: the final chance for a value to be set, indicating that a tag's value is
  * completely missing with no chance of any reasonably guess to what the value should be. These
  * values are not based on any data, acting as a pure default value.
  *
- * 4. {@link formatFn} is designed to ensure the final tag's value is the most canonical version of
+ * 4. {@link formatFn}: designed to ensure the final tag's value is the most canonical version of
  * itself it can be. Sometimes, values for tags, or partial values in the case of arrays, can use
  * shortcuts in the way they are written to make it easier for mappers. The goal of format is to
  * reverse these changes to make it clearest what different values are referring to.
  *
- * 5. {@link validateFn} is used to check that the value makes sense in the context of all the other
+ * 5. {@link validateFn}: used to check that the value makes sense in the context of all the other
  * tags. This is not the correct place to ensure values are "proper" (i.e., a surface is specified)
  * as a valid surface, these checks should be made in a class extending from {@link OsmValue},
  * restricting possible inner values to the "proper" ones.

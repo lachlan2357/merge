@@ -7,7 +7,7 @@ import { OverpassNode } from "./overpass.js";
  * Usually, this interface should be used to allow math between the same coordinate type, however
  * it can also be used to perform math across different ones. Generally speaking, implementations
  * should then reference the math functions {@link coordinateAdd()}, {@link coordinateSubtract()},
- * {@link coordinateMultiply()} and {@link coordinateDivide()}
+ * {@link coordinateMultiply()} and {@link coordinateDivide()}.
  */
 interface CoordinateMath<T extends Coordinate> {
 	/**
@@ -57,7 +57,7 @@ interface CoordinateMath<T extends Coordinate> {
 }
 
 /**
- * Signature for passing a {@link Coordinate} constructor as a parameter
+ * Signature for passing a {@link Coordinate} constructor as a parameter.
  */
 type CoordinateConstructor<T extends Coordinate> = new (x: number, y: number) => T;
 
@@ -199,7 +199,7 @@ class Coordinate {
 	 *
 	 * This method is designed to be used with methods that require both dimensions to be passed as
 	 * different parameters, such as {@link CanvasRenderingContext2D.moveTo()}, thus can be used
-	 * like `context.moveTo(...coordinate.get());
+	 * like `context.moveTo(...coordinate.get());`.
 	 *
 	 * @returns A tuple of [x, y] positions.
 	 */

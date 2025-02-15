@@ -89,6 +89,8 @@ export abstract class GraphItem {
 	 * ensure this method is called itself.
 	 *
 	 * It is also imperative to call {@link beginCalculation} at the start of any calculation.
+	 *
+	 * @throws {DependencyError} If the dependencies could not be collated.
 	 */
 	protected finishCalculation(this: Compute) {
 		// pop top item off the access stack

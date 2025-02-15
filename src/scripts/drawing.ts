@@ -92,7 +92,7 @@ export function drawPolygon(coordinates: Array<WorldCoordinate>, settings: Drawi
  *
  * @param type The type of arrow to draw.
  * @param width The width to draw the arrow with.
- * @param length The height to draw the arrow with
+ * @param length The height to draw the arrow with.
  * @param centre The coordinate of the centre of the arrow.
  * @param angle The angle to draw the arrow at.
  */
