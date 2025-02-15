@@ -38,7 +38,7 @@ export class Database {
 	 * used internally to encapsulate one. To retrieve a valid instance, see
 	 * {@link Database.connect()}.
 	 *
-	 * @param database
+	 * @param database The raw {@link IDBDatabase} connection.
 	 */
 	private constructor(database: IDBDatabase) {
 		this.database = database;
@@ -48,7 +48,7 @@ export class Database {
 	 * Retrieve a connection to the {@link Database} and {@link IDBDatabase}.
 	 *
 	 * @throws {DatabaseError} If a connection to the database could not be retrieved.
-	 * @returns
+	 * @returns A connection to the database.
 	 */
 	static async connect() {
 		const database = await new Promise<IDBDatabase>(resolve => {
@@ -92,6 +92,7 @@ export class Database {
 	 *
 	 * @param mode The mode for this transaction.
 	 * @param fn The function for logic to perform on this transaction.
+	 * @returns The value defined by {@link fn}.
 	 */
 	private async transact<R>(
 		mode: IDBTransactionMode,
@@ -118,6 +119,7 @@ export class Database {
 	 *
 	 * @param key The key of the cached data.
 	 * @throws {DatabaseError} If the data could not be retrieved.
+	 * @returns The cached data from the database, if it exists.
 	 */
 	async get(key: string) {
 		return this.transact<OverpassResponse | null>("readonly", (store, resolve) => {
@@ -142,9 +144,10 @@ export class Database {
 	 *
 	 * @param data The data to cache.
 	 * @throws {DatabaseError} If the data could not be cached.
+	 * @returns Whether the value was successfully set.
 	 */
 	async set(data: CachedQuery) {
-		return this.transact<void>("readwrite", (store, resolve) => {
+		return this.transact<boolean>("readwrite", (store, resolve) => {
 			const req = store.put(data);
 
 			req.onerror = () => {
@@ -152,7 +155,7 @@ export class Database {
 			};
 
 			req.onsuccess = () => {
-				resolve();
+				resolve(true);
 			};
 		});
 	}

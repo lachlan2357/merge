@@ -101,6 +101,7 @@ function compile<Tag extends MergeWayTag, Value extends MergeWayTags[Tag]>(
  * A tag is deemed to be set if its value is neither `null` or `undefined`.
  *
  * @param tag The tag to check if set.
+ * @param cmp The value to compare {@link tag} with.
  * @returns Whether the tag has its value set.
  */
 export function isEq<Value extends OsmValue<T>, T extends ToString>(

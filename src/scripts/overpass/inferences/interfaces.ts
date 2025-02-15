@@ -11,16 +11,6 @@ export type TransformFn<Tag extends MergeWayTag> = (
 ) => MergeWayTags[Tag];
 
 /**
- * NOP function to be used when there are no transforms available for a tag.
- */
-export function noTransform<Tag extends MergeWayTag>(
-	_tag: Tag,
-	value: MergeWayTags[Tag]
-): MergeWayTags[Tag] {
-	return value;
-}
-
-/**
  * Function signature for validation functions.
  */
 export type ValidationFn<Tag extends MergeWayTag> = (
@@ -28,8 +18,3 @@ export type ValidationFn<Tag extends MergeWayTag> = (
 	tags: MergeWayTags,
 	warnings: Set<TagWarning>
 ) => void;
-
-/**
- * NOP function to be used when there are no validations available for a tag.
- */
-export function noValidation() {}

@@ -34,7 +34,6 @@ export function createCustomElement<const CustomElement extends typeof HTMLEleme
  *
  * @param id The ID of the element to retrieve.
  * @param constructor The expected type of the element.
- * @param parent The parent to search for an element in. If omitted, search is done globally.
  * @throws {ElementError} If the retrieval was unsuccessful.
  * @returns The element if successfully found.
  */

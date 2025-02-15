@@ -13,6 +13,12 @@ const surfaceColours = new Map([
 
 const defaultSurfaceColour = "#000000";
 
+/**
+ * Retrieve the colour of a way surface.
+ *
+ * @param surface The surface to retrieve the colour of.
+ * @returns The colour of the surface.
+ */
 export function getSurfaceColour(surface?: string) {
 	if (surface === undefined) return defaultSurfaceColour;
 	return surfaceColours.get(surface) ?? defaultSurfaceColour;
@@ -30,6 +36,13 @@ type DrawingSettings = {
 	cap?: CanvasLineCap;
 };
 
+/**
+ * Draw a line on the canvas.
+ *
+ * @param coordStart The start coordinate of the line.
+ * @param coordEnd The end coordinate of the line.
+ * @param settings Settings definition for the line.
+ */
 export function drawLine(
 	coordStart: WorldCoordinate,
 	coordEnd: WorldCoordinate,
@@ -48,6 +61,13 @@ export function drawLine(
 	applyStyle(context, settings);
 }
 
+/**
+ * Draw a polygon on the canvas.
+ *
+ * @param coordinates Coordinates of all vertices of the polygon.
+ * @param settings Settings definition for the line.
+ * @returns The path object of what was drawn.
+ */
 export function drawPolygon(coordinates: Array<WorldCoordinate>, settings: DrawingSettings) {
 	const context = setStyle(settings);
 
@@ -67,6 +87,15 @@ export function drawPolygon(coordinates: Array<WorldCoordinate>, settings: Drawi
 	return path;
 }
 
+/**
+ * Draw an arrow on the canvas.
+ *
+ * @param type The type of arrow to draw.
+ * @param width The width to draw the arrow with.
+ * @param length The height to draw the arrow with
+ * @param centre The coordinate of the centre of the arrow.
+ * @param angle The angle to draw the arrow at.
+ */
 export function drawArrow(
 	type: "left" | "right" | "through",
 	width: number,
@@ -182,6 +211,12 @@ export function drawArrow(
 	}
 }
 
+/**
+ * Set the canvas context to draw in a particular style.
+ *
+ * @param settings Settings definition for the line.
+ * @returns The canvas rendering context.
+ */
 function setStyle(settings: DrawingSettings) {
 	const context = CANVAS.getContext();
 
@@ -193,6 +228,13 @@ function setStyle(settings: DrawingSettings) {
 	return context;
 }
 
+/**
+ * Apply a style to a drawn element.
+ *
+ * @param context The canvas rendering context.
+ * @param settings Settings definition for the line.
+ * @param path The path to style, if applicable.
+ */
 function applyStyle(context: CanvasRenderingContext2D, settings: DrawingSettings, path?: Path2D) {
 	if (path === undefined) {
 		if (settings.fill !== undefined) context.fill();

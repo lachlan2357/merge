@@ -16,11 +16,21 @@ export type AppMsg = keyof typeof appMsgMap;
 
 const element = getElement("messages", HTMLDivElement);
 
+/**
+ * Display a application message.
+ *
+ * @param key The key of the message to display.
+ */
 export function displayMessage(key: AppMsg) {
 	const message = appMsgMap[key];
 	displayMessageString(message);
 }
 
+/**
+ * Display a custom message.
+ *
+ * @param msg The message to display.
+ */
 export async function displayMessageString(msg: string) {
 	const messageText = new ElementBuilder("p").text(msg).build();
 

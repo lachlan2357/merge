@@ -11,9 +11,10 @@ export class PopupContainer extends CustomHTMLElement {
 	}
 
 	/**
-	 * Append elements as children of the header of this container.
+	 * Append a title and buttons to the header.
 	 *
-	 * @param children The children to append into the header.
+	 * @param title The title to display in the title bar.
+	 * @param buttons The buttons to add alongside the title.
 	 * @returns This object for method chaining.
 	 */
 	appendToHeader(title: HTMLElement, ...buttons: Array<HTMLElement>) {

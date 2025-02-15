@@ -1,9 +1,20 @@
 import js from "@eslint/js";
 import prettier from "eslint-config-prettier";
+import jsdoc from "eslint-plugin-jsdoc";
 import globals from "globals";
 import ts from "typescript-eslint";
 
-/** @type{Linter.RulesRecord} */
+const jsdocConfig = [
+	jsdoc.configs["flat/recommended-typescript"],
+	{
+		files: ["**/*.ts"],
+		plugins: { jsdoc },
+		rules: {
+			"jsdoc/tag-lines": "off"
+		}
+	}
+];
+
 const customConfig = {
 	languageOptions: {
 		globals: {
@@ -20,4 +31,12 @@ const customConfig = {
 	}
 };
 
-export default ts.config(js.configs.recommended, ...ts.configs.recommended, prettier, customConfig);
+const config = [
+	js.configs.recommended,
+	...ts.configs.recommended,
+	jsdocConfig,
+	prettier,
+	customConfig
+];
+
+export default ts.config(...config);

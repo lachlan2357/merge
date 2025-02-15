@@ -201,6 +201,7 @@ export class Inference<
 	 * and nothing will be notified.
 	 *
 	 * @param tags The current state of the tags.
+	 * @param inferredTags Set to keep track of tags which have had their values inferred.
 	 * @param inferenceGraph The graph this inference is attached to.
 	 * @returns The inferred value, if it is possible to be inferred.
 	 */

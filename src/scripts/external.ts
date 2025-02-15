@@ -2,12 +2,23 @@ import { MESSAGE_BOX } from "./messages.js";
 import { State } from "./state/index.js";
 
 const ID_BASE_URL = new URL("https://www.openstreetmap.org");
+
+/**
+ * Open a URL in a new browser tab.
+ *
+ * @param url The URL to open.
+ */
 function openUrl(url: URL) {
-	console.log("opening");
 	window.open(url, "_blank", "noreferrer noopener");
 }
 
 const JOSM_BASE_URL = new URL("http://127.0.0.1:8111/load_and_zoom");
+
+/**
+ * Open a URL in JOSM
+ *
+ * @param url The URL to open.
+ */
 function openJosm(url: URL) {
 	const { minLat, maxLat, minLon, maxLon } = State.multiplier.get();
 	url.searchParams.set("left", minLon.toString());

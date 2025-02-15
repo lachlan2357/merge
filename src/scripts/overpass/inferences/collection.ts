@@ -60,8 +60,8 @@ export class InferenceCollection<
 	readonly calculations: Array<UnknownInference<Tag>>;
 	readonly fallbacks: Array<UnknownInference<Tag>>;
 	readonly defaultValue: MergeWayTags[Tag];
-	readonly formatFn: TransformFn<Tag>;
-	readonly validateFn: ValidationFn<Tag>;
+	readonly formatFn: TransformFn<Tag> | undefined;
+	readonly validateFn: ValidationFn<Tag> | undefined;
 
 	/**
 	 * Define how a certain {@link tag} can be inferred.
@@ -78,8 +78,8 @@ export class InferenceCollection<
 		calculations: Array<UnknownInference<Tag>>,
 		fallbacks: Array<UnknownInference<Tag>>,
 		defaultValue: MergeWayTags[Tag],
-		formatFn: TransformFn<Tag>,
-		validateFn: ValidationFn<Tag>
+		formatFn: TransformFn<Tag> | undefined,
+		validateFn: ValidationFn<Tag> | undefined
 	) {
 		this.tag = tag;
 		this.calculations = calculations;
@@ -96,6 +96,7 @@ export class InferenceCollection<
 	 *
 	 * @param tags The current state of the existing tags.
 	 * @param inferredTags Set to keep track of tags which have had their values inferred.
+	 * @returns Whether the value was set to default.
 	 */
 	setDefault(tags: MergeWayTagsIn, inferredTags: InferencesMade) {
 		// ensure value already hasn't been inferred
@@ -114,10 +115,11 @@ export class InferenceCollection<
 	 * @param tags The final values of all tags.
 	 */
 	formatValue(tags: MergeWayTags) {
-		// ensure tag value exists
-		const value = tags[this.tag];
+		// ensure format function is provided
+		if (this.formatFn === undefined) return;
 
 		// format value
+		const value = tags[this.tag];
 		const formattedValue = this.formatFn(this.tag, value, tags);
 		if (formattedValue === undefined) return;
 		tags[this.tag] = formattedValue;
@@ -129,10 +131,12 @@ export class InferenceCollection<
 	 * @param tags The final values of all tags.
 	 * @param warnings Set to keep track of warnings for all tags.
 	 */
-	validateValue = (tags: MergeWayTags, warnings: Set<TagWarning>) => {
-		const value = tags[this.tag];
+	validateValue(tags: MergeWayTags, warnings: Set<TagWarning>) {
+		// ensure validation function is provided
+		if (this.validateFn === undefined) return;
 
 		// validate value
+		const value = tags[this.tag];
 		this.validateFn(value, tags, warnings);
-	};
+	}
 }

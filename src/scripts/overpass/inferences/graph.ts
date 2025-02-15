@@ -52,6 +52,7 @@ export class InferenceGraph {
 	 * possible.
 	 *
 	 * @param tag The tag which has just had its value set.
+	 * @param inferredTags Set to keep track of tags which have had their values inferred.
 	 * @param tags The current state of the tags.
 	 */
 	notifySet(tag: MergeWayTagIn, inferredTags: Set<MergeWayTag>, tags: MergeWayTagsIn) {

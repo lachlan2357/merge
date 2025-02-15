@@ -54,6 +54,8 @@ export class Store<T> extends GraphItem {
 	 * passed by value, and for all object values, passed by reference. For this reason, even
 	 * though objects can be retrieved through this method and subsequently modified, they should
 	 * never be as doing so will bypass the state management from this container.
+	 *
+	 * @returns The data stored in this container.
 	 */
 	get() {
 		this.wasAccessed();
@@ -130,7 +132,6 @@ export class Computed<T> extends Store<T> implements Compute {
 	 * is up to implementers to ensure this does not occur.
 	 *
 	 * @param computeFn The function that will be used to compute new values.
-	 * @param dependencies All dependencies of this computation.
 	 */
 	constructor(computeFn: ComputeFn<T>) {
 		super(computeFn());
@@ -167,7 +168,6 @@ export class Effect extends GraphItem implements Compute {
 	 * Create a {@link Effect} container by defining an effect function.
 	 *
 	 * @param effectFn The function that will be used to perform effects.
-	 * @param dependencies All dependencies of this computation.
 	 */
 	constructor(effectFn: ComputeFn<void>) {
 		super();

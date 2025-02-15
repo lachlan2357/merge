@@ -9,7 +9,6 @@ import { MergeWayTag, MergeWayTags, MergeWayTagsIn } from "../../types/processed
 import { TagWarning, WarningMap } from "../warnings.js";
 import { InferenceCollection } from "./collection.js";
 import { InferenceBuilder } from "./builder.js";
-import { noTransform, noValidation } from "./interfaces.js";
 import { InferenceGraph, Nodes } from "./graph.js";
 
 /**
@@ -97,7 +96,9 @@ const formatters = {
 	/**
 	 * Format a `turn:lanes`, `turn:lanes:*` tag value.
 	 *
+	 * @param tag The tag to format.
 	 * @param value The original value of the `turn:lanes` tag.
+	 * @param tags The current state of the tags.
 	 * @returns The formatted value of the `turn:lanes` tag.
 	 */
 	turnLanes(
@@ -142,7 +143,7 @@ const allInferences = {
 		],
 		[],
 		new OsmBoolean(false),
-		noTransform<"oneway">,
+		undefined,
 		(oneway, { lanesBackward }, warnings) => {
 			// oneway === true && lanes:backward !== 0
 			if (oneway.eq(true) && !lanesBackward.eq(0))
@@ -169,8 +170,8 @@ const allInferences = {
 		[],
 		[],
 		new OsmString("no"),
-		noTransform<"junction">,
-		noValidation
+		undefined,
+		undefined
 	),
 
 	/**
@@ -188,8 +189,8 @@ const allInferences = {
 		[],
 		[],
 		new OsmString("unknown"),
-		noTransform<"surface">,
-		noValidation
+		undefined,
+		undefined
 	),
 
 	/**
@@ -222,7 +223,7 @@ const allInferences = {
 				.setInferenceFn(tags => new OsmUnsignedInteger(tags.oneway.eq(true) ? 1 : 2))
 		],
 		new OsmUnsignedInteger(2),
-		noTransform<"lanes">,
+		undefined,
 		(lanes, { lanesForward, lanesBackward }, warnings) => {
 			// lanes === 0
 			if (lanes.eq(0)) warnings.add(TagWarning.lanesEqualZero("lanes"));
@@ -266,7 +267,7 @@ const allInferences = {
 				.setInferenceFn(tags => tags.lanes.divide(2))
 		],
 		new OsmUnsignedInteger(1),
-		noTransform<"lanesForward">,
+		undefined,
 		(lanesForward, _tags, warnings) => {
 			// lanes:forward === 0
 			if (lanesForward.eq(0)) warnings.add(TagWarning.lanesEqualZero("lanesForward"));
@@ -303,7 +304,7 @@ const allInferences = {
 				.setInferenceFn(tags => tags.lanes.divide(2))
 		],
 		new OsmUnsignedInteger(1),
-		noTransform<"lanesBackward">,
+		undefined,
 		(lanesBackward, tags, warnings) => {
 			// oneway === true && lanes:backward !== 0
 			if (tags.oneway.eq(true) && !lanesBackward.eq(0))

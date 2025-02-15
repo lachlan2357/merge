@@ -99,7 +99,7 @@ export abstract class Setting<T extends ToString> {
 	 * @param name The display name of this setting.
 	 * @param key The key used when reading/writing to {@link localStorage}.
 	 * @param description A description of the function this setting changes.
-	 * @param value The default value of this setting if it isn't fetched from persistent storage.
+	 * @param defaultValue The default value of this setting if it isn't fetched from persistent storage.
 	 * @param isPersistent Whether this setting should be persistent across sessions.
 	 * @param inSettingsMenu Whether this setting should appear in the settings menu.
 	 * @param onChange A callback function to be called whenever the stored value changes.

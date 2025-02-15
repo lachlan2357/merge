@@ -49,20 +49,43 @@ type SettingsObject = typeof settingsStorage;
 type SettingsKey = keyof SettingsObject;
 type SettingType<K extends SettingsKey> = SettingsObject[K] extends Setting<infer T> ? T : never;
 
+/**
+ * Retrieve the current value of a setting.
+ *
+ * @param key The key of the setting to retrieve.
+ * @returns The current value of the setting.
+ */
 export function get<K extends SettingsKey>(key: K): SettingType<K> {
 	const setting = settingsStorage[key];
 	return setting.value as unknown as SettingType<K>;
 }
 
+/**
+ * Retrieve the {@link Setting} object for a setting.
+ *
+ * @param key The key of the setting to retrieve.
+ * @returns The corresponding {@link Setting} object.
+ */
 export function getObject<K extends SettingsKey>(key: K): SettingsObject[K] {
 	return settingsStorage[key];
 }
 
+/**
+ * Set the value of a setting.
+ *
+ * @param key The key of the setting to set.
+ * @param value The value of the setting to set.
+ */
 export function set<K extends SettingsKey>(key: K, value: SettingType<K>) {
 	const setting = settingsStorage[key] as unknown as Setting<SettingType<K>>;
 	setting.value = value;
 }
 
+/**
+ * Retrieve all valid settings keys.
+ *
+ * @returns All valid settings keys.
+ */
 export function keys() {
 	return Object.keys(settingsStorage) as Array<SettingsKey>;
 }
