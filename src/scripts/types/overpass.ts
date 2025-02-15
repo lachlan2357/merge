@@ -70,4 +70,4 @@ export interface OverpassNode {
 /**
  * All possible elements as represented in an Overpass API response.
  */
-export type OverpassElement = OverpassRelation | OverpassWay | OverpassNode;
+type OverpassElement = OverpassRelation | OverpassWay | OverpassNode;

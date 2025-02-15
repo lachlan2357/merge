@@ -1,6 +1,6 @@
 import { Database } from "../database.js";
 import { CANVAS } from "../map/canvas.js";
-import { MESSAGE_BOX, MessageBoxError } from "../messages.js";
+import * as MessageBox from "../messages.js";
 import * as Settings from "../settings/index.js";
 import { State } from "../state/index.js";
 import {
@@ -10,7 +10,6 @@ import {
 	OverpassWay
 } from "../types/overpass.js";
 import { process } from "./process.js";
-
 /**
  * Request the Overpass API for the required search.
  *
@@ -118,7 +117,7 @@ function transform(response: OverpassResponse) {
  * @throws {OverpassError} If the request was unsuccessful.
  */
 async function fetchFromApi(queryString: string) {
-	MESSAGE_BOX.display("overpassDownload");
+	MessageBox.displayMessage("overpassDownload");
 
 	// perform api request
 	const req = await fetch(Settings.get("endpoint"), {
@@ -139,7 +138,7 @@ async function fetchFromApi(queryString: string) {
 	return json;
 }
 
-export class OverpassError extends MessageBoxError {
+class OverpassError extends MessageBox.MessageBoxError {
 	static readonly MALFORMED_SEARCH = new OverpassError("Invalid search term.");
 	static readonly ILLEGAL_CHARACTER = new OverpassError(
 		"Currently, double quotes in search terms are not supported."

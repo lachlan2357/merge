@@ -1,7 +1,7 @@
 import { ElementBuilder } from "../elements.js";
 import { Popup } from "./index.js";
 
-export class HelpPopup extends Popup {
+class HelpPopup extends Popup {
 	protected readonly title = "Help";
 
 	build(): Array<HTMLElement> {

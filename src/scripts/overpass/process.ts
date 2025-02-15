@@ -95,28 +95,6 @@ function compile<Tag extends MergeWayTag, Value extends MergeWayTags[Tag]>(
 	return value.get();
 }
 
-/**
- * Determine whether the value of a tag has been set.
- *
- * A tag is deemed to be set if its value is neither `null` or `undefined`.
- *
- * @param tag The tag to check if set.
- * @param cmp The value to compare {@link tag} with.
- * @returns Whether the tag has its value set.
- */
-export function isEq<Value extends OsmValue<T>, T extends ToString>(
-	tag: Value | OsmMaybe<Value>,
-	cmp: Value | T
-): boolean {
-	if (tag === undefined) return false;
-	if (tag instanceof OsmMaybe) {
-		if (!tag.isSet()) return false;
-		else return tag.get().eq(cmp);
-	} else {
-		return tag.eq(cmp);
-	}
-}
-
 class MissingTagError extends MessageBoxError {
 	constructor(tag: string) {
 		super(`Tag '${tag}' is missing and could not be inferred.`);

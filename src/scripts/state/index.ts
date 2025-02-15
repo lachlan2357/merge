@@ -22,7 +22,7 @@ export interface Compute {
 	compute(): void;
 }
 
-export type ComputeFn<T> = () => T;
+type ComputeFn<T> = () => T;
 
 /**
  * A state container that can only store data.

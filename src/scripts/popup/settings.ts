@@ -5,7 +5,7 @@ import * as Settings from "../settings/index.js";
 import { createCustomElement } from "../supplement/elements.js";
 import { Popup } from "./index.js";
 
-export class SettingsPopup extends Popup {
+class SettingsPopup extends Popup {
 	protected readonly title = "Settings";
 
 	build(): Array<HTMLElement> {

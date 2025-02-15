@@ -13,7 +13,7 @@ export const laneLength = metresToDegrees(laneWidthMetres);
  * @param metres The number of metres.
  * @returns The converted number of degrees.
  */
-export function metresToDegrees(metres: number) {
+function metresToDegrees(metres: number) {
 	return (metres / degreesRange) * 180;
 }
 
@@ -23,7 +23,7 @@ export function metresToDegrees(metres: number) {
  * @param degrees The number of degrees.
  * @returns The converted number of pixels.
  */
-export function degreesToPixels(degrees: number) {
+function degreesToPixels(degrees: number) {
 	return degrees * State.totalMultiplier.get();
 }
 

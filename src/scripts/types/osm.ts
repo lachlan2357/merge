@@ -5,13 +5,13 @@ export interface ToString {
 	toString(): string;
 }
 
-export interface ArrayLike<T extends ToString> {
+interface ArrayLike<T extends ToString> {
 	get length(): number;
 
 	push(value: T): void;
 }
 
-export type OsmConstructor<Value extends OsmValue<ToString>> = new (value: string) => Value;
+type OsmConstructor<Value extends OsmValue<ToString>> = new (value: string) => Value;
 
 export type OsmInner<OsmType> = OsmType extends OsmValue<infer T> ? T : never;
 

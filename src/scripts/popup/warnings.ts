@@ -6,7 +6,7 @@ import { createCustomElement } from "../supplement/elements.js";
 import { POPUP_DIALOG, Popup } from "./index.js";
 import sidebar from "../map/sidebar.js";
 
-export class WarningsPopup extends Popup {
+class WarningsPopup extends Popup {
 	protected readonly title = "Warnings";
 
 	build(): Array<HTMLElement> {

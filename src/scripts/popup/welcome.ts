@@ -1,7 +1,7 @@
 import { ElementBuilder } from "../elements.js";
 import { Popup } from "./index.js";
 
-export class WelcomePopup extends Popup {
+class WelcomePopup extends Popup {
 	protected readonly title = "Welcome to Merge";
 
 	build(): Array<HTMLElement> {

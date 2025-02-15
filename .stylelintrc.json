@@ -1,5 +1,5 @@
 {
-  "plugins": ["stylelint-order"],
+  "plugins": ["stylelint-scss", "stylelint-order"],
   "extends": ["stylelint-config-recommended-scss"],
   "overrides": [
     {

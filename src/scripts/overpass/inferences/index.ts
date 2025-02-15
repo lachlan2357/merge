@@ -396,8 +396,6 @@ const allInferences = {
 	)
 } as const;
 
-export type AllInferences = typeof allInferences;
-
 /**
  * Compiled array of all calculations specified in {@link allInferences}.
  */

@@ -57,7 +57,7 @@ export type Certain<OsmMaybeType> = OsmMaybeType extends OsmMaybe<infer T> ? T :
 /**
  * Tags not required for each {@link MergeWay}, but are required for inferring other tags.
  */
-export interface MergeWayTagsHelper {
+interface MergeWayTagsHelper {
 	turnLanes: OsmDoubleArray<OsmString>;
 }
 

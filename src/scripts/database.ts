@@ -164,7 +164,7 @@ export class Database {
 /**
  * Errors which could occur while opening a new connection to the {@link IDBDatabase}.
  */
-export class DatabaseError extends MessageBoxError {
+class DatabaseError extends MessageBoxError {
 	static readonly CONNECTION_ERROR = new DatabaseError(
 		"Could not connect to the local database."
 	);

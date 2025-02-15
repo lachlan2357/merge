@@ -12,7 +12,7 @@ const appMsgMap = {
 	error: "Something went wrong."
 } as const;
 
-export type AppMsg = keyof typeof appMsgMap;
+type AppMsg = keyof typeof appMsgMap;
 
 const element = getElement("messages", HTMLDivElement);
 
@@ -23,7 +23,7 @@ const element = getElement("messages", HTMLDivElement);
  */
 export function displayMessage(key: AppMsg) {
 	const message = appMsgMap[key];
-	displayMessageString(message);
+	displayString(message);
 }
 
 /**
@@ -31,7 +31,7 @@ export function displayMessage(key: AppMsg) {
  *
  * @param msg The message to display.
  */
-export async function displayMessageString(msg: string) {
+export async function displayString(msg: string) {
 	const messageText = new ElementBuilder("p").text(msg).build();
 
 	const message = new ElementBuilder("div")
@@ -56,16 +56,11 @@ export async function displayMessageString(msg: string) {
 	);
 }
 
-export const MESSAGE_BOX = {
-	display: displayMessage,
-	displayString: displayMessageString
-};
-
 /**
  * An error type that can directly send the contents of it's error to the {@link Message} box.
  */
 export class MessageBoxError extends Error {
 	display() {
-		displayMessageString(this.message);
+		displayString(this.message);
 	}
 }

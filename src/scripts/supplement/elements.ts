@@ -4,7 +4,7 @@
  * This constructor type is valid for any class inheriting from {@link HTMLElement}, including
  * WebComponents.
  */
-export type ElementConstructor<E extends HTMLElement> = new () => E;
+type ElementConstructor<E extends HTMLElement> = new () => E;
 
 /**
  * Create an instance of a custom element of a specified class.

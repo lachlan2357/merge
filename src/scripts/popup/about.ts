@@ -3,7 +3,7 @@ import { ElementBuilder, LinkChip } from "../elements.js";
 import { createCustomElement } from "../supplement/elements.js";
 import { Popup } from "./index.js";
 
-export class AboutPopup extends Popup {
+class AboutPopup extends Popup {
 	protected readonly title = "About";
 
 	build(): Array<HTMLElement> {

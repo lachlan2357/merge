@@ -1,4 +1,4 @@
-import { MESSAGE_BOX } from "./messages.js";
+import * as messageBox from "./messages.js";
 import { State } from "./state/index.js";
 
 const ID_BASE_URL = new URL("https://www.openstreetmap.org");
@@ -27,7 +27,7 @@ function openJosm(url: URL) {
 	url.searchParams.set("bottom", minLat.toString());
 
 	fetch(url).catch(() =>
-		MESSAGE_BOX.displayString(
+		messageBox.displayString(
 			"Failed to load map in JOSM. Ensure it is running and remote control is enabled."
 		)
 	);

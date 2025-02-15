@@ -5,7 +5,7 @@ import { State } from "../state/index.js";
 import { createCustomElement } from "../supplement/elements.js";
 import { Popup } from "./index.js";
 
-export class SharePopup extends Popup {
+class SharePopup extends Popup {
 	protected readonly title = "Share";
 
 	build(): Array<HTMLElement> {

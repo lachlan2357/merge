@@ -1,22 +1,23 @@
+# builds
+dist
+merge
+
 # file backups, legacy, etc.
 *.backup
 *.old
-old
-
-output.html
-branchChecking.*
-inputs
 
 # misc markdown
 todo.md
 
-# python
-cache
-*.py
-
 # node
 node_modules
-dist
-merge
-todo.md
+
+# yarn
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
 yarn-error.*
