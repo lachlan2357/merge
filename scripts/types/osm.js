@@ -7,6 +7,9 @@ export class OsmValue {
     get() {
         return this.inner;
     }
+    maybe() {
+        return new OsmMaybe(this);
+    }
     eq(other) {
         if (other instanceof OsmValue)
             return this.cmp(other);
@@ -17,23 +20,37 @@ export class OsmValue {
     }
     static from(value, constructor) {
         if (value === undefined)
-            return undefined;
-        return new constructor(value);
+            return OsmMaybe.unset();
+        else
+            return new constructor(value).maybe();
     }
     static fromArray(value, constructor, delimiter = ";") {
         if (value === undefined)
-            return undefined;
-        return new OsmArray(value, constructor, delimiter);
+            return OsmMaybe.unset();
+        return new OsmArray(value, constructor, delimiter).maybe();
     }
     static fromDoubleArray(value, constructor, innerDelimiter, outerDelimiter) {
         if (value === undefined)
-            return undefined;
-        return new OsmDoubleArray(value, constructor, innerDelimiter, outerDelimiter);
+            return OsmMaybe.unset();
+        return new OsmDoubleArray(value, constructor, innerDelimiter, outerDelimiter).maybe();
+    }
+}
+export class OsmMaybe {
+    inner;
+    constructor(value) {
+        this.inner = value;
+    }
+    isSet() {
+        return this.inner !== undefined;
+    }
+    get() {
+        return this.inner;
+    }
+    static unset() {
+        return new OsmMaybe(undefined);
     }
 }
 export class OsmBoolean extends OsmValue {
-    static TRUE = new OsmBoolean(true);
-    static FALSE = new OsmBoolean(false);
     constructor(value) {
         if (typeof value === "boolean")
             super(value);
@@ -117,6 +134,21 @@ export class OsmArray extends OsmValue {
         const values = value.split(delimiter).map(value => new constructor(value));
         return values;
     }
+    fill(creator) {
+        if (typeof creator === "function") {
+            for (let i = 0; i < this.inner.length; i++)
+                this.inner[0] = creator();
+        }
+        else {
+            this.inner.fill(creator);
+        }
+    }
+    static ofLength(length, value, constructor) {
+        const arr = new Array(length);
+        const osmArr = new OsmArray(arr, constructor);
+        osmArr.fill(() => new constructor(value));
+        return osmArr;
+    }
     toString() {
         return this.inner.map(value => value.toString()).join(this.delimiter);
     }
@@ -144,6 +176,22 @@ export class OsmDoubleArray extends OsmValue {
     map(mapFn, constructor) {
         const array = this.inner.map(mapFn);
         return new OsmDoubleArray(array, constructor, this.innerDelimiter, this.outerDelimiter);
+    }
+    fill(creator) {
+        if (typeof creator === "function") {
+            for (let i = 0; i < this.inner.length; i++)
+                this.inner[0] = creator();
+        }
+        else {
+            this.inner.fill(creator);
+        }
+    }
+    static ofLength(length, value, constructor) {
+        const arr = new Array();
+        for (let i = 0; i < length; i++)
+            arr.push(OsmArray.ofLength(1, value, constructor));
+        const osmArr = new OsmDoubleArray(arr, constructor);
+        return osmArr;
     }
     static process(value, constructor, innerDelimiter, outerDelimiter) {
         return value

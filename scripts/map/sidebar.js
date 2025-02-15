@@ -81,7 +81,7 @@ function show(wayId) {
         // inferred values strings store no-value as empty string, convert it back
         const inferredValue = inferredValueRaw === "" ? undefined : inferredValueRaw;
         // create children
-        const valueString = originalValue ?? inferredValue ?? "<no value>";
+        const valueString = inferredValue ?? originalValue ?? "<no value>";
         // build row
         const tagCell = new ElementBuilder("td").class("code").text(tag.toString()).build();
         const valueCell = new ElementBuilder("td").class("code").text(valueString);

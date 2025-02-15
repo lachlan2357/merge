@@ -1,6 +1,6 @@
 import { MessageBoxError } from "../messages.js";
-import { OsmBoolean, OsmString, OsmUnsignedInteger, OsmValue } from "../types/osm.js";
-import { performInferences, performTransforms } from "./inferences.js";
+import { OsmBoolean, OsmMaybe, OsmString, OsmUnsignedInteger, OsmValue } from "../types/osm.js";
+import { performInferences, performTransforms } from "./inferences/index.js";
 /**
  * Process {@link OverpassNode Nodes}, {@link OverpassWay Ways} and
  * {@link OverpassRelation Relations} into data the map can use to display.
@@ -63,9 +63,9 @@ export function process(allNodes, allWays) {
  */
 function compile(tags, tag) {
     const value = tags[tag];
-    if (!isSet(value))
+    if (!value.isSet())
         throw new MissingTagError(tag);
-    return value;
+    return value.get();
 }
 /**
  * Determine whether the value of a tag has been set.
@@ -75,13 +75,18 @@ function compile(tags, tag) {
  * @param tag The tag to check if set.
  * @returns Whether the tag has its value set.
  */
-export function isSet(tag) {
-    return !(tag === null || tag === undefined);
-}
 export function isEq(tag, cmp) {
-    if (!isSet(tag))
+    if (tag === undefined)
         return false;
-    return tag.eq(cmp);
+    if (tag instanceof OsmMaybe) {
+        if (!tag.isSet())
+            return false;
+        else
+            return tag.get().eq(cmp);
+    }
+    else {
+        return tag.eq(cmp);
+    }
 }
 class MissingTagError extends MessageBoxError {
     constructor(tag) {
