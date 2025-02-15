@@ -228,6 +228,7 @@ export class Inference<
 
 			// check has not succeeded, thus inference is impossible
 			inferenceGraph.notifyIsImpossible(this);
+			return;
 		}
 
 		// infer value
