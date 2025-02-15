@@ -8,12 +8,12 @@ export class InferenceGraph {
 	/**
 	 * All nodes to be added to the graph.
 	 */
-	private readonly nodes: Nodes;
+	readonly nodes: Nodes;
 
 	/**
 	 * Graph containing a tag-dependency relationship.
 	 */
-	private readonly graph: Graph;
+	readonly graph: Graph;
 
 	/**
 	 * Initialise a new {@link InferenceGraph}.
@@ -45,21 +45,6 @@ export class InferenceGraph {
 	}
 
 	/**
-	 * Request all nodes in the graph attempt to infer their values.
-	 *
-	 * This request will set of a chain of inferences to ultimately render as many inferences as
-	 * possible using this layer.
-	 *
-	 * @param tags The current state of the tags.
-	 */
-	runGraph(tags: MergeWayTagsIn) {
-		// try infer each node
-		for (const node of this.nodes) {
-			node.tryInfer(tags, this);
-		}
-	}
-
-	/**
 	 * Notify this graph that a {@link tag} has just had its value set.
 	 *
 	 * Notifying the graph will cause it to individually notify each dependent of the tag that its
@@ -69,12 +54,12 @@ export class InferenceGraph {
 	 * @param tag The tag which has just had its value set.
 	 * @param tags The current state of the tags.
 	 */
-	notifySet(tag: MergeWayTagIn, tags: MergeWayTagsIn) {
+	notifySet(tag: MergeWayTagIn, inferredTags: Set<MergeWayTag>, tags: MergeWayTagsIn) {
 		const set = this.graph.get(tag);
 		if (set === undefined) return;
 
 		for (const inference of set) {
-			inference.tryInfer(tags, this);
+			inference.tryInfer(tags, inferredTags, this);
 		}
 	}
 

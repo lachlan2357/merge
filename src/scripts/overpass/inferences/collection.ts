@@ -100,11 +100,12 @@ export class InferenceCollection<
 	setDefault(tags: MergeWayTagsIn, inferredTags: InferencesMade) {
 		// ensure value already hasn't been inferred
 		const oldValue = tags[this.tag];
-		if (oldValue.isSet()) return;
+		if (oldValue.isSet()) return false;
 
 		// make and record changes
 		(tags[this.tag] as OsmMaybe<OsmType>) = this.defaultValue.maybe() as OsmMaybe<OsmType>;
 		inferredTags.add(this.tag);
+		return true;
 	}
 
 	/**

@@ -197,23 +197,27 @@ export class Inference<
 	 * It is also possible for it to be determined that it is impossible for this inference to ever
 	 * yield a result. In this case, {@link inferenceGraph} will be notified as such.
 	 *
+	 * Note that if {@link inferenceGraph} is not passed, all hooks into a graph will be disabled
+	 * and nothing will be notified.
+	 *
 	 * @param tags The current state of the tags.
 	 * @param inferenceGraph The graph this inference is attached to.
 	 * @returns The inferred value, if it is possible to be inferred.
 	 */
 	tryInfer(
 		tags: MergeWayTagsIn,
-		inferenceGraph: InferenceGraph
-	): Certain<MergeWayTagsIn[Tag]> | undefined {
+		inferredTags: Set<MergeWayTag>,
+		inferenceGraph?: InferenceGraph
+	) {
 		// ensure tag doesn't already have a value set
 		const currentValue = tags[this.builder.tag];
-		if (currentValue.isSet()) return;
+		if (currentValue.isSet()) return false;
 
 		// check and type set values
 		const partialTagsSubset: Partial<Record<SetTags[number], OsmValue<ToString>>> = {};
 		for (const tag of this.builder.setTags) {
 			const maybeValue = tags[tag];
-			if (!maybeValue.isSet()) return;
+			if (!maybeValue.isSet()) return false;
 
 			const typedMaybe: OsmMaybe<OsmValue<ToString>, OsmValue<ToString>> = maybeValue;
 			partialTagsSubset[tag as SetTags[number]] = typedMaybe.get();
@@ -227,18 +231,19 @@ export class Inference<
 			if (succeeded) continue;
 
 			// check has not succeeded, thus inference is impossible
-			inferenceGraph.notifyIsImpossible(this);
-			return;
+			inferenceGraph?.notifyIsImpossible(this);
+			return false;
 		}
 
-		// infer value
+		// try infer value
 		const newValue = this.inferenceFn(tagsSubset);
-		if (newValue === undefined) return;
-		(tags[this.builder.tag] as OsmMaybe<OsmValue<ToString>>) = newValue.maybe() as OsmMaybe<
-			OsmValue<ToString>
-		>;
+		if (newValue === undefined) return false;
 
-		// notify graph of set value
-		if (newValue) inferenceGraph.notifySet(this.builder.tag, tags);
+		// set inferred value
+		const tag = this.builder.tag;
+		(tags[tag] as OsmMaybe<OsmValue<ToString>>) = newValue.maybe();
+		inferredTags.add(tag);
+		inferenceGraph?.notifySet(tag, inferredTags, tags);
+		return true;
 	}
 }

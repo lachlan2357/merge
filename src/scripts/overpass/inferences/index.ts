@@ -25,15 +25,40 @@ export function performInferences(tags: MergeWayTagsIn) {
 	const inferredTags = new Set<MergeWayTag>();
 	const inferences = new Set(Object.values(allInferences));
 
-	// perform calculations
-	const calculationGraph = new InferenceGraph(ALL_CALCULATIONS);
-	calculationGraph.runGraph(tags);
+	// attempt to infer values
+	const inferenceGraph = new InferenceGraph(ALL_CALCULATIONS);
+	while (true) {
+		// infer all possible calculations
+		for (const node of inferenceGraph.nodes) {
+			node.tryInfer(tags, inferredTags, inferenceGraph);
+		}
 
-	// perform fallbacks
-	const fallbackGraph = new InferenceGraph(ALL_FALLBACKS);
-	fallbackGraph.runGraph(tags);
+		let found = false;
+		guard: {
+			// try infer a fallback until one is inferred
+			for (const fallback of ALL_FALLBACKS) {
+				const success = fallback.tryInfer(tags, inferredTags);
+				if (!success) continue;
 
-	// set defaults
+				found = true;
+				break guard;
+			}
+
+			// try set a default until one is set
+			for (const infer of inferences) {
+				const set = infer.setDefault(tags, inferredTags);
+				if (!set) continue;
+
+				found = true;
+				break guard;
+			}
+		}
+
+		// complete logical inferences if no more inferences could be made, otherwise try again
+		if (!found) break;
+	}
+
+	// set defaults for values that could not be inferred
 	for (const infer of inferences) infer.setDefault(tags, inferredTags);
 
 	return inferredTags;
@@ -367,6 +392,8 @@ const allInferences = {
 		}
 	)
 } as const;
+
+export type AllInferences = typeof allInferences;
 
 /**
  * Compiled array of all calculations specified in {@link allInferences}.
