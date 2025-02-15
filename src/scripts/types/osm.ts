@@ -1,4 +1,5 @@
 import { MessageBoxError } from "../messages.js";
+import { Maybe, MergeWayTagIn, MergeWayTagsIn } from "./processed.js";
 
 export interface ToString {
 	toString(): string;
@@ -12,6 +13,11 @@ export interface ArrayLike<T extends ToString> {
 
 export type OsmConstructor<Value extends OsmValue<ToString>> = new (value: string) => Value;
 
+export type OsmInner<OsmType> = OsmType extends OsmValue<infer T> ? T : never;
+
+export type OsmValueForTag<Tag extends MergeWayTagIn> =
+	MergeWayTagsIn[Tag] extends Maybe<infer OsmType extends OsmValue<ToString>> ? OsmType : never;
+
 export abstract class OsmValue<T extends ToString> {
 	protected readonly inner: T;
 
@@ -21,6 +27,10 @@ export abstract class OsmValue<T extends ToString> {
 
 	get() {
 		return this.inner;
+	}
+
+	maybe() {
+		return new OsmMaybe<typeof this>(this);
 	}
 
 	eq(other: this | T) {
@@ -34,21 +44,21 @@ export abstract class OsmValue<T extends ToString> {
 
 	abstract toString(): string;
 
-	static from<C extends OsmValue<T>, T extends ToString>(
+	static from<OsmType extends OsmValue<ToString>>(
 		value: string | undefined,
-		constructor: OsmConstructor<C>
-	): C | undefined {
-		if (value === undefined) return undefined;
-		return new constructor(value);
+		constructor: OsmConstructor<OsmType>
+	): OsmMaybe<OsmType> {
+		if (value === undefined) return OsmMaybe.unset();
+		else return new constructor(value).maybe();
 	}
 
 	static fromArray<T extends OsmValue<ToString>>(
 		value: string | undefined,
 		constructor: OsmConstructor<T>,
 		delimiter: string = ";"
-	): OsmArray<T> | undefined {
-		if (value === undefined) return undefined;
-		return new OsmArray(value, constructor, delimiter);
+	): OsmMaybe<OsmArray<T>> {
+		if (value === undefined) return OsmMaybe.unset();
+		return new OsmArray(value, constructor, delimiter).maybe();
 	}
 
 	static fromDoubleArray<T extends OsmValue<ToString>>(
@@ -56,16 +66,36 @@ export abstract class OsmValue<T extends ToString> {
 		constructor: OsmConstructor<T>,
 		innerDelimiter?: string,
 		outerDelimiter?: string
-	): OsmDoubleArray<T> | undefined {
-		if (value === undefined) return undefined;
-		return new OsmDoubleArray(value, constructor, innerDelimiter, outerDelimiter);
+	): OsmMaybe<OsmDoubleArray<T>> {
+		if (value === undefined) return OsmMaybe.unset();
+		return new OsmDoubleArray(value, constructor, innerDelimiter, outerDelimiter).maybe();
+	}
+}
+
+export class OsmMaybe<
+	OsmType extends OsmValue<ToString>,
+	OsmMaybeType extends OsmValue<ToString> | undefined = OsmType | undefined
+> {
+	private readonly inner: OsmMaybeType;
+
+	constructor(value: OsmMaybeType) {
+		this.inner = value;
+	}
+
+	isSet(): this is OsmMaybe<OsmType, OsmType> {
+		return this.inner !== undefined;
+	}
+
+	get(this: OsmMaybe<OsmType, OsmType>) {
+		return this.inner;
+	}
+
+	static unset<OsmType extends OsmValue<ToString>>() {
+		return new OsmMaybe<OsmType>(undefined);
 	}
 }
 
 export class OsmBoolean extends OsmValue<boolean> {
-	static readonly TRUE = new OsmBoolean(true);
-	static readonly FALSE = new OsmBoolean(false);
-
 	constructor(value: boolean | string) {
 		if (typeof value === "boolean") super(value);
 		else super(OsmBoolean.process(value));
@@ -182,6 +212,25 @@ export class OsmArray<T extends OsmValue<ToString>>
 		return values;
 	}
 
+	fill(creator: (() => T) | T) {
+		if (typeof creator === "function") {
+			for (let i = 0; i < this.inner.length; i++) this.inner[0] = creator();
+		} else {
+			this.inner.fill(creator);
+		}
+	}
+
+	static ofLength<T extends OsmValue<ToString>>(
+		length: number,
+		value: string,
+		constructor: OsmConstructor<T>
+	) {
+		const arr = new Array<T>(length);
+		const osmArr = new OsmArray(arr, constructor);
+		osmArr.fill(() => new constructor(value));
+		return osmArr;
+	}
+
 	toString(): string {
 		return this.inner.map(value => value.toString()).join(this.delimiter);
 	}
@@ -225,6 +274,26 @@ export class OsmDoubleArray<T extends OsmValue<ToString>>
 	): OsmDoubleArray<Out> {
 		const array = this.inner.map(mapFn);
 		return new OsmDoubleArray(array, constructor, this.innerDelimiter, this.outerDelimiter);
+	}
+
+	fill(creator: (() => OsmArray<T>) | OsmArray<T>) {
+		if (typeof creator === "function") {
+			for (let i = 0; i < this.inner.length; i++) this.inner[0] = creator();
+		} else {
+			this.inner.fill(creator);
+		}
+	}
+
+	static ofLength<T extends OsmValue<ToString>>(
+		length: number,
+		value: string,
+		constructor: OsmConstructor<T>
+	) {
+		const arr = new Array<OsmArray<T>>();
+		for (let i = 0; i < length; i++) arr.push(OsmArray.ofLength(1, value, constructor));
+
+		const osmArr = new OsmDoubleArray(arr, constructor);
+		return osmArr;
 	}
 
 	protected static process<T extends OsmValue<ToString>>(

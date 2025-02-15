@@ -1,14 +1,22 @@
 import { MessageBoxError } from "../messages.js";
-import { OsmBoolean, OsmString, OsmUnsignedInteger, OsmValue, ToString } from "../types/osm.js";
+import {
+	OsmBoolean,
+	OsmMaybe,
+	OsmString,
+	OsmUnsignedInteger,
+	OsmValue,
+	ToString
+} from "../types/osm.js";
 import { OverpassNode, OverpassWay } from "../types/overpass.js";
 import {
 	MergeData,
+	MergePartial,
 	MergeWay,
 	MergeWayTag,
 	MergeWayTags,
 	MergeWayTagsIn
 } from "../types/processed.js";
-import { performInferences, performTransforms } from "./inferences.js";
+import { performInferences, performTransforms } from "./inferences/index.js";
 
 /**
  * Process {@link OverpassNode Nodes}, {@link OverpassWay Ways} and
@@ -79,12 +87,12 @@ export function process(allNodes: Map<number, OverpassNode>, allWays: Map<number
  * @returns The compiled tag.
  */
 function compile<Tag extends MergeWayTag, Value extends MergeWayTags[Tag]>(
-	tags: Partial<MergeWayTags>,
+	tags: MergePartial<MergeWayTags>,
 	tag: Tag
 ): Value {
-	const value = tags[tag];
-	if (!isSet(value)) throw new MissingTagError(tag);
-	return value as Value;
+	const value = tags[tag] as OsmMaybe<Value>;
+	if (!value.isSet()) throw new MissingTagError(tag);
+	return value.get();
 }
 
 /**
@@ -95,16 +103,17 @@ function compile<Tag extends MergeWayTag, Value extends MergeWayTags[Tag]>(
  * @param tag The tag to check if set.
  * @returns Whether the tag has its value set.
  */
-export function isSet<T>(tag: T | undefined | null): tag is T {
-	return !(tag === null || tag === undefined);
-}
-
 export function isEq<Value extends OsmValue<T>, T extends ToString>(
-	tag: Value | undefined | null,
+	tag: Value | OsmMaybe<Value>,
 	cmp: Value | T
 ): boolean {
-	if (!isSet(tag)) return false;
-	return tag.eq(cmp);
+	if (tag === undefined) return false;
+	if (tag instanceof OsmMaybe) {
+		if (!tag.isSet()) return false;
+		else return tag.get().eq(cmp);
+	} else {
+		return tag.eq(cmp);
+	}
 }
 
 class MissingTagError extends MessageBoxError {
