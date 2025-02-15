@@ -108,7 +108,8 @@ class ElementError extends Error {
 		// attempt to extract class name from element
 		let className = element.toString();
 		const matches = /\[object (.+?)\]/.exec(className);
-		if (matches !== null) className = matches[1];
+		const classNameOpt = matches?.[1];
+		if (classNameOpt !== undefined) className = classNameOpt;
 
 		return new ElementError(
 			`WebComponent '${tagName.toLowerCase()}' did not create element with prototype of '${constructor.name}', instead created '${className}'.`

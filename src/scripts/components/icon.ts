@@ -12,7 +12,7 @@ export class FontAwesomeIcon extends CustomHTMLElement {
 	 */
 	private readonly icon = document.createElement("i");
 
-	connectedCallback() {
+	override connectedCallback() {
 		const shadow = this.attachShadow({ mode: "closed" });
 
 		// set default family if none is specified
@@ -26,7 +26,11 @@ export class FontAwesomeIcon extends CustomHTMLElement {
 		shadow.append(fontawesomeCss, this.icon);
 	}
 
-	attributeChangedCallback(attribute: string, oldValue: string | null, newValue: string | null) {
+	override attributeChangedCallback(
+		attribute: string,
+		oldValue: string | null,
+		newValue: string | null
+	) {
 		switch (attribute) {
 			case "family":
 			case "icon":

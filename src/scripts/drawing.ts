@@ -67,6 +67,7 @@ export function drawLine(
  * @param coordinates Coordinates of all vertices of the polygon.
  * @param settings Settings definition for the line.
  * @returns The path object of what was drawn.
+ * @throws {DrawError} If the polygon could not be drawn.
  */
 export function drawPolygon(coordinates: Array<WorldCoordinate>, settings: DrawingSettings) {
 	const context = setStyle(settings);
@@ -74,12 +75,18 @@ export function drawPolygon(coordinates: Array<WorldCoordinate>, settings: Drawi
 	// convert to screen coordinates
 	const coords = coordinates.map(world => world.toScreen());
 	const start = coords[0];
+	if (start === undefined) throw DrawError.polygonNotEnoughVertices(coords.length);
 
 	// draw
 	const path = new Path2D();
 
 	path.moveTo(...start.get());
-	for (let i = 1; i < coords.length; i++) path.lineTo(...coords[i].get());
+	for (let i = 0; i < coords.length; i++) {
+		const coord = coords[i];
+		if (coord === undefined) break;
+
+		path.lineTo(...coord.get());
+	}
 
 	path.closePath();
 	applyStyle(context, settings, path);
@@ -242,5 +249,13 @@ function applyStyle(context: CanvasRenderingContext2D, settings: DrawingSettings
 	} else {
 		if (settings.fill !== undefined) context.fill(path);
 		if (settings.colour !== undefined) context.stroke(path);
+	}
+}
+
+class DrawError extends Error {
+	static polygonNotEnoughVertices(numVertices: number) {
+		return new DrawError(
+			`Drawing a polygon requires at least 1 vertex, however ${numVertices} vertices were provided.`
+		);
 	}
 }

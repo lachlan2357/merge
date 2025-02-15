@@ -36,7 +36,7 @@ export async function overpassSearch(searchTerm: string) {
 	const processedData = process(transformedData.nodes, transformedData.ways);
 
 	// set map data
-	State.currentRelationId.set(transformedData.relations[0].id);
+	State.currentRelationId.set(transformedData.relation.id);
 	State.data.set(processedData);
 	State.allWays.set(transformedData.ways);
 
@@ -106,7 +106,7 @@ function transform(response: OverpassResponse) {
 	const keepWayIds = relation.members.map(member => member.ref);
 	for (const key of ways.keys()) if (!keepWayIds.includes(key)) ways.delete(key);
 
-	return { nodes, ways, relations };
+	return { nodes, ways, relation };
 }
 
 /**

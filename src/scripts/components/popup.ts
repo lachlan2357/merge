@@ -6,7 +6,7 @@ import { CustomHTMLElement } from "./index.js";
  */
 @CustomHTMLElement.registerCustomElement("popup-container")
 export class PopupContainer extends CustomHTMLElement {
-	connectedCallback(): void {
+	override connectedCallback(): void {
 		this.classList.add("container");
 	}
 

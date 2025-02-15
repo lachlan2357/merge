@@ -63,10 +63,9 @@ function show(wayId: number) {
 	const inferredTagMap = new Map<string, string>();
 	Object.entries(inferredTags).forEach(([tag, value]) => {
 		// format tag
-		const words = Array.from(tag);
 		let formattedTag = "";
-		for (let i = 0; i < words.length; i++) {
-			const letter = words[i];
+		const letters = Array.from(tag);
+		for (const letter of letters) {
 			if (letter.toUpperCase() !== letter) formattedTag += letter;
 			else formattedTag += `:${letter.toLowerCase()}`;
 		}

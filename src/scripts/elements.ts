@@ -17,10 +17,7 @@ export class ElementBuilder<T extends keyof HTMLElementTagNameMap> {
 	}
 
 	class(...classes: Array<string>) {
-		for (let i = 0, n = classes.length; i < n; i++) {
-			this.element.classList.add(classes[i]);
-		}
-
+		this.element.classList.add(...classes);
 		return this;
 	}
 
