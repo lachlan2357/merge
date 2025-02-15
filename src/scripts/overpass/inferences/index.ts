@@ -1,4 +1,3 @@
-import { Atomic } from "../../state/index.js";
 import {
 	OsmArray,
 	OsmBoolean,
@@ -11,6 +10,7 @@ import { TagWarning, WarningMap } from "../warnings.js";
 import { InferenceCollection } from "./collection.js";
 import { InferenceBuilder } from "./builder.js";
 import { noTransform, noValidation } from "./interfaces.js";
+import { InferenceGraph, Nodes } from "./graph.js";
 
 /**
  * Perform all available {@link inferences} on {@link tags}.
@@ -22,21 +22,17 @@ import { noTransform, noValidation } from "./interfaces.js";
  * @returns The tags which have been inferred.
  */
 export function performInferences(tags: MergeWayTagsIn) {
-	const hasChanged = new Atomic(true);
+	// const hasChanged = new Atomic(true);
 	const inferredTags = new Set<MergeWayTag>();
 	const inferences = new Set(Object.values(allInferences));
 
 	// perform calculations
-	do {
-		hasChanged.set(false);
-		for (const infer of inferences) infer.tryCalculate(tags, hasChanged, inferredTags);
-	} while (hasChanged.get() === true);
+	const calculationGraph = new InferenceGraph(ALL_CALCULATIONS);
+	calculationGraph.runGraph(tags);
 
 	// perform fallbacks
-	do {
-		hasChanged.set(false);
-		for (const infer of inferences) infer.tryFallback(tags, hasChanged, inferredTags);
-	} while (hasChanged.get() === true);
+	const fallbackGraph = new InferenceGraph(ALL_FALLBACKS);
+	fallbackGraph.runGraph(tags);
 
 	// set defaults
 	for (const infer of inferences) infer.setDefault(tags, inferredTags);
@@ -365,4 +361,12 @@ const allInferences = {
 				);
 		}
 	)
-};
+} as const;
+
+const ALL_CALCULATIONS = Object.values(allInferences)
+	.map<Nodes>(collection => collection.calculations)
+	.flat();
+
+const ALL_FALLBACKS = Object.values(allInferences)
+	.map<Nodes>(collection => collection.fallbacks)
+	.flat();

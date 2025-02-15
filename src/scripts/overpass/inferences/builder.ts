@@ -7,6 +7,7 @@ import {
 	MergeWayTagsIn,
 	Pretty
 } from "../../types/processed.js";
+import { InferenceGraph } from "./graph.js";
 
 /**
  * Typed object for a subset of {@link MergeWayTagsIn}.
@@ -149,6 +150,20 @@ export class InferenceBuilder<
 }
 
 /**
+ * State to determine what stage an inference is up to.
+ */
+type InferenceState = {
+	/**
+	 * All tags which have been found, in the current inference process, to be set.
+	 */
+	declaredTags: Array<MergeWayTagIn>;
+	/**
+	 * Whether a previous inference check has determined this value is impossible to be inferred.
+	 */
+	impossible: boolean;
+};
+
+/**
  * An complete inference path.
  *
  * Generally, {@link Inference} objects should be initialised by first creating an
@@ -176,6 +191,14 @@ export class Inference<
 	readonly inferenceFn: InferFn;
 
 	/**
+	 * Internal state to track the stage at which this inference is at
+	 */
+	#state: InferenceState = {
+		declaredTags: [],
+		impossible: false
+	};
+
+	/**
 	 * Create a new {@link Inference}.
 	 *
 	 * @param builder The {@link InferenceBuilder} this {@link Inference} is based on.
@@ -192,16 +215,19 @@ export class Inference<
 	 * @param tags The current state of the tags.
 	 * @returns The inferred value, if it possible to do.
 	 */
-	exec(tags: MergeWayTagsIn): Certain<MergeWayTagsIn[Tag]> | undefined {
+	exec(
+		tags: MergeWayTagsIn,
+		inferenceGraph: InferenceGraph
+	): Certain<MergeWayTagsIn[Tag]> | undefined {
 		// ensure tag should be inferred
 		const currentValue = tags[this.builder.tag];
-		if (currentValue.isSet()) return undefined;
+		if (currentValue.isSet()) return;
 
 		// check and type unset values
 		const partialTagsSubset: Partial<Record<SetTags[number], OsmValue<ToString>>> = {};
 		for (const tag of this.builder.setTags) {
 			const maybeValue = tags[tag];
-			if (!maybeValue.isSet()) return undefined;
+			if (!maybeValue.isSet()) return;
 
 			const typedMaybe: OsmMaybe<OsmValue<ToString>, OsmValue<ToString>> = maybeValue;
 			partialTagsSubset[tag as SetTags[number]] = typedMaybe.get();
@@ -212,10 +238,52 @@ export class Inference<
 		for (const [tag, cmpFn] of this.builder.cmpFns) {
 			const value = tagsSubset[tag as keyof typeof tagsSubset];
 			const succeeded = cmpFn(value);
-			if (!succeeded) return undefined;
+			if (!succeeded) return;
 		}
 
 		// infer value
-		return this.inferenceFn(tagsSubset);
+		const newValue = this.inferenceFn(tagsSubset);
+		if (newValue === undefined) return;
+
+		// set inferred value
+		(tags[this.builder.tag] as OsmMaybe<OsmValue<ToString>>) = newValue.maybe() as OsmMaybe<
+			OsmValue<ToString>
+		>;
+
+		// notify graph of set value
+		if (newValue) inferenceGraph.notifySet(this.builder.tag, tags);
+	}
+
+	notifySet(
+		tag: MergeWayTagIn,
+		tags: MergeWayTagsIn,
+		value: OsmValue<ToString>,
+		inferenceGraph: InferenceGraph
+	) {
+		// don't bother if it is impossible to infer
+		if (this.#state.impossible) return;
+
+		// ensure tag is one that is relevant to this inference
+		if (this.#state.declaredTags.includes(tag)) return;
+		const isWatchedTag = this.builder.setTags.includes(tag);
+		if (!isWatchedTag) return;
+
+		// register that the tag has been set
+		this.#state.declaredTags.push(tag);
+
+		// run all relevant computation functions to determine whether the value is impossible
+		for (const [cmpTag, cmpFn] of this.builder.cmpFns) {
+			if (cmpTag !== tag) continue;
+
+			// determine if comparison is successful
+			const success = cmpFn(value);
+			if (success) continue;
+
+			// comparison not successful, thus future inference is impossible
+			this.#state.impossible = true;
+			break;
+		}
+
+		this.exec(tags, inferenceGraph);
 	}
 }

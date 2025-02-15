@@ -1,4 +1,3 @@
-import { Atomic } from "../../state/index.js";
 import { OsmMaybe } from "../../types/osm.js";
 import {
 	InferencesMade,
@@ -58,11 +57,11 @@ export class InferenceCollection<
 	 */
 	readonly tag: Tag;
 
-	private readonly calculations: Array<UnknownInference<Tag>>;
-	private readonly fallbacks: Array<UnknownInference<Tag>>;
-	private readonly defaultValue: MergeWayTags[Tag];
-	private readonly formatFn: TransformFn<Tag>;
-	private readonly validateFn: ValidationFn<Tag>;
+	readonly calculations: Array<UnknownInference<Tag>>;
+	readonly fallbacks: Array<UnknownInference<Tag>>;
+	readonly defaultValue: MergeWayTags[Tag];
+	readonly formatFn: TransformFn<Tag>;
+	readonly validateFn: ValidationFn<Tag>;
 
 	/**
 	 * Define how a certain {@link tag} can be inferred.
@@ -88,64 +87,6 @@ export class InferenceCollection<
 		this.defaultValue = defaultValue;
 		this.formatFn = formatFn;
 		this.validateFn = validateFn;
-	}
-
-	/**
-	 * Attempt to calculate the value for this tag based on other existing tags.
-	 *
-	 * Calculations will only be attempted if the value of the tag is unset. In the case where no
-	 * inferences can be made, no changes will occur. In the case where changes are made however,
-	 * {@link hasChanged} will be set to `true` and the tag being inferred will be added to
-	 * {@link inferredTags}.
-	 *
-	 * @param tags The current state of the existing tags.
-	 * @param hasChanged State value to set if changes are made in this method.
-	 * @param inferredTags Set to keep track of tags which have had their values inferred.
-	 */
-	tryCalculate(tags: MergeWayTagsIn, hasChanged: Atomic<boolean>, inferredTags: InferencesMade) {
-		// ensure value doesn't already exist
-		const oldValue = tags[this.tag];
-		if (oldValue.isSet()) return;
-
-		// try to infer value
-		for (const calculation of this.calculations) {
-			const newValue = calculation.exec(tags);
-			if (newValue === undefined) continue;
-
-			// make and record changes
-			(tags[this.tag] as OsmMaybe<OsmType>) = newValue.maybe() as OsmMaybe<OsmType>;
-			inferredTags.add(this.tag);
-			hasChanged.set(true);
-		}
-	}
-
-	/**
-	 * Attempt to fallback the value for this tag based on other existing tags.
-	 *
-	 * Fallbacks will only be attempted if the value of the tag is unset. In the case where no
-	 * inferences can be made, no changes will occur. In the case where changes are made however,
-	 * {@link hasChanged} will be set to `true` and the tag being inferred will be added to
-	 * {@link inferredTags}.
-	 *
-	 * @param tags The current state of the existing tags.
-	 * @param hasChanged State value to set if changes are made in this method.
-	 * @param inferredTags Set to keep track of tags which have had their values inferred.
-	 */
-	tryFallback(tags: MergeWayTagsIn, hasChanged: Atomic<boolean>, inferredTags: InferencesMade) {
-		// ensure value already hasn't been inferred
-		const oldValue = tags[this.tag];
-		if (oldValue.isSet()) return;
-
-		// try to perform fallbacks
-		for (const fallback of this.fallbacks) {
-			const newValue = fallback.exec(tags);
-			if (newValue === undefined) return;
-
-			// make and record changes
-			(tags[this.tag] as OsmMaybe<OsmType>) = newValue.maybe() as OsmMaybe<OsmType>;
-			inferredTags.add(this.tag);
-			hasChanged.set(true);
-		}
 	}
 
 	/**
