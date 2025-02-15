@@ -35,16 +35,18 @@ export function performInferences(tags: MergeWayTagsIn) {
 
 		let found = false;
 		guard: {
-			// try infer a fallback until one is inferred
-			for (const fallback of ALL_FALLBACKS) {
-				const success = fallback.tryInfer(tags, inferredTags);
-				if (!success) continue;
+			// try infer a fallback until one is successful
+			for (const infer of inferences) {
+				for (const fallback of infer.fallbacks) {
+					const success = fallback.tryInfer(tags, inferredTags);
+					if (!success) continue;
 
-				found = true;
-				break guard;
+					found = true;
+					break guard;
+				}
 			}
 
-			// try set a default until one is set
+			// try set a default until one is successful
 			for (const infer of inferences) {
 				const set = infer.setDefault(tags, inferredTags);
 				if (!set) continue;
@@ -400,11 +402,4 @@ export type AllInferences = typeof allInferences;
  */
 const ALL_CALCULATIONS = Object.values(allInferences)
 	.map<Nodes>(collection => collection.calculations)
-	.flat();
-
-/**
- * Compiled array of all fallbacks specified in {@link allInferences}.
- */
-const ALL_FALLBACKS = Object.values(allInferences)
-	.map<Nodes>(collection => collection.fallbacks)
 	.flat();
