@@ -18,7 +18,6 @@ import { InferenceGraph, Nodes } from "./graph.js";
  * Inferences will be performed as specified under {@link InferenceCollection} on {@link tags}.
  *
  * @param tags The tags to perform inferences on.
- * @param inferences The inferences to perform.
  * @returns The tags which have been inferred.
  */
 export function performInferences(tags: MergeWayTagsIn) {
@@ -40,6 +39,12 @@ export function performInferences(tags: MergeWayTagsIn) {
 	return inferredTags;
 }
 
+/**
+ * Perform all available transforms on {@link tags}.
+ *
+ * @param tags The tags to perform transforms on.
+ * @returns All warnings that arose from performing the transformation.
+ */
 export function performTransforms(tags: MergeWayTags): WarningMap {
 	const warningMap = new Map<MergeWayTag, Set<TagWarning>>();
 	const inferences = new Set(Object.values(allInferences));
@@ -363,10 +368,16 @@ const allInferences = {
 	)
 } as const;
 
+/**
+ * Compiled array of all calculations specified in {@link allInferences}.
+ */
 const ALL_CALCULATIONS = Object.values(allInferences)
 	.map<Nodes>(collection => collection.calculations)
 	.flat();
 
+/**
+ * Compiled array of all fallbacks specified in {@link allInferences}.
+ */
 const ALL_FALLBACKS = Object.values(allInferences)
 	.map<Nodes>(collection => collection.fallbacks)
 	.flat();
