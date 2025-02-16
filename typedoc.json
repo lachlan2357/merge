@@ -14,6 +14,7 @@
 
   "tsconfig": "./tsconfig.json",
   "useTsLinkResolution": true,
+  "favicon": "./assets/merge.png",
 
   "validation": {
     "invalidLink": true,
