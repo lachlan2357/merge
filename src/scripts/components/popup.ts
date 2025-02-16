@@ -1,9 +1,7 @@
 import { ElementBuilder } from "../elements.js";
 import { CustomHTMLElement } from "./index.js";
 
-/**
- * Custom container for displaying blocked items inside the popup.
- */
+/** Custom container for displaying blocked items inside the popup. */
 @CustomHTMLElement.registerCustomElement("popup-container")
 export class PopupContainer extends CustomHTMLElement {
 	override connectedCallback(): void {
@@ -19,12 +17,12 @@ export class PopupContainer extends CustomHTMLElement {
 	 */
 	appendToHeader(title: HTMLElement, ...buttons: Array<HTMLElement>) {
 		const icons = new ElementBuilder("div")
-			.class("title-bar-buttons")
+			.addClasses("title-bar-buttons")
 			.children(...buttons)
 			.build();
 		const header = new ElementBuilder("header")
 			.children(title, icons)
-			.class("title-bar")
+			.addClasses("title-bar")
 			.build();
 
 		this.append(header);

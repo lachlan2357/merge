@@ -1,20 +1,12 @@
-/**
- * Callback methods for WebComponents.
- */
+/** Callback methods for WebComponents. */
 interface CustomElementCallbacks {
-	/**
-	 * Callback for when this WebComponent is connected to the DOM.
-	 */
+	/** Callback for when this WebComponent is connected to the DOM. */
 	connectedCallback(): void;
 
-	/**
-	 * Callback for when this WebComponent is disconnected from the DOM.
-	 */
+	/** Callback for when this WebComponent is disconnected from the DOM. */
 	disconnectedCallback(): void;
 
-	/**
-	 * Callback for when this WebComponent is moved from one node to another.
-	 */
+	/** Callback for when this WebComponent is moved from one node to another. */
 	adoptedCallback(): void;
 
 	/**

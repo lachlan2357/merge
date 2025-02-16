@@ -21,31 +21,17 @@ class MapButton {
 }
 
 // map controls
-new MapButton("zoom-in").setAction("click", () =>
-	CANVAS.zoom("in", "button")
-);
-new MapButton("zoom-out").setAction("click", () =>
-	CANVAS.zoom("out", "button")
-);
-new MapButton("zoom-reset").setAction("click", () =>
-	CANVAS.centre()
-);
-new MapButton("fullscreen").setAction("click", () =>
-	CANVAS.toggleFullscreen()
-);
+new MapButton("zoom-in").setAction("click", () => CANVAS.zoom("in", "button"));
+new MapButton("zoom-out").setAction("click", () => CANVAS.zoom("out", "button"));
+new MapButton("zoom-reset").setAction("click", () => CANVAS.centre());
+new MapButton("fullscreen").setAction("click", () => CANVAS.toggleFullscreen());
 
 // popup toggles
-new MapButton("advanced").setAction("click", () =>
-	ADVANCED_POPUP.display()
-);
-new MapButton("settings").setAction("click", () =>
-	SETTINGS_POPUP.display()
-);
+new MapButton("advanced").setAction("click", () => ADVANCED_POPUP.display());
+new MapButton("settings").setAction("click", () => SETTINGS_POPUP.display());
 new MapButton("share").setAction("click", () => SHARE_POPUP.display());
 new MapButton("help").setAction("click", () => HELP_POPUP.display());
 new MapButton("about").setAction("click", () => ABOUT_POPUP.display());
 
 // warnings
-new MapButton("warnings").setAction("click", () =>
-	WARNINGS_POPUP.display()
-);
+new MapButton("warnings").setAction("click", () => WARNINGS_POPUP.display());

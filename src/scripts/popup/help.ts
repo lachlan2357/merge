@@ -1,6 +1,7 @@
 import { ElementBuilder } from "../elements.js";
 import { Popup } from "./index.js";
 
+/** Popup definition for the help screen. */
 class HelpPopup extends Popup {
 	protected readonly title = "Help";
 

@@ -1,6 +1,6 @@
 import { laneLength, metresToPixels } from "../conversions.js";
 import { DrawnElement, drawArrow, drawLine, drawPolygon, getSurfaceColour } from "../drawing.js";
-import sidebar from "./sidebar.js";
+import * as Sidebar from "./sidebar.js";
 import * as Settings from "../settings/index.js";
 import { Effect, State } from "../state/index.js";
 import { getElement } from "../supplement/elements.js";
@@ -8,23 +8,26 @@ import { zoomIncrement } from "../supplement/index.js";
 import { ScreenCoordinate, WorldCoordinate } from "../types/coordinate.js";
 import "./buttons.js";
 
+/** Structure containing all data required to calculate a zoom multiplier. */
 export type MultiplierData = {
+	/** The minimum latitude of any nodes. */
 	minLat: number;
+	/** The maximum latitude of any nodes. */
 	maxLat: number;
+	/** The minimum longitude of any nodes. */
 	minLon: number;
+	/** The maximum longitude of any nodes. */
 	maxLon: number;
+	/** The calculated multiplier. */
 	multiplier: number;
 };
 
+/** Container to control drawing the map to a {@link HTMLCanvasElement}. */
 class Canvas {
-	/**
-	 * Reference to the HTML Canvas element.
-	 */
+	/** Reference to the HTML Canvas element. */
 	private readonly element: HTMLCanvasElement;
 
-	/**
-	 * Reference to the container for the {@link element}.
-	 */
+	/** Reference to the container for the {@link element}. */
 	private readonly container: HTMLElement;
 
 	/**
@@ -56,7 +59,7 @@ class Canvas {
 			if (!State.data.get()) return;
 
 			if (!State.mouseMoved.get() && !this.checkHover()) {
-				sidebar.hide();
+				Sidebar.hide();
 				State.selectedWay.set(-1);
 			}
 
@@ -90,9 +93,7 @@ class Canvas {
 		new ResizeObserver(() => this.setResolution()).observe(this.container);
 	}
 
-	/**
-	 * Re-centre the canvas back to origin, resetting offset and zoom.
-	 */
+	/** Re-centre the canvas back to origin, resetting offset and zoom. */
 	centre() {
 		State.mouseOffset.set(new ScreenCoordinate());
 		State.zoomOffset.set(new ScreenCoordinate());
@@ -126,16 +127,12 @@ class Canvas {
 		State.zoomOffset.setDynamic(old => old.add(diff));
 	}
 
-	/**
-	 * Toggle whether the map should be displayed in fullscreen.
-	 */
+	/** Toggle whether the map should be displayed in fullscreen. */
 	toggleFullscreen() {
 		this.container.toggleAttribute("fullscreen");
 	}
 
-	/**
-	 * Draw the map onto the canvas, taking consideration of zoom, offset, etc.
-	 */
+	/** Draw the map onto the canvas, taking consideration of zoom, offset, etc. */
 	draw() {
 		// clear canvas from previous drawings
 		const dimensions = State.canvasDimensions.get();
@@ -350,9 +347,7 @@ class Canvas {
 		State.drawnElements.set(drawnElementsCache);
 	}
 
-	/**
-	 * Resize the canvas to fit it's container.
-	 */
+	/** Resize the canvas to fit it's container. */
 	setResolution() {
 		const offset = ScreenCoordinate.ofElementOffset(this.container);
 		const dimensions = ScreenCoordinate.ofElementDimensions(this.element);
@@ -390,7 +385,7 @@ class Canvas {
 			// display popup if element is clicked
 			const way = State.allWays.get().get(element.wayId);
 			if (way === undefined) continue;
-			if (clicked) sidebar.show(element.wayId);
+			if (clicked) Sidebar.show(element.wayId);
 		}
 
 		return anyHovered;
@@ -409,15 +404,29 @@ class Canvas {
 	}
 }
 
-// canvas instance
+/** Main instance of the {@link HTMLCanvasElement}. */
 export const CANVAS = new Canvas("canvas", "main");
 
 // canvas effects
 new Effect(() => CANVAS.draw());
 
+/**
+ * A two-dimension matrix of values.
+ *
+ * @template T The type of the matrix value. Currently this is restricted to primitives for proper
+ *   comparisons and copying.
+ */
 class Matrix<T extends string | number> {
+	/** The inner array storing the values of the matrix. */
 	private readonly inner: Array<Array<T>>;
 
+	/**
+	 * Initialise a new {@link Matrix}.
+	 *
+	 * @param xLength The length of the matrix in the x-dimension.
+	 * @param yLength The length of the matrix in the y-dimension.
+	 * @param defaultValue The default value to set in all matrix cells.
+	 */
 	constructor(xLength: number, yLength: number, defaultValue: T) {
 		this.inner = new Array();
 		for (let i = 0; i < xLength; i++) {
@@ -426,14 +435,36 @@ class Matrix<T extends string | number> {
 		}
 	}
 
+	/**
+	 * Retrieve the value stored in a particular cell.
+	 *
+	 * @param x The x-coordinate of the cell.
+	 * @param y The y-coordinate of the cell.
+	 * @returns The value stored in the cell, if the cell exists.
+	 */
 	get(x: number, y: number) {
 		return this.getArray(x)?.[y];
 	}
 
+	/**
+	 * Retrieve the array of cells at a particular x-coordinate.
+	 *
+	 * @param x The x-coordinate of the cell.
+	 * @returns The array of cells at the x-coordinate, if the array exists.
+	 */
 	getArray(x: number) {
 		return this.inner[x];
 	}
 
+	/**
+	 * Set the value of a particular cell.
+	 *
+	 * If a particular {@link x}-{@link y} cell does not exist, nothing will be set.
+	 *
+	 * @param x The x-coordinate of the cell to set.
+	 * @param y The y-coordinate of the cell to set.
+	 * @param value The value to set the cell to.
+	 */
 	set(x: number, y: number, value: T) {
 		if (this.inner[x] === undefined) return;
 		if (this.inner[x][y] === undefined) return;

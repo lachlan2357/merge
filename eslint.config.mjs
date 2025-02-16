@@ -14,7 +14,6 @@ const jsdocConfig = [
 			"jsdoc/require-throws": "warn",
 			"jsdoc/require-description": "warn",
 			"jsdoc/require-description-complete-sentence": "warn",
-			"jsdoc/check-indentation": "warn",
 			"jsdoc/sort-tags": "warn"
 		}
 	}
@@ -32,7 +31,8 @@ const customConfig = {
 	},
 
 	rules: {
-		"@typescript-eslint/no-array-constructor": "off"
+		"@typescript-eslint/no-array-constructor": "off",
+		"@typescript-eslint/no-unused-vars": "off"
 	}
 };
 

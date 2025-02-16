@@ -1,27 +1,34 @@
 import { MessageBoxError } from "./messages.js";
 import { OverpassResponse } from "./types/overpass.js";
 
+/** Structure of how a cached query is stored in the IndexedDB database. */
 type CachedQuery = {
+	/** The request string that was sent to the Overpass API. */
 	request: string;
+	/** The response string that was retrieved from the Overpass API. */
 	value: string;
 };
 
 /**
  * A connection to the local IndexedDB database.
  *
- * Merge currently requires data persistence in order to cache responses from the Overpass API as
- * to not unnecessarily re-request the API.
+ * Merge currently requires data persistence in order to cache responses from the Overpass API as to
+ * not unnecessarily re-request the API.
  *
  * ## Usage
  *
  * Each time a connection to the database is required, a new {@link Database} object should be
- * retrieved, used while in the current scope and discarded afterwards. There is little point
- * trying to maintain an active connection.
+ * retrieved, used while in the current scope and discarded afterwards. There is little point trying
+ * to maintain an active connection.
  */
 export class Database {
+	/** Name of the IndexedDB database to use. */
 	private static readonly DB_NAME: string = "Overpass Data";
 
+	/** Name of the IndexedDB store to use for caching. */
 	private static readonly STORE_NAME: string = "overpass-cache";
+
+	/** Parameters of how to setup the IndexedDB cache store. */
 	private static readonly STORE_OPTIONS: IDBObjectStoreParameters = { keyPath: "request" };
 
 	/**
@@ -87,8 +94,8 @@ export class Database {
 	 * designate a function `f` which will be run on the object store inside the transaction.
 	 *
 	 * This method signature resembles that of a {@link Promise} and can be used similarly as, when
-	 * called, this method will wrap the provided function inside a promise to complete the
-	 * required actions.
+	 * called, this method will wrap the provided function inside a promise to complete the required
+	 * actions.
 	 *
 	 * @param mode The mode for this transaction.
 	 * @param fn The function for logic to perform on this transaction.
@@ -161,9 +168,7 @@ export class Database {
 	}
 }
 
-/**
- * Errors which could occur while opening a new connection to the {@link IDBDatabase}.
- */
+/** Errors which could occur while opening a new connection to the {@link IDBDatabase}. */
 class DatabaseError extends MessageBoxError {
 	static readonly CONNECTION_ERROR = new DatabaseError(
 		"Could not connect to the local database."

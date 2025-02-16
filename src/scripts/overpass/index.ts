@@ -74,7 +74,7 @@ function buildQuery(searchTerm: string) {
  *
  * @param response The {@link OverpassResponse} direct from an API or Database call.
  * @returns The sorted {@link OverpassNode Nodes}, {@link OverpassWay Ways} and
- * {@link OverpassRelation Relations}.
+ *   {@link OverpassRelation Relations}.
  * @throws {OverpassError} If the {@link response} is not valid for this application's purpose.
  */
 function transform(response: OverpassResponse) {

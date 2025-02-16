@@ -1,18 +1,18 @@
 import { MergeWayTag, MergeWayTagIn, MergeWayTagsIn } from "../../types/processed.js";
 import { UnknownInference } from "./builder.js";
 
+/** Type of nodes to store in the {@link InferenceGraph}. */
 export type Nodes = Array<UnknownInference<MergeWayTag>>;
+
+/** Inner graph type to use in the {@link InferenceGraph}. */
 export class Graph extends Map<MergeWayTagIn, Set<UnknownInference<MergeWayTag>>> {}
 
+/** A graph to determine which tags can be inferred based on the values of all other tags. */
 export class InferenceGraph {
-	/**
-	 * All nodes to be added to the graph.
-	 */
+	/** All nodes to be added to the graph. */
 	readonly nodes: Nodes;
 
-	/**
-	 * Graph containing a tag-dependency relationship.
-	 */
+	/** Graph containing a tag-dependency relationship. */
 	readonly graph: Graph;
 
 	/**

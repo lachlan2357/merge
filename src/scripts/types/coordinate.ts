@@ -2,19 +2,20 @@ import { State } from "../state/index.js";
 import { OverpassNode } from "./overpass.js";
 
 /**
- * Allow a coordinate to perform math functions with another type of coordinate.
+ * Allow a {@link Coordinate} to perform math functions with a specific {@link Coordinate} variant.
  *
- * Usually, this interface should be used to allow math between the same coordinate type, however
- * it can also be used to perform math across different ones. Generally speaking, implementations
- * should then reference the math functions {@link coordinateAdd()}, {@link coordinateSubtract()},
- * {@link coordinateMultiply()} and {@link coordinateDivide()}.
+ * Usually, this interface should be used to allow math between the same coordinate type, however it
+ * can also be used to perform math across different ones. Generally speaking, implementations
+ * should then reference the math functions {@link coordinateAdd}, {@link coordinateSubtract},
+ * {@link coordinateMultiply} and {@link coordinateDivide}.
  */
 interface CoordinateMath<T extends Coordinate> {
 	/**
-	 * Add a coordinate or {@link number} to this coordinate.
+	 * Add a {@link T Coordinate} or `number` to this {@link Coordinate}.
 	 *
-	 * In the case where a coordinate is passed, each corresponding dimension will be added. In the
-	 * case where a number is passed, each dimension will have that value added to it.
+	 * In the case where a {@link T Coordinate} is passed, each corresponding dimension will be
+	 * added. In the case where a number is passed, each dimension will have that value added to
+	 * it.
 	 *
 	 * @param value The value to add to this coordinate.
 	 * @returns The resulting coordinate from the addition.
@@ -22,11 +23,10 @@ interface CoordinateMath<T extends Coordinate> {
 	add(value: T | number): T;
 
 	/**
-	 * Subtract a coordinate or {@link number} from this coordinate.
+	 * Subtract a coordinate or `number` from this coordinate.
 	 *
-	 * In the case where a coordinate is passed, each corresponding dimension will be subtracted.
-	 * In the case where a number is passed, each dimension will have that value subtracted from
-	 * it.
+	 * In the case where a coordinate is passed, each corresponding dimension will be subtracted. In
+	 * the case where a number is passed, each dimension will have that value subtracted from it.
 	 *
 	 * @param value The value to subtract from this coordinate.
 	 * @returns The resulting coordinate from the subtraction.
@@ -34,10 +34,10 @@ interface CoordinateMath<T extends Coordinate> {
 	subtract(value: T | number): T;
 
 	/**
-	 * Multiply a coordinate or {@link number} by this coordinate.
+	 * Multiply a coordinate or `number` by this coordinate.
 	 *
-	 * In the case where a coordinate is passed, each corresponding dimension will be multiplied.
-	 * In the case where a number is passed, each dimension will be multiplied by it.
+	 * In the case where a coordinate is passed, each corresponding dimension will be multiplied. In
+	 * the case where a number is passed, each dimension will be multiplied by it.
 	 *
 	 * @param value The value to multiply this coordinate by.
 	 * @returns The resulting coordinate from the multiplication.
@@ -45,10 +45,10 @@ interface CoordinateMath<T extends Coordinate> {
 	multiply(value: T | number): T;
 
 	/**
-	 * Divide this coordinate by a coordinate or {@link number}.
+	 * Divide this coordinate by a coordinate or `number`.
 	 *
-	 * In the case where a coordinate is passed, each corresponding dimension will be divided.
-	 * In the case where a number is passed, each dimension will be divided by it.
+	 * In the case where a coordinate is passed, each corresponding dimension will be divided. In
+	 * the case where a number is passed, each dimension will be divided by it.
 	 *
 	 * @param value The value to divide this coordinate by.
 	 * @returns The resulting coordinate from the division.
@@ -56,9 +56,7 @@ interface CoordinateMath<T extends Coordinate> {
 	divide(value: T | number): T;
 }
 
-/**
- * Signature for passing a {@link Coordinate} constructor as a parameter.
- */
+/** Signature for passing a {@link Coordinate} constructor as a parameter. */
 type CoordinateConstructor<T extends Coordinate> = new (x: number, y: number) => T;
 
 /**
@@ -94,8 +92,8 @@ function coordinateAdd<T extends Coordinate>(
  * `coordinateSubtract(coord1, coord2, Coordinate);` does what should be `coord1 - coord;`.
  *
  * Also in a perfect world, this method would form the default implementation of
- * {@link CoordinateMath.subtract()} however since interfaces are not real in JavaScript, they
- * cannot perform any logic and thus cannot have default implementations.
+ * {@link CoordinateMath.subtract()} however since interfaces are not real in JavaScript, they cannot
+ * perform any logic and thus cannot have default implementations.
  *
  * @param lhs The coordinate on the left-hand side of the subtraction.
  * @param rhs The coordinate, or value, on the right-hand size of the subtraction.
@@ -119,8 +117,8 @@ function coordinateSubtract<T extends Coordinate>(
  * `coordinateMultiply(coord1, coord2, Coordinate);` does what should be `coord1 * coord;`.
  *
  * Also in a perfect world, this method would form the default implementation of
- * {@link CoordinateMath.multiply()} however since interfaces are not real in JavaScript, they
- * cannot perform any logic and thus cannot have default implementations.
+ * {@link CoordinateMath.multiply()} however since interfaces are not real in JavaScript, they cannot
+ * perform any logic and thus cannot have default implementations.
  *
  * @param lhs The coordinate on the left-hand side of the multiplication.
  * @param rhs The coordinate, or value, on the right-hand size of the multiplication.
@@ -144,8 +142,8 @@ function coordinateMultiply<T extends Coordinate>(
  * `coordinateDivide(coord1, coord2, Coordinate);` does what should be `coord1 / coord;`.
  *
  * Also in a perfect world, this method would form the default implementation of
- * {@link CoordinateMath.divide()} however since interfaces are not real in JavaScript, they
- * cannot perform any logic and thus cannot have default implementations.
+ * {@link CoordinateMath.divide()} however since interfaces are not real in JavaScript, they cannot
+ * perform any logic and thus cannot have default implementations.
  *
  * @param lhs The coordinate on the left-hand side of the division.
  * @param rhs The coordinate, or value, on the right-hand size of the division.
@@ -165,26 +163,22 @@ function coordinateDivide<T extends Coordinate>(
  * Base Coordinate class for representing a two-dimensional point.
  *
  * This base class should not be used by a consumer as it does not provide the context required to
- * properly use it. Instead, it is required to use either {@link ScreenCoordinate} if the
- * coordinate is measured in screen-space (pixels) or {@link WorldCoordinate} if the coordinate is
- * measured in world-space (degrees latitude/longitude).
+ * properly use it. Instead, it is required to use either {@link ScreenCoordinate} if the coordinate
+ * is measured in screen-space (pixels) or {@link WorldCoordinate} if the coordinate is measured in
+ * world-space (degrees latitude/longitude).
  */
 class Coordinate {
-	/**
-	 * The x-position of this coordinate.
-	 */
+	/** The x-position of this coordinate. */
 	x: number;
 
-	/**
-	 * The y-position of this coordinate.
-	 */
+	/** The y-position of this coordinate. */
 	y: number;
 
 	/**
 	 * Create a new coordinate at a certain location.
 	 *
-	 * Omitting either {@link x} or {@link y} components of this constructor will result in the
-	 * value of that dimension being set to 0.
+	 * Omitting either {@link x} or {@link y} components of this constructor will result in the value
+	 * of that dimension being set to 0.
 	 *
 	 * @param x The initial x-position of this coordinate.
 	 * @param y The initial y-position of this coordinate.
@@ -198,8 +192,8 @@ class Coordinate {
 	 * Retrieve a tuple with the x- and y-position of this coordinate.
 	 *
 	 * This method is designed to be used with methods that require both dimensions to be passed as
-	 * different parameters, such as {@link CanvasRenderingContext2D.moveTo()}, thus can be used
-	 * like `context.moveTo(...coordinate.get());`.
+	 * different parameters, such as {@link CanvasRenderingContext2D.moveTo()}, thus can be used like
+	 * `context.moveTo(...coordinate.get());`.
 	 *
 	 * @returns A tuple of [x, y] positions.
 	 */
@@ -249,14 +243,32 @@ export class ScreenCoordinate extends Coordinate implements CoordinateMath<Scree
 		);
 	}
 
+	/**
+	 * Import the location of the mouse from a {@link MouseEvent} into a {@link ScreenCoordinate}.
+	 *
+	 * @param event The {@link MouseEvent} to import from.
+	 * @returns The {@link ScreenCoordinate}.
+	 */
 	static fromMouseEvent(event: MouseEvent) {
 		return new ScreenCoordinate(event.clientX, event.clientY);
 	}
 
+	/**
+	 * Import the dimensions of an {@link Element} into a {@link ScreenCoordinate}.
+	 *
+	 * @param element The {@link Element} to import from.
+	 * @returns The {@link ScreenCoordinate}.
+	 */
 	static ofElementDimensions(element: Element) {
 		return new ScreenCoordinate(element.clientWidth, element.clientHeight);
 	}
 
+	/**
+	 * Import the offset of an {@link Element} into a {@link ScreenCoordinate}.
+	 *
+	 * @param element The {@link Element} to import from.
+	 * @returns The {@link ScreenCoordinate}.
+	 */
 	static ofElementOffset(element: HTMLElement) {
 		return new ScreenCoordinate(element.offsetLeft, element.offsetTop);
 	}
@@ -297,6 +309,12 @@ export class WorldCoordinate extends Coordinate implements CoordinateMath<WorldC
 		);
 	}
 
+	/**
+	 * Import the longitude/latitude of an {@link OverpassNode} into a {@link WorldCoordinate}.
+	 *
+	 * @param node The {@link OverpassNode} to import from.
+	 * @returns The {@link WorldCoordinate}.
+	 */
 	static fromOverpassNode(node: OverpassNode) {
 		return new WorldCoordinate(node.lon, node.lat);
 	}

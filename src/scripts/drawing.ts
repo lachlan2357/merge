@@ -24,15 +24,23 @@ export function getSurfaceColour(surface?: string) {
 	return surfaceColours.get(surface) ?? defaultSurfaceColour;
 }
 
+/** Structure to represent a way that has been drawn to the canvas. */
 export type DrawnElement = {
+	/** The ID of this way. */
 	wayId: number;
+	/** The {@link Path2D} that was used to draw this way. */
 	path: Path2D;
 };
 
+/** Structure of all settings to control how a path is drawn to the canvas. */
 type DrawingSettings = {
+	/** The thickness, or width, of lines. */
 	thickness?: number;
+	/** The colour of lines. */
 	colour?: string;
+	/** The colour of the area fill. */
 	fill?: string;
+	/** The cap of how lines are ended/joined. */
 	cap?: CanvasLineCap;
 };
 

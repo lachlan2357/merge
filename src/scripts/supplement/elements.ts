@@ -48,9 +48,7 @@ export function getElement<E extends HTMLElement>(id: string, constructor: Eleme
 	else throw ElementError.incorrectType(id, element, constructor);
 }
 
-/**
- * Errors which could occur during element retrieval.
- */
+/** Errors which could occur during element retrieval. */
 class ElementError extends Error {
 	/**
 	 * Construct an error for when an element could not be found by ID.

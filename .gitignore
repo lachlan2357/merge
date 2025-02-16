@@ -2,9 +2,13 @@
 dist
 merge
 
-# file backups, legacy, etc.
+# documentation
+docs
+
+# file backups, legacy, logs, etc.
 *.backup
 *.old
+*.log
 
 # misc markdown
 todo.md

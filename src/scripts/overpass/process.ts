@@ -5,9 +5,9 @@ import {
 	OsmString,
 	OsmUnsignedInteger,
 	OsmValue,
-	ToString
+	OsmInnerValue
 } from "../types/osm.js";
-import { OverpassNode, OverpassWay } from "../types/overpass.js";
+import { OverpassNode, OverpassWay, OverpassRelation } from "../types/overpass.js";
 import {
 	MergeData,
 	MergePartial,
@@ -19,7 +19,7 @@ import {
 import { performInferences, performTransforms } from "./inferences/index.js";
 
 /**
- * Process {@link OverpassNode Nodes}, {@link OverpassWay Ways} and
+ * Process {@link OverpassNode Nodes} and {@link OverpassWay Ways} and
  * {@link OverpassRelation Relations} into data the map can use to display.
  *
  * @param allNodes All {@link OverpassNode OverpassNodes} to process.
@@ -57,7 +57,7 @@ export function process(allNodes: Map<number, OverpassNode>, allWays: Map<number
 			turnLanesForward: compile(tags, "turnLanesForward"),
 			turnLanesBackward: compile(tags, "turnLanesBackward"),
 			surface: compile(tags, "surface")
-		} satisfies Record<string, OsmValue<ToString>>;
+		} satisfies Record<string, OsmValue<OsmInnerValue>>;
 
 		// format compiled tags
 		const warnings = performTransforms(compiledTags);

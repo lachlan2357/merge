@@ -1,6 +1,7 @@
 import { ElementBuilder } from "../elements.js";
 import { Popup } from "./index.js";
 
+/** Popup definition for the welcome screen. */
 class WelcomePopup extends Popup {
 	protected readonly title = "Welcome to Merge";
 

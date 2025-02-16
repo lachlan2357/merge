@@ -3,6 +3,7 @@ import { ElementBuilder, LinkChip } from "../elements.js";
 import { createCustomElement } from "../supplement/elements.js";
 import { Popup } from "./index.js";
 
+/** Popup definition for the about screen. */
 class AboutPopup extends Popup {
 	protected readonly title = "About";
 

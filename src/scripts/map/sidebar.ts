@@ -40,7 +40,7 @@ const usedTags: Array<string> = [
  *
  * @param wayId The ID of the way to populate the content for.
  */
-function show(wayId: number) {
+export function show(wayId: number) {
 	// get data for way
 	const wayData = State.data.get()?.get(wayId);
 	if (wayData === undefined) return;
@@ -94,12 +94,12 @@ function show(wayId: number) {
 		const valueString = inferredValue ?? originalValue ?? "<no value>";
 
 		// build row
-		const tagCell = new ElementBuilder("td").class("code").text(tag.toString()).build();
-		const valueCell = new ElementBuilder("td").class("code").text(valueString);
+		const tagCell = new ElementBuilder("td").addClasses("code").text(tag.toString()).build();
+		const valueCell = new ElementBuilder("td").addClasses("code").text(valueString);
 		if (originalValue === undefined && inferredValueRaw !== undefined) {
 			const icon = createCustomElement(FontAwesomeIcon).setIcon("circle-info");
 			const iconSpan = new ElementBuilder("span")
-				.class("inference-icon")
+				.addClasses("inference-icon")
 				.tooltip("This value has been inferred", "left")
 				.children(icon)
 				.build();
@@ -118,11 +118,7 @@ function show(wayId: number) {
 	SIDEBAR.scrollTop = 0;
 }
 
-/**
- * Close the sidebar.
- */
-function hide() {
+/** Close the sidebar. */
+export function hide() {
 	SIDEBAR.setAttribute("hidden", "true");
 }
-
-export default { show, hide };

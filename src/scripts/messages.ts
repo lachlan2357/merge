@@ -35,7 +35,7 @@ export async function displayString(msg: string) {
 	const messageText = new ElementBuilder("p").text(msg).build();
 
 	const message = new ElementBuilder("div")
-		.class("message-box")
+		.addClasses("message-box")
 		.children(messageText)
 		.attribute("visible", "")
 		.build();
@@ -56,10 +56,9 @@ export async function displayString(msg: string) {
 	);
 }
 
-/**
- * An error type that can directly send the contents of it's error to the {@link Message} box.
- */
+/** An error type that can directly send the contents of it's error to the message box. */
 export class MessageBoxError extends Error {
+	/** Display this error in the message box. */
 	display() {
 		displayString(this.message);
 	}

@@ -1,6 +1,7 @@
 import * as messageBox from "./messages.js";
 import { State } from "./state/index.js";
 
+/** The base URL pointing to OpenStreetMap. */
 const ID_BASE_URL = new URL("https://www.openstreetmap.org");
 
 /**
@@ -12,6 +13,7 @@ function openUrl(url: URL) {
 	window.open(url, "_blank", "noreferrer noopener");
 }
 
+/** The base URL pointing to the socket JOSM uses for remote control. */
 const JOSM_BASE_URL = new URL("http://127.0.0.1:8111/load_and_zoom");
 
 /**
@@ -33,8 +35,11 @@ function openJosm(url: URL) {
 	);
 }
 
+/** Collection of methods to open a way or relation in either OpenStreetMap or JOSM. */
 export default {
+	/** Methods to open a way. */
 	way: {
+		/** Open the currently selected way in iD. */
 		iD() {
 			const wayId = State.selectedWay.get();
 			if (wayId < 0) return;
@@ -43,6 +48,7 @@ export default {
 			url.pathname = `/way/${wayId}`;
 			openUrl(url);
 		},
+		/** Open the currently selected way in JOSM. */
 		josm() {
 			const wayId = State.selectedWay.get();
 			if (wayId < 0) return;
@@ -52,7 +58,9 @@ export default {
 			openJosm(url);
 		}
 	},
+	/** Methods to open a relation. */
 	relation: {
+		/** Open the currently loaded relation in OpenStreetMap. */
 		iD() {
 			console.log("id-ing");
 			const relationId = State.currentRelationId.get();
@@ -62,6 +70,7 @@ export default {
 			url.pathname = `/relation/${relationId}`;
 			openUrl(url);
 		},
+		/** Open the currently loaded relation in JOSM. */
 		josm() {
 			const relationId = State.currentRelationId.get();
 			if (relationId === undefined) return;

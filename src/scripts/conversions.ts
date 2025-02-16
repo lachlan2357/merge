@@ -1,10 +1,18 @@
 import { State } from "./state/index.js";
 
-const earthRadius = 6371000;
+/** The radius of the Earth, measured in metres. */
+const earthRadius = 6_371_000;
+
+/** The circumference of the Earth, measured in metres. */
 const earthCircumference = 2 * Math.PI * earthRadius;
+
+/** The range at which degrees longitude/latitude can be. */
 const degreesRange = earthCircumference / 2;
+
+/** Default width of a lane, measured in metres. */
 const laneWidthMetres = 3.5;
 
+/** Default width of a lane, measured in degrees. */
 export const laneLength = metresToDegrees(laneWidthMetres);
 
 /**
