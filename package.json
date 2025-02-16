@@ -16,6 +16,7 @@
     "knip": "knip",
     "format": "prettier --write ./src/",
     "doc": "typedoc",
+    "check-all": "yarn check-ts && yarn lint && yarn knip && yarn format && yarn doc",
     "generate-icons": "realfavicon generate ./assets/merge.png favicon-settings.json favicon-output.json ./assets/icons",
     "merge": "node cli/index.js"
   },
