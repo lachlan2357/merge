@@ -1,4 +1,4 @@
-import { TagWarning } from "../overpass/warnings.js";
+import { TagWarning } from "./warnings.js";
 import {
 	OsmBoolean,
 	OsmDoubleArray,
@@ -7,8 +7,8 @@ import {
 	OsmUnsignedInteger,
 	OsmValue,
 	OsmInnerValue
-} from "../overpass/osm-values.js";
-import { OverpassNode, OverpassWay } from "../overpass/structures.js";
+} from "./osm-values.js";
+import { OverpassNode, OverpassWay } from "./structures.js";
 
 /**
  * Representing a record of tag-values where each tag may be unset.
