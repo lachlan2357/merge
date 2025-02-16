@@ -117,14 +117,11 @@ export class Computed<T> extends Store<T> implements Compute {
 	/**
 	 * Create a {@link Computed} container by defining a compute function.
 	 *
-	 * It is crucial to ensure all state containers used within the {@link computeFn} are specified
-	 * in the {@link dependencies} array, otherwise the computed value may not be recalculated when
-	 * it should be.
-	 *
-	 * It is also imperative not to create a circular dependency, for example by having two computed
-	 * values dependent on each other. If this occurs, a call to compute this value will result in
-	 * an infinite loop. Currently, there is no inbuilt mechanism to detect this, so it is up to
-	 * implementers to ensure this does not occur.
+	 * A computed value does not require its dependencies listed as automatic dependency discovery
+	 * will take place on the first run of the computation. However, it is imperative to not create
+	 * a circular dependency as doing so will result in an infinite loop. There is no built-in
+	 * method of detecting circular dependencies, so it is up to clients to ensure this does not
+	 * occur.
 	 *
 	 * @param computeFn The function that will be used to compute new values.
 	 */

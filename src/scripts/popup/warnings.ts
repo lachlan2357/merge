@@ -62,4 +62,5 @@ class WarningsPopup extends Popup {
 	}
 }
 
+/** Instance of {@link WarningsPopup}. */
 export const WARNINGS_POPUP = new WarningsPopup();

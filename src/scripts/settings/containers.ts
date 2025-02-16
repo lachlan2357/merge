@@ -53,8 +53,8 @@ export abstract class Setting<T extends OsmInnerValue> {
 	/**
 	 * Overwrite the value stored in this container with a new one.
 	 *
-	 * Setting the value will cause the new value to be saved in {@link window.localStorage},
-	 * provided {@link isPersistent} is `true`.
+	 * Setting the value will cause the new value to be saved in {@link localStorage}, provided
+	 * {@link isPersistent} is `true`.
 	 *
 	 * Setting this value will also cause the {@link inputElement} to have it's value set to the new
 	 * value. In almost all cases, since this value is being called from an event listener on that
@@ -84,7 +84,7 @@ export abstract class Setting<T extends OsmInnerValue> {
 	 * Create a new setting definition.
 	 *
 	 * @param name The display name of this setting.
-	 * @param key The key used when reading/writing to {@link window.localStorage}.
+	 * @param key The key used when reading/writing to {@link localStorage}.
 	 * @param description A description of the function this setting changes.
 	 * @param defaultValue The default value of this setting if it isn't fetched from persistent
 	 *   storage.
@@ -133,11 +133,11 @@ export abstract class Setting<T extends OsmInnerValue> {
 	}
 
 	/**
-	 * Load this value from {@link window.localStorage}, overwriting the currently stored value.
+	 * Load this value from {@link localStorage}, overwriting the currently stored value.
 	 *
 	 * If either {@link isPersistent} is `false`, there doesn't exist a value stored in
-	 * {@link window.localStorage} or the value stored cannot be processed correctly, the currently
-	 * stored value is not updated.
+	 * {@link localStorage} or the value stored cannot be processed correctly, the currently stored
+	 * value is not updated.
 	 */
 	protected load() {
 		// retrieve value from localstorage, if applicable
@@ -153,9 +153,9 @@ export abstract class Setting<T extends OsmInnerValue> {
 	}
 
 	/**
-	 * Save this value to {@link window.localStorage}, overwriting the value stored there.
+	 * Save this value to {@link localStorage}, overwriting the value stored there.
 	 *
-	 * If {@link isPersistent} is `false`, nothing is written to {@link window.localStorage}.
+	 * If {@link isPersistent} is `false`, nothing is written to {@link localStorage}.
 	 */
 	protected save() {
 		if (!this.isPersistent) return;
@@ -195,7 +195,7 @@ export abstract class Setting<T extends OsmInnerValue> {
 	abstract configureInputElement(builder: ElementBuilder<"input">): void;
 
 	/**
-	 * Process an incoming `string` from {@link window.localStorage} into the correct setting type.
+	 * Process an incoming `string` from {@link localStorage} into the correct setting type.
 	 *
 	 * @param input The `string` value to process.
 	 * @returns The processed value.

@@ -87,7 +87,7 @@ interface MergeWayTagsHelper {
 }
 
 /**
- * Union of {@link MergeWayTags} and {@link WayDataTagsHelper} to represent the in-tags for
+ * Union of {@link MergeWayTags} and {@link MergeWayTagsHelper} to represent the in-tags for
  * processing.
  */
 export type MergeWayTagsIn = Pretty<MergePartial<MergeWayTags & MergeWayTagsHelper>>;

@@ -23,4 +23,5 @@ class AboutPopup extends Popup {
 	}
 }
 
+/** Instance of {@link AboutPopup}. */
 export const ABOUT_POPUP = new AboutPopup();

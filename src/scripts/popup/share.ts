@@ -65,4 +65,5 @@ class SharePopup extends Popup {
 	}
 }
 
+/** Instance of {@link SharePopup}. */
 export const SHARE_POPUP = new SharePopup();

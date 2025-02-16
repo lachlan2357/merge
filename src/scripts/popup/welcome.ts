@@ -17,4 +17,5 @@ class WelcomePopup extends Popup {
 	}
 }
 
+/** Instance of {@link WelcomePopup}. */
 export const WELCOME_POPUP = new WelcomePopup();

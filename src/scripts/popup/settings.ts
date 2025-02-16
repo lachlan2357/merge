@@ -45,4 +45,5 @@ class SettingsPopup extends Popup {
 	}
 }
 
+/** Instance of {@link SettingsPopup}. */
 export const SETTINGS_POPUP = new SettingsPopup();

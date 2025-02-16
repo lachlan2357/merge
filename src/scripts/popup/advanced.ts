@@ -11,4 +11,5 @@ class AdvancedPopup extends Popup {
 	}
 }
 
+/** Instance of {@link AdvancedPopup}. */
 export const ADVANCED_POPUP = new AdvancedPopup();

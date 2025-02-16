@@ -12,7 +12,7 @@ import { InferenceBuilder } from "./builder.js";
 import { InferenceGraph, Nodes } from "./graph.js";
 
 /**
- * Perform all available {@link inferences} on {@link tags}.
+ * Perform all available {@link allInferences inferences} on {@link tags}.
  *
  * Inferences will be performed as specified under {@link InferenceCollection} on {@link tags}.
  *

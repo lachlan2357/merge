@@ -11,4 +11,5 @@ class HelpPopup extends Popup {
 	}
 }
 
+/** Instance of {@link HelpPopup}. */
 export const HELP_POPUP = new HelpPopup();
