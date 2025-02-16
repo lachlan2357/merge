@@ -6,8 +6,8 @@ import {
 	OsmUnsignedInteger,
 	OsmValue,
 	OsmInnerValue
-} from "../types/osm.js";
-import { OverpassNode, OverpassWay, OverpassRelation } from "../types/overpass.js";
+} from "./osm-values.js";
+import { OverpassNode, OverpassWay, OverpassRelation } from "./structures.js";
 import {
 	MergeData,
 	MergePartial,
@@ -15,7 +15,7 @@ import {
 	MergeWayTag,
 	MergeWayTags,
 	MergeWayTagsIn
-} from "../types/processed.js";
+} from "./structures-processed.js";
 import { performInferences, performTransforms } from "./inferences/index.js";
 
 /**

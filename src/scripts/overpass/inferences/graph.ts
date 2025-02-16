@@ -1,4 +1,4 @@
-import { MergeWayTag, MergeWayTagIn, MergeWayTagsIn } from "../../types/processed.js";
+import { MergeWayTag, MergeWayTagIn, MergeWayTagsIn } from "../structures-processed.js";
 import { UnknownInference } from "./builder.js";
 
 /** Type of nodes to store in the {@link InferenceGraph}. */

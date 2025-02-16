@@ -34,50 +34,47 @@ function openJosm(url: URL) {
 		)
 	);
 }
+/** Methods to open a way. */
+export const way = {
+	/** Open the currently selected way in iD. */
+	iD() {
+		const wayId = State.selectedWay.get();
+		if (wayId < 0) return;
 
-/** Collection of methods to open a way or relation in either OpenStreetMap or JOSM. */
-export default {
-	/** Methods to open a way. */
-	way: {
-		/** Open the currently selected way in iD. */
-		iD() {
-			const wayId = State.selectedWay.get();
-			if (wayId < 0) return;
-
-			const url = new URL(ID_BASE_URL);
-			url.pathname = `/way/${wayId}`;
-			openUrl(url);
-		},
-		/** Open the currently selected way in JOSM. */
-		josm() {
-			const wayId = State.selectedWay.get();
-			if (wayId < 0) return;
-
-			const url = new URL(JOSM_BASE_URL);
-			url.searchParams.set("select", `way${wayId}`);
-			openJosm(url);
-		}
+		const url = new URL(ID_BASE_URL);
+		url.pathname = `/way/${wayId}`;
+		openUrl(url);
 	},
-	/** Methods to open a relation. */
-	relation: {
-		/** Open the currently loaded relation in OpenStreetMap. */
-		iD() {
-			console.log("id-ing");
-			const relationId = State.currentRelationId.get();
-			if (relationId === undefined) return;
+	/** Open the currently selected way in JOSM. */
+	josm() {
+		const wayId = State.selectedWay.get();
+		if (wayId < 0) return;
 
-			const url = new URL(ID_BASE_URL);
-			url.pathname = `/relation/${relationId}`;
-			openUrl(url);
-		},
-		/** Open the currently loaded relation in JOSM. */
-		josm() {
-			const relationId = State.currentRelationId.get();
-			if (relationId === undefined) return;
+		const url = new URL(JOSM_BASE_URL);
+		url.searchParams.set("select", `way${wayId}`);
+		openJosm(url);
+	}
+};
 
-			const url = new URL(JOSM_BASE_URL);
-			url.searchParams.set("select", `relation${relationId}`);
-			openJosm(url);
-		}
+/** Methods to open a relation. */
+export const relation = {
+	/** Open the currently loaded relation in OpenStreetMap. */
+	iD() {
+		console.log("id-ing");
+		const relationId = State.currentRelationId.get();
+		if (relationId === undefined) return;
+
+		const url = new URL(ID_BASE_URL);
+		url.pathname = `/relation/${relationId}`;
+		openUrl(url);
+	},
+	/** Open the currently loaded relation in JOSM. */
+	josm() {
+		const relationId = State.currentRelationId.get();
+		if (relationId === undefined) return;
+
+		const url = new URL(JOSM_BASE_URL);
+		url.searchParams.set("select", `relation${relationId}`);
+		openJosm(url);
 	}
 };

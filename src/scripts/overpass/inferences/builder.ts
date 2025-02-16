@@ -1,4 +1,4 @@
-import { OsmInner, OsmMaybe, OsmValue, OsmValueForTag, OsmInnerValue } from "../../types/osm.js";
+import { OsmInner, OsmMaybe, OsmValue, OsmValueForTag, OsmInnerValue } from "../osm-values.js";
 import {
 	Certain,
 	MergeCertain,
@@ -6,7 +6,7 @@ import {
 	MergeWayTagIn,
 	MergeWayTagsIn,
 	Pretty
-} from "../../types/processed.js";
+} from "../structures-processed.js";
 import { InferenceGraph } from "./graph.js";
 
 /** Typed object for a subset of {@link MergeWayTagsIn}. */

@@ -1,10 +1,10 @@
-import { OsmMaybe, OsmValue } from "../../types/osm.js";
+import { OsmMaybe, OsmValue } from "../osm-values.js";
 import {
 	InferencesMade,
 	MergeWayTag,
 	MergeWayTags,
 	MergeWayTagsIn
-} from "../../types/processed.js";
+} from "../structures-processed.js";
 import { TagWarning } from "../warnings.js";
 import { UnknownInference } from "./builder.js";
 import { TransformFn, ValidationFn } from "./interfaces.js";

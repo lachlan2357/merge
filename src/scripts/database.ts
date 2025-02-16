@@ -1,5 +1,5 @@
 import { MessageBoxError } from "./messages.js";
-import { OverpassResponse } from "./types/overpass.js";
+import { OverpassResponse } from "./overpass/structures.js";
 
 /** Structure of how a cached query is stored in the IndexedDB database. */
 type CachedQuery = {

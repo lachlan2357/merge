@@ -1,6 +1,6 @@
 import { FontAwesomeIcon } from "../components/icon.js";
 import { ElementBuilder } from "../elements.js";
-import external from "../external.js";
+import * as external from "../external.js";
 import { State } from "../state/index.js";
 import { createCustomElement } from "../supplement/elements.js";
 import { Popup } from "./index.js";

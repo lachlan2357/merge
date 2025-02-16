@@ -4,8 +4,8 @@ import {
 	OsmDoubleArray,
 	OsmString,
 	OsmUnsignedInteger
-} from "../../types/osm.js";
-import { MergeWayTag, MergeWayTags, MergeWayTagsIn } from "../../types/processed.js";
+} from "../osm-values.js";
+import { MergeWayTag, MergeWayTags, MergeWayTagsIn } from "../structures-processed.js";
 import { TagWarning, WarningMap } from "../warnings.js";
 import { InferenceCollection } from "./collection.js";
 import { InferenceBuilder } from "./builder.js";

@@ -1,6 +1,6 @@
 import { ElementBuilder } from "../elements.js";
 import { MessageBoxError } from "../messages.js";
-import { OsmInnerValue } from "../types/osm.js";
+import { OsmInnerValue } from "../overpass/osm-values.js";
 
 /**
  * Container for storing information about a particular application setting.

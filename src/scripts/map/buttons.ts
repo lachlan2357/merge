@@ -5,7 +5,7 @@ import { SETTINGS_POPUP } from "../popup/settings.js";
 import { SHARE_POPUP } from "../popup/share.js";
 import { WARNINGS_POPUP } from "../popup/warnings.js";
 import { getElement } from "../supplement/elements.js";
-import { CANVAS } from "./canvas.js";
+import { CANVAS } from "./index.js";
 
 class MapButton {
 	private readonly element: HTMLButtonElement;

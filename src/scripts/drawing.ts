@@ -1,6 +1,6 @@
 import { metresToPixels } from "./conversions.js";
-import { CANVAS } from "./map/canvas.js";
-import { WorldCoordinate } from "./types/coordinate.js";
+import { CANVAS } from "./map/index.js";
+import { WorldCoordinate } from "./supplement/coordinate.js";
 
 const surfaceColours = new Map([
 	["asphalt", "#222233"],

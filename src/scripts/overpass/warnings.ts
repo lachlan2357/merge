@@ -1,5 +1,5 @@
-import { OsmUnsignedInteger } from "../types/osm.js";
-import { MergeWayTag } from "../types/processed.js";
+import { OsmUnsignedInteger } from "./osm-values.js";
+import { MergeWayTag } from "./structures-processed.js";
 
 /** Warning messages for when validation of a tag's value fails. */
 export class TagWarning extends Error {

@@ -1,8 +1,8 @@
 import { DrawnElement } from "../drawing.js";
-import { MultiplierData } from "../map/canvas.js";
-import { ScreenCoordinate } from "../types/coordinate.js";
-import { OverpassWay } from "../types/overpass.js";
-import { MergeData } from "../types/processed.js";
+import { MultiplierData } from "../map/index.js";
+import { ScreenCoordinate } from "../supplement/coordinate.js";
+import { OverpassWay } from "../overpass/structures.js";
+import { MergeData } from "../overpass/structures-processed.js";
 import { GraphItem } from "./graph.js";
 
 /** Ability to perform calculations when dependent information changes. */

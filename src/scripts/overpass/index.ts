@@ -1,14 +1,9 @@
 import { Database } from "../database.js";
-import { CANVAS } from "../map/canvas.js";
+import { CANVAS } from "../map/index.js";
 import * as MessageBox from "../messages.js";
 import * as Settings from "../settings/index.js";
 import { State } from "../state/index.js";
-import {
-	OverpassNode,
-	OverpassRelation,
-	OverpassResponse,
-	OverpassWay
-} from "../types/overpass.js";
+import { OverpassNode, OverpassRelation, OverpassResponse, OverpassWay } from "./structures.js";
 import { process } from "./process.js";
 /**
  * Request the Overpass API for the required search.

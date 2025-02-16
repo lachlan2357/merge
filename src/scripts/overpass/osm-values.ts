@@ -1,5 +1,5 @@
 import { MessageBoxError } from "../messages.js";
-import { Maybe, MergeWayTagIn, MergeWayTagsIn } from "./processed.js";
+import { Maybe, MergeWayTagIn, MergeWayTagsIn } from "./structures-processed.js";
 
 /** The requirements for a type to be able to be stored in an {@link OsmValue}. */
 export interface OsmInnerValue {

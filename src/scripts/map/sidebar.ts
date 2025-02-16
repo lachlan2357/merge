@@ -1,9 +1,9 @@
 import { FontAwesomeIcon } from "../components/icon.js";
 import { ElementBuilder } from "../elements.js";
-import external from "../external.js";
+import * as external from "../external.js";
 import { State } from "../state/index.js";
 import { createCustomElement, getElement } from "../supplement/elements.js";
-import { OsmValue } from "../types/osm.js";
+import { OsmValue } from "../overpass/osm-values.js";
 
 const SIDEBAR = getElement("way-info", HTMLDivElement);
 const WAY_EXTERNAL_LINK = getElement("wayid-link", HTMLAnchorElement);

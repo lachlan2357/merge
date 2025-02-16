@@ -5,7 +5,7 @@ import * as Settings from "../settings/index.js";
 import { Effect, State } from "../state/index.js";
 import { getElement } from "../supplement/elements.js";
 import { zoomIncrement } from "../supplement/index.js";
-import { ScreenCoordinate, WorldCoordinate } from "../types/coordinate.js";
+import { ScreenCoordinate, WorldCoordinate } from "../supplement/coordinate.js";
 import "./buttons.js";
 
 /** Structure containing all data required to calculate a zoom multiplier. */
