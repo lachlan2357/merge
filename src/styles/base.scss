@@ -139,7 +139,7 @@ a {
 
 	&.link-chip {
 		@include mixins.flexbox();
-		background-color: var(--background-colour);
+		background-color: var(--midground-colour);
 		border-radius: 10px;
 		color: var(--text);
 		padding: 10px;

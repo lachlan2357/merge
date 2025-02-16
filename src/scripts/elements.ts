@@ -1,5 +1,3 @@
-import { FontAwesomeIcon } from "./components/icon.js";
-
 /** Builder class to streamline construction and modification of a {@link HTMLElement}. */
 export class ElementBuilder<T extends keyof HTMLElementTagNameMap> {
 	/** The tag of the {@link HTMLElement} that was created. */
@@ -199,36 +197,5 @@ export class ElementBuilder<T extends keyof HTMLElementTagNameMap> {
 	 */
 	build() {
 		return this.element;
-	}
-}
-
-export class LinkChip {
-	protected element: ElementBuilder<"a">;
-	protected displayText: ElementBuilder<"span">;
-	protected optionalIcon?: FontAwesomeIcon;
-
-	constructor() {
-		this.element = new ElementBuilder("a").addClasses("link-chip");
-		this.displayText = new ElementBuilder("span");
-	}
-
-	url(url: string) {
-		this.element.href(url).setExternalLink();
-		return this;
-	}
-
-	text(text: string) {
-		this.displayText?.text(text);
-		return this;
-	}
-
-	icon(icon: FontAwesomeIcon) {
-		this.optionalIcon = icon;
-		return this;
-	}
-
-	build() {
-		if (this.optionalIcon) this.element.children(this.optionalIcon);
-		return this.element.children(this.displayText.build()).build();
 	}
 }
