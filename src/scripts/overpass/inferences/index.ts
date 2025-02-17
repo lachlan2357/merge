@@ -100,6 +100,7 @@ const formatters = {
 	 * @returns The formatted value of the `turn:lanes` tag.
 	 */
 	turnLanes(
+		this: void,
 		tag: MergeWayTag,
 		value: OsmDoubleArray<OsmString>,
 		tags: MergeWayTags
@@ -110,7 +111,7 @@ const formatters = {
 		// add missing lanes to turn:lanes
 		const numLanesObj = tag === "turnLanesForward" ? tags.lanesForward : tags.lanesBackward;
 		const numLanes = numLanesObj.get();
-		while (value.length < numLanes) value.push(new OsmArray(new Array(), OsmString));
+		while (value.length < numLanes) value.push(new OsmArray([], OsmString));
 
 		// convert implicit nones (empty element) to explicit nones "none"
 		return value.map(array => {

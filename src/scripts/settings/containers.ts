@@ -249,7 +249,6 @@ export class UrlSetting extends Setting<URL> {
 
 	protected process(value: string) {
 		try {
-			if (value === "") throw null;
 			return new URL(value);
 		} catch {
 			throw SettingError.invalidValue(value, "url");

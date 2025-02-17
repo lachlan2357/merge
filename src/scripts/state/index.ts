@@ -180,54 +180,54 @@ export class State {
 	// atomics
 
 	/** The data used to render the current map. */
-	static readonly data: Atomic<MergeData | undefined> = new Atomic(undefined);
+	static readonly data = new Atomic<MergeData | undefined>(undefined);
 
 	/** The ID of the relation currently drawn on the map. */
-	static readonly currentRelationId: Atomic<number | undefined> = new Atomic(undefined);
+	static readonly currentRelationId = new Atomic<number | undefined>(undefined);
 
 	/** All elements currently drawn on the map. */
-	static readonly drawnElements: Atomic<Array<DrawnElement>> = new Atomic(new Array());
+	static readonly drawnElements = new Atomic(new Array<DrawnElement>());
 
 	/** The way that is currently selected for inspection. */
-	static readonly selectedWay: Atomic<number> = new Atomic(-1);
+	static readonly selectedWay = new Atomic(-1);
 
 	/** All ways that are part of the current relation. */
-	static readonly allWays: Atomic<Map<number, OverpassWay>> = new Atomic(new Map());
+	static readonly allWays = new Atomic(new Map<number, OverpassWay>());
 
 	/** The dimensions that the canvas raster should be drawn at. */
-	static readonly canvasDimensions: Atomic<ScreenCoordinate> = new Atomic(new ScreenCoordinate());
+	static readonly canvasDimensions = new Atomic(new ScreenCoordinate());
 
 	/** The offset of the canvas relative to the page. */
-	static readonly canvasOffset: Atomic<ScreenCoordinate> = new Atomic(new ScreenCoordinate());
+	static readonly canvasOffset = new Atomic(new ScreenCoordinate());
 
 	/** The current mouse position. */
-	static readonly mousePos: Atomic<ScreenCoordinate> = new Atomic(new ScreenCoordinate());
+	static readonly mousePos = new Atomic(new ScreenCoordinate());
 
 	/** The position of the mouse when the left mouse button started to be pressed. */
-	static readonly mouseDownPos: Atomic<ScreenCoordinate> = new Atomic(new ScreenCoordinate());
+	static readonly mouseDownPos = new Atomic(new ScreenCoordinate());
 
 	/**
 	 * The offset of the mouse relative to {@link mouseDownPos}.
 	 *
 	 * TODO: this should probably be a computed value.
 	 */
-	static readonly mouseOffset: Atomic<ScreenCoordinate> = new Atomic(new ScreenCoordinate());
+	static readonly mouseOffset = new Atomic(new ScreenCoordinate());
 
 	/** The offset of the map caused by zooming in/out. */
-	static readonly zoomOffset: Atomic<ScreenCoordinate> = new Atomic(new ScreenCoordinate());
+	static readonly zoomOffset = new Atomic(new ScreenCoordinate());
 
 	/** Whether the mouse is currently being held down. */
-	static readonly mouseDown: Atomic<boolean> = new Atomic(false);
+	static readonly mouseDown = new Atomic(false);
 
 	/**
 	 * Whether the mouse has moved since being held down.
 	 *
 	 * TODO: this should probably be a computed value.
 	 */
-	static readonly mouseMoved: Atomic<boolean> = new Atomic(false);
+	static readonly mouseMoved = new Atomic(false);
 
 	/** The current zoom factor of the map. */
-	static readonly zoom: Atomic<number> = new Atomic(0);
+	static readonly zoom = new Atomic(0);
 
 	// computed
 

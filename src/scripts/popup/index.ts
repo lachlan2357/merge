@@ -15,7 +15,7 @@ export abstract class Popup {
 	 *
 	 * This is generally calculated through {@link build()} at a later stage.
 	 */
-	private children: Array<HTMLElement> = new Array();
+	private children = new Array<HTMLElement>();
 
 	/**
 	 * Construct the {@link HTMLElement HTMLElements} to be appended to the popup window.

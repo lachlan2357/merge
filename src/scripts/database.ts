@@ -137,10 +137,11 @@ export class Database {
 			};
 
 			req.onsuccess = () => {
-				const result: CachedQuery | undefined = req.result;
+				const result = req.result as CachedQuery | undefined;
 				if (result === undefined) return resolve(null);
 
-				const json: OverpassResponse = JSON.parse(result.value);
+				const json = JSON.parse(result.value) as OverpassResponse | undefined;
+				if (json === undefined) return resolve(null);
 				resolve(json);
 			};
 		});

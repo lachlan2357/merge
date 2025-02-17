@@ -144,7 +144,7 @@ class Canvas {
 
 		// clear any previously-drawn elements
 		context.clearRect(0, 0, dimensions.x, dimensions.y);
-		State.drawnElements.set(new Array());
+		State.drawnElements.set([]);
 
 		const drawnElementsCache = new Array<DrawnElement>();
 		dataCache.forEach((way, wayId) => {
@@ -428,7 +428,7 @@ class Matrix<T extends string | number> {
 	 * @param defaultValue The default value to set in all matrix cells.
 	 */
 	constructor(xLength: number, yLength: number, defaultValue: T) {
-		this.inner = new Array();
+		this.inner = [];
 		for (let i = 0; i < xLength; i++) {
 			const arr = new Array<T>(yLength).fill(defaultValue);
 			this.inner.push(arr);

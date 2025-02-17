@@ -75,7 +75,7 @@ function stringToBoolean(string: string | undefined) {
 		case "false":
 			return false;
 		default:
-			throw `Cannot convert ${string} to boolean.`;
+			throw new TypeError(`Cannot convert ${string} to boolean.`);
 	}
 }
 
@@ -91,7 +91,9 @@ export async function checkUrl(page: Page, input: Locator, settingsKey: string) 
 	let ls = await getLocalStorage(page);
 	let value = ls[settingsKey];
 	if (value === undefined)
-		throw `Value retrieved from 'localStorage' for ${settingsKey} is 'undefined'`;
+		throw new TypeError(
+			`Value retrieved from 'localStorage' for ${settingsKey} is 'undefined'`
+		);
 	await expect.soft(input).toHaveValue(value);
 
 	// change state and check again
@@ -99,6 +101,8 @@ export async function checkUrl(page: Page, input: Locator, settingsKey: string) 
 	ls = await getLocalStorage(page);
 	value = ls[settingsKey];
 	if (value === undefined)
-		throw `Value retrieved from 'localStorage' for ${settingsKey} is 'undefined'`;
+		throw new TypeError(
+			`Value retrieved from 'localStorage' for ${settingsKey} is 'undefined'`
+		);
 	await expect.soft(input).toHaveValue(value);
 }

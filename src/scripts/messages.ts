@@ -31,29 +31,29 @@ export function displayMessage(key: AppMsg) {
  *
  * @param msg The message to display.
  */
-export async function displayString(msg: string) {
+export function displayString(msg: string) {
+	// display message
 	const messageText = new ElementBuilder("p").text(msg).build();
-
 	const message = new ElementBuilder("div")
 		.addClasses("message-box")
 		.children(messageText)
 		.attribute("visible", "")
 		.build();
-
 	element.append(message);
 
-	await new Promise(resolve => setTimeout(resolve, 5000));
-
-	message.setAttribute("closing", "");
-	message.addEventListener(
-		"animationend",
-		() => {
-			message.removeAttribute("closing");
-			message.removeAttribute("visible");
-			message.parentElement?.removeChild(message);
-		},
-		{ once: true }
-	);
+	// remove message after timeout
+	setTimeout(() => {
+		message.setAttribute("closing", "");
+		message.addEventListener(
+			"animationend",
+			() => {
+				message.removeAttribute("closing");
+				message.removeAttribute("visible");
+				message.parentElement?.removeChild(message);
+			},
+			{ once: true }
+		);
+	}, 5000);
 }
 
 /** An error type that can directly send the contents of it's error to the message box. */

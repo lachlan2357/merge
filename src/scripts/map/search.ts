@@ -32,7 +32,7 @@ function setSearching(searching: boolean) {
 	SEARCH_ICON.setAnimation(animation);
 }
 
-SEARCH_FORM.addEventListener("submit", async e => {
+SEARCH_FORM.addEventListener("submit", e => {
 	e.preventDefault();
 
 	try {
@@ -46,7 +46,7 @@ SEARCH_FORM.addEventListener("submit", async e => {
 		if (searchTerm === undefined) throw SearchError.EMPTY_SEARCH_TERM;
 
 		// search
-		await search(searchTerm);
+		search(searchTerm).catch(e => console.error(e));
 	} catch (error) {
 		if (error instanceof MessageBoxError) error.display();
 		else console.error(error);

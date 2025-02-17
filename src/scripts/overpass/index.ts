@@ -121,7 +121,7 @@ async function fetchFromApi(queryString: string) {
 	});
 
 	// retrieve json body
-	const json: OverpassResponse | undefined = await req.json();
+	const json = (await req.json()) as OverpassResponse | undefined;
 	if (json === undefined) throw OverpassError.REQUEST_ERROR;
 
 	// cache response data

@@ -1,11 +1,11 @@
-import test, { expect } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 import * as lib from "../lib.ts";
 
 test.afterEach(async ({ page }) => {
 	await lib.clearLocalStorage(page);
 });
 
-test.describe("colour scheme agnostic", async () => {
+test.describe("colour scheme agnostic", () => {
 	test.beforeEach(async ({ page }) => {
 		await lib.navigateHome(page);
 	});
@@ -42,6 +42,7 @@ test.describe("colour scheme agnostic", async () => {
 		for (let i = 0; i < containers.length; i++) {
 			const settingsKey = settingsOrder[i];
 			const container = containers[i];
+			if (settingsKey === undefined || container === undefined) continue;
 			if (notPersistent.includes(settingsKey)) continue;
 
 			const input = container.locator("input");
@@ -57,7 +58,7 @@ test.describe("colour scheme agnostic", async () => {
 					break;
 				}
 				default:
-					throw `'${inputType}' does not have any recognised test cases.`;
+					throw new TypeError(`'${inputType}' does not have any recognised test cases.`);
 			}
 		}
 	});

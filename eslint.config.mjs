@@ -31,14 +31,24 @@ const customConfig = {
 	},
 
 	rules: {
-		"@typescript-eslint/no-array-constructor": "off",
-		"@typescript-eslint/no-unused-vars": "off"
-	}
+		"@typescript-eslint/no-unused-vars": "off",
+		"@typescript-eslint/no-base-to-string": "off",
+		"@typescript-eslint/restrict-template-expressions": "off"
+	},
+
+	languageOptions: {
+		parserOptions: {
+			projectService: true,
+			tsconfigRootDir: import.meta.dirname
+		}
+	},
+
+	ignores: ["**/*.js", "**/*.mjs", "**/*.cjs"]
 };
 
 const config = [
 	js.configs.recommended,
-	...ts.configs.recommended,
+	...ts.configs.recommendedTypeChecked,
 	jsdocConfig,
 	prettier,
 	customConfig

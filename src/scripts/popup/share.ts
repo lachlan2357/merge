@@ -20,14 +20,17 @@ class SharePopup extends Popup {
 			.addClasses("copy")
 			.tooltip("Copy", "left")
 			.event("click", () => {
-				navigator.clipboard.writeText(shareText).then(() => {
-					copyIcon.setIcon("check");
-					copyButton.tooltip("Copied", "left");
-					setTimeout(() => {
-						copyIcon.setIcon("copy");
-						copyButton.tooltip("Copy", "left");
-					}, 2000);
-				});
+				navigator.clipboard
+					.writeText(shareText)
+					.then(() => {
+						copyIcon.setIcon("check");
+						copyButton.tooltip("Copied", "left");
+						setTimeout(() => {
+							copyIcon.setIcon("copy");
+							copyButton.tooltip("Copy", "left");
+						}, 2000);
+					})
+					.catch(e => console.error(e));
 			})
 			.children(copyIcon);
 

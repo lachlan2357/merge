@@ -5,6 +5,7 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "lib": ["DOM", "ES2024"],
+    "types": [],
 
     /* disallow JavaScript */
     "allowJs": false,
