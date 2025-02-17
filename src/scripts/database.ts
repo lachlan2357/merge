@@ -1,5 +1,6 @@
 import { MessageBoxError } from "./messages.js";
 import { OverpassResponse } from "./overpass/structures.js";
+import { Oath, OathResult } from "./supplement/oath.js";
 
 /** Structure of how a cached query is stored in the IndexedDB database. */
 type CachedQuery = {
@@ -58,33 +59,29 @@ export class Database {
 	 * @throws {DatabaseError} If a connection to the database could not be retrieved.
 	 */
 	static async connect() {
-		const database = await new Promise<IDBDatabase>(resolve => {
-			const req = window.indexedDB.open(Database.DB_NAME);
+		return await new Oath<IDBDatabase, DatabaseError>(DatabaseError, resolve => {
+			const request = window.indexedDB.open(Database.DB_NAME);
 
-			// failed connection
-			req.onerror = () => {
+			request.onerror = function () {
 				throw DatabaseError.CONNECTION_ERROR;
 			};
 
-			// blocked connection
-			req.onblocked = () => {
+			request.onblocked = function () {
 				throw DatabaseError.BLOCKED_ERROR;
 			};
 
-			// upgrade database
-			req.onupgradeneeded = () => {
-				const database = req.result;
+			request.onupgradeneeded = function () {
+				const database = this.result;
 				database.createObjectStore(Database.STORE_NAME, Database.STORE_OPTIONS);
 			};
 
-			// successful connection
-			req.onsuccess = () => {
-				const database = req.result;
+			request.onsuccess = function () {
+				const database = this.result;
 				resolve(database);
 			};
-		});
-
-		return new Database(database);
+		})
+			.map(database => new Database(database))
+			.run();
 	}
 
 	/**
@@ -108,17 +105,38 @@ export class Database {
 			resolve: (data: R) => void,
 			reject: (error: unknown) => void
 		) => void
-	): Promise<R> {
-		// open transaction
-		const transaction = this.database.transaction(Database.STORE_NAME, mode);
-		const store = transaction.objectStore(Database.STORE_NAME);
+	): Promise<OathResult<R, DatabaseError>> {
+		return await new Oath<R, Error>(DatabaseError, resolve => {
+			// open transaction
+			const transaction = this.database.transaction(Database.STORE_NAME, mode);
+			const store = transaction.objectStore(Database.STORE_NAME);
 
-		// complete actions
-		const data = await new Promise<R>((resolve, reject) => {
-			return fn(store, resolve, reject);
-		});
-		transaction.commit();
-		return data;
+			// complete actions
+			void new Promise<R>((resolve, reject) => {
+				return fn(store, resolve, reject);
+			}).then(data => {
+				transaction.commit();
+				resolve(data);
+			});
+		})
+			.mapError(DatabaseError, error => {
+				if (error instanceof TypeError) return DatabaseError.INVALID_MODE;
+				if (error instanceof DOMException) {
+					switch (error.name) {
+						case "InvalidStateError":
+							return DatabaseError.DATABASE_CLOSED;
+						case "NotFoundError":
+							return DatabaseError.NON_EXISTENT_OBJECT_STORE;
+						case "InvalidAccessError":
+							return DatabaseError.MISSING_OBJECT_STORE;
+						default:
+							throw error;
+					}
+				}
+
+				throw error;
+			})
+			.run();
 	}
 
 	/**
@@ -129,7 +147,7 @@ export class Database {
 	 * @throws {DatabaseError} If the data could not be retrieved.
 	 */
 	async get(key: string) {
-		return this.transact<OverpassResponse | null>("readonly", (store, resolve) => {
+		return await this.transact<OverpassResponse | null>("readonly", (store, resolve) => {
 			const req = store.get(key);
 
 			req.onerror = () => {
@@ -180,4 +198,16 @@ class DatabaseError extends MessageBoxError {
 
 	static readonly GET_ERROR = new DatabaseError("Could not retrieve data from the database.");
 	static readonly SET_ERROR = new DatabaseError("Could not insert data into the database.");
+
+	// transaction errors
+	static readonly INVALID_MODE = new DatabaseError("Transaction 'mode' is invalid.");
+	static readonly DATABASE_CLOSED = new DatabaseError(
+		"This connection to the database has previously been closed."
+	);
+	static readonly NON_EXISTENT_OBJECT_STORE = new DatabaseError(
+		"One or more requested object stores do not exist"
+	);
+	static readonly MISSING_OBJECT_STORE = new DatabaseError(
+		"No object stores requested in this transaction."
+	);
 }

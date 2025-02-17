@@ -18,12 +18,19 @@ export async function overpassSearch(searchTerm: string) {
 
 	// check database for cached result, if applicable
 	const skipDatabase = Settings.get("ignoreCache");
-	if (!skipDatabase) {
-		const database = await Database.connect();
-		response = await database.get(queryString);
+	guard: if (!skipDatabase) {
+		const [database, connectionError] = await Database.connect();
+		if (connectionError !== null) {
+			connectionError.display();
+			break guard;
+		}
+
+		const [data, error] = await database.get(queryString);
+		if (error !== null) error.display();
+		else response = data;
 	}
 
-	// request from Overpass API if required
+	// request from Overpass API if database yielded no result or an error
 	if (response === null) response = await fetchFromApi(queryString);
 
 	// transform data into a useable state
@@ -124,9 +131,10 @@ async function fetchFromApi(queryString: string) {
 	const json = (await req.json()) as OverpassResponse | undefined;
 	if (json === undefined) throw OverpassError.REQUEST_ERROR;
 
-	// cache response data
-	const database = await Database.connect();
-	if (json.elements.length > 0)
+	// cache response data if response yielded any data
+	const [database, error] = await Database.connect();
+	if (error !== null) error.display();
+	else if (json.elements.length > 0)
 		await database.set({ request: queryString, value: JSON.stringify(json) });
 
 	Settings.set("ignoreCache", false);
