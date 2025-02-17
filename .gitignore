@@ -5,6 +5,10 @@ merge
 # documentation
 docs
 
+# tests, playwright, etc.
+test-results
+playwright-report
+
 # file backups, legacy, logs, etc.
 *.backup
 *.old
