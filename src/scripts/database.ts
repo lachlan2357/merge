@@ -142,10 +142,7 @@ export class Database {
 			reject: (error: DatabaseError) => void
 		) => void
 	): Oath<R, DatabaseError> {
-		return new Oath<
-			{ transaction: IDBTransaction; objectStore: IDBObjectStore },
-			DatabaseError
-		>(DatabaseError, resolve => {
+		return Oath.fromAsync(DatabaseError, async () => {
 			// open transaction
 			const transaction = Oath.mapException(
 				() => this.database.transaction(Database.STORE_NAME, mode),
@@ -168,7 +165,7 @@ export class Database {
 			);
 
 			// retrieve object store
-			const objectStore = Oath.mapException(
+			const store = Oath.mapException(
 				() => transaction.objectStore(Database.STORE_NAME),
 				error => {
 					/* https://developer.mozilla.org/en-US/docs/Web/API/IDBTransaction/objectStore#exceptions */
@@ -183,18 +180,12 @@ export class Database {
 				}
 			);
 
-			resolve({ transaction, objectStore });
-		})
-			.map(
-				({ transaction, objectStore }) =>
-					new Oath<{ transaction: IDBTransaction; data: R }, DatabaseError>(
-						DatabaseError,
-						(resolve, reject) =>
-							fn(objectStore, data => resolve({ transaction, data }), reject)
-					)
-			)
-			.map(({ transaction, data }) => {
-				Oath.mapException(
+			// complete transaction logic
+			const data = await new Promise<R>((resolve, reject) => fn(store, resolve, reject));
+
+			// commit and close transaction
+			const [_, commitError] = Oath.sync(DatabaseError, () => {
+				return Oath.mapException(
 					() => transaction.commit(),
 					error => {
 						/* https://developer.mozilla.org/en-US/docs/Web/API/IDBTransaction/commit#exceptions */
@@ -206,8 +197,10 @@ export class Database {
 						}
 					}
 				);
-				return data;
 			});
+			if (commitError !== null) console.warn(commitError);
+			return data;
+		});
 	}
 
 	/**

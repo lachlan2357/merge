@@ -8,6 +8,8 @@ type OathFunction<T, E> = (
 	resolve: OathResolveFunction<T>,
 	reject: OathRejectFunction<E>
 ) => void;
+type OathFunctionSync<T> = (this: void) => T;
+type OathFunctionAsync<T> = (this: void) => Promise<T>;
 
 export type OathResult<T, E> = [T, null] | [null, E];
 
@@ -31,6 +33,11 @@ type OathMapErrorFn<E, F> = (old: E) => F | undefined;
  *   function is stored until the {@link Oath.run()} method is called. Then, the asynchronous
  *   function run just as a {@link Promise} usually does. This allows for more flexibility with
  *   allowing extensibility of promises before they are executed and awaited.
+ *
+ * However there are circumstances where a bare {@link Promise} may be desirable.
+ *
+ * - If any error returned by a {@link Oath} will be immediately thrown, there is little purpose in
+ *   using an {@link Oath} as this behaviour is given as default with a {@link Promise}.
  */
 export class Oath<T, E extends Error> {
 	/**
@@ -56,6 +63,11 @@ export class Oath<T, E extends Error> {
 
 	/**
 	 * Create a new {@link Oath}.
+	 *
+	 * Constructing an {@link Oath} this way is primarily designed for importing a callback-based
+	 * asynchronous function (e.g., because of the use of an API such as {@link indexedDB}) that
+	 * requires calling `resolve(...)` to return from the function. To instead use the modern
+	 * async/await syntax, see {@link Oath.fromAsync()}.
 	 *
 	 * @param error The type of error to treat as an expected error.
 	 * @param fn The function to run to evaluate the {@link Oath}.
@@ -138,6 +150,41 @@ export class Oath<T, E extends Error> {
 			return [result, null];
 		} catch (e) {
 			if (e instanceof this.ErrorConstructor) return [null, e];
+			else throw e;
+		}
+	}
+
+	/**
+	 * Import an asynchronous function into an {@link Oath}.
+	 *
+	 * This method provides an alternative way of constructing an {@link Oath} using the modern
+	 * async/await syntax. Instead of calling `resolve(...)` or `reject(...)` as in a regular
+	 * {@link Oath}, resolving is done through returning a value from the function, and rejecting is
+	 * done through throwing an exception.
+	 *
+	 * @param error The type of error to treat as an expected error.
+	 * @param fn The asynchronous function to run to evaluate the {@link Oath}.
+	 * @returns The new {@link Oath}.
+	 */
+	static fromAsync<T, E extends Error>(error: Constructor<E>, fn: OathFunctionAsync<T>) {
+		return new Oath<T, E>(error, (resolve, reject) => {
+			fn()
+				.then(data => resolve(data))
+				.catch(e => {
+					if (e instanceof error) reject(e);
+					else throw e;
+				});
+		});
+	}
+
+	static sync<T, E extends Error>(
+		error: Constructor<E>,
+		fn: OathFunctionSync<T>
+	): OathResult<T, E> {
+		try {
+			return [fn(), null];
+		} catch (e) {
+			if (e instanceof error) return [null, e];
 			else throw e;
 		}
 	}
