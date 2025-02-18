@@ -11,7 +11,8 @@ type OathFunction<T, E> = (
 type OathFunctionSync<T> = (this: void) => T;
 type OathFunctionAsync<T> = (this: void) => Promise<T>;
 
-export type OathResult<T, E> = [T, null] | [null, E];
+export const OATH_NULL = Symbol("Representing a null return value in an OathResult.");
+export type OathResult<T, E> = [T, typeof OATH_NULL] | [typeof OATH_NULL, E];
 
 type OathMapFn<T, U, E extends Error> = (old: T) => U | Oath<U, E>;
 type OathMapErrorFn<E, F> = (old: E) => F | undefined;
@@ -90,8 +91,8 @@ export class Oath<T, E extends Error> {
 		return new Oath<U, E>(this.ErrorConstructor, (resolve, reject) => {
 			this.run()
 				.then(([value, error]) => {
-					if (error !== null) throw error;
-					else if (value === null) throw OathError.noValueNorError();
+					if (error !== OATH_NULL) throw error;
+					else if (value === OATH_NULL) throw OathError.noValueNorError();
 					else {
 						const newValue = fn(value);
 						if (newValue instanceof Oath) return newValue.run();
@@ -102,8 +103,8 @@ export class Oath<T, E extends Error> {
 					if (awaited === undefined) return;
 
 					const [value, error] = awaited;
-					if (error !== null) throw error;
-					else if (value !== null) resolve(value);
+					if (error !== OATH_NULL) throw error;
+					else if (value !== OATH_NULL) resolve(value);
 					else throw OathError.noValueNorError();
 				})
 				.catch(e => {
@@ -128,8 +129,8 @@ export class Oath<T, E extends Error> {
 		return new Oath<T, F>(error, (resolve, reject) => {
 			this.run()
 				.then(([value, error]) => {
-					if (value !== null) resolve(value);
-					else if (error === null) throw OathError.noValueNorError();
+					if (value !== OATH_NULL) resolve(value);
+					else if (error === OATH_NULL) throw OathError.noValueNorError();
 					else throw fn(error) ?? error;
 				})
 				.catch(e => {
@@ -147,9 +148,9 @@ export class Oath<T, E extends Error> {
 	async run(): Promise<OathResult<T, E>> {
 		try {
 			const result = await new Promise<T>(this.oathFn);
-			return [result, null];
+			return [result, OATH_NULL];
 		} catch (e) {
-			if (e instanceof this.ErrorConstructor) return [null, e];
+			if (e instanceof this.ErrorConstructor) return [OATH_NULL, e];
 			else throw e;
 		}
 	}
@@ -182,9 +183,9 @@ export class Oath<T, E extends Error> {
 		fn: OathFunctionSync<T>
 	): OathResult<T, E> {
 		try {
-			return [fn(), null];
+			return [fn(), OATH_NULL];
 		} catch (e) {
-			if (e instanceof error) return [null, e];
+			if (e instanceof error) return [OATH_NULL, e];
 			else throw e;
 		}
 	}

@@ -5,6 +5,7 @@ import * as Settings from "../settings/index.js";
 import { State } from "../state/index.js";
 import { OverpassNode, OverpassRelation, OverpassResponse, OverpassWay } from "./structures.js";
 import { process } from "./process.js";
+import { OATH_NULL } from "../supplement/oath.js";
 /**
  * Request the Overpass API for the required search.
  *
@@ -23,7 +24,7 @@ export async function overpassSearch(searchTerm: string) {
 			.map(database => database.get(queryString))
 			.run();
 
-		if (error !== null) error.display();
+		if (error !== OATH_NULL) error.display();
 		else response = data;
 	}
 
@@ -134,7 +135,7 @@ async function fetchFromApi(queryString: string) {
 		const [_, error] = await Database.connect()
 			.map(database => database.set(data))
 			.run();
-		if (error !== null) error.display();
+		if (error !== OATH_NULL) error.display();
 	}
 
 	Settings.set("ignoreCache", false);

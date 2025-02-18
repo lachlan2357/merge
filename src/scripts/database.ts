@@ -1,6 +1,6 @@
 import { MessageBoxError } from "./messages.js";
 import { OverpassResponse } from "./overpass/structures.js";
-import { Constructor, Oath } from "./supplement/oath.js";
+import { Oath } from "./supplement/oath.js";
 
 /** Structure of how a cached query is stored in the IndexedDB database. */
 type CachedQuery = {
@@ -62,34 +62,17 @@ export class Database {
 	 * @throws {DatabaseError} If a connection to the database could not be retrieved.
 	 */
 	static connect(): Oath<Database, DatabaseError> {
-		return new Oath<IDBDatabase, DatabaseError>(DatabaseError, resolve => {
+		return new Oath(DatabaseError, (resolve, reject) => {
 			const request = Oath.mapException(
 				() => window.indexedDB.open(Database.DB_NAME, Database.DB_VERSION),
-				error => {
-					/* https://developer.mozilla.org/en-US/docs/Web/API/IDBFactory/open#exceptions */
-					if (error instanceof TypeError)
-						return DatabaseError.new("invalidDatabaseVersion", error);
-				}
+				error => DatabaseError.new("databaseOpen", error)
 			);
 
-			request.onerror = function (e) {
-				throw DatabaseError.new("connectionError", e);
-			};
-
-			request.onblocked = function (e) {
-				throw DatabaseError.new("upgradeBlocked", e);
-			};
-
-			request.onupgradeneeded = () => {
-				const database = request.result;
-				this.upgradeDatabase(database);
-			};
-
-			request.onsuccess = () => {
-				const database = request.result;
-				resolve(database);
-			};
-		}).map(database => new Database(database));
+			request.onerror = e => reject(DatabaseError.new("databaseOpen", e));
+			request.onblocked = e => reject(DatabaseError.new("databaseOpen", e));
+			request.onupgradeneeded = () => this.upgradeDatabase(request.result);
+			request.onsuccess = () => resolve(new Database(request.result));
+		});
 	}
 
 	/**
@@ -101,22 +84,7 @@ export class Database {
 	private static upgradeDatabase(database: IDBDatabase) {
 		Oath.mapException(
 			() => database.createObjectStore(Database.STORE_NAME, Database.STORE_OPTIONS),
-			error => {
-				if (error instanceof DatabaseError) return error;
-				if (error instanceof SyntaxError) return DatabaseError.new("invalidKeyPath", error);
-				if (error instanceof DOMException) {
-					switch (error.name) {
-						case "ConstraintError":
-							return DatabaseError.new("objectStoreAlreadyExists", error);
-						case "InvalidAccessError":
-							return DatabaseError.new("autoIncrementAndKeyPathProvided", error);
-						case "InvalidStateError":
-							return DatabaseError.new("creationFromNonUpgrade", error);
-						case "TransactionInactiveError":
-							return DatabaseError.new("inactiveTransaction", error);
-					}
-				}
-			}
+			error => DatabaseError.new("objectStoreCreate", error)
 		);
 	}
 
@@ -146,38 +114,13 @@ export class Database {
 			// open transaction
 			const transaction = Oath.mapException(
 				() => this.database.transaction(Database.STORE_NAME, mode),
-				error => {
-					/* https://developer.mozilla.org/en-US/docs/Web/API/IDBDatabase/transaction#exceptions */
-					if (error instanceof TypeError) return DatabaseError.new("invalidMode", error);
-					if (error instanceof DOMException) {
-						switch (error.name) {
-							case "InvalidStateError":
-								throw DatabaseError.new("databaseClosed", error);
-							case "NotFoundError":
-								throw DatabaseError.new("nonExistentObjectStore", error);
-							case "InvalidAccessError":
-								throw DatabaseError.new("missingObjectStore", error);
-							default:
-								throw DatabaseError.new("unknownError", error);
-						}
-					}
-				}
+				error => DatabaseError.new("transactionOpen", error)
 			);
 
 			// retrieve object store
 			const store = Oath.mapException(
 				() => transaction.objectStore(Database.STORE_NAME),
-				error => {
-					/* https://developer.mozilla.org/en-US/docs/Web/API/IDBTransaction/objectStore#exceptions */
-					if (error instanceof DOMException) {
-						switch (error.name) {
-							case "NotFoundError":
-								return DatabaseError.new("objectStoreOutOfScope", error);
-							case "InvalidStateError":
-								return DatabaseError.new("couldNotAccessObjectStore", error);
-						}
-					}
-				}
+				error => DatabaseError.new("objectStoreGet", error)
 			);
 
 			// complete transaction logic
@@ -187,15 +130,7 @@ export class Database {
 			const [_, commitError] = Oath.sync(DatabaseError, () => {
 				return Oath.mapException(
 					() => transaction.commit(),
-					error => {
-						/* https://developer.mozilla.org/en-US/docs/Web/API/IDBTransaction/commit#exceptions */
-						if (error instanceof DOMException) {
-							switch (error.name) {
-								case "InvalidStateError":
-									return DatabaseError.new("transactionAlreadyClosed", error);
-							}
-						}
-					}
+					error => DatabaseError.new("transactionCommit", error)
 				);
 			});
 			if (commitError !== null) console.warn(commitError);
@@ -210,29 +145,14 @@ export class Database {
 	 * @returns The cached data from the database, if it exists.
 	 * @throws {DatabaseError} If the data could not be retrieved.
 	 */
-	get(key: string) {
-		return this.transact<OverpassResponse | null>("readonly", (store, resolve) => {
+	get(key: string): Oath<OverpassResponse | null, DatabaseError> {
+		return this.transact("readonly", (store, resolve, reject) => {
 			const req = Oath.mapException(
 				() => store.get(key),
-				error => {
-					/* https://developer.mozilla.org/en-US/docs/Web/API/IDBObjectStore/get#exceptions */
-					if (error instanceof DOMException) {
-						switch (error.name) {
-							case "TransactionInactiveError":
-								return DatabaseError.new("inactiveTransaction", error);
-							case "DataError":
-								return DatabaseError.new("invalidKeyPath", error);
-							case "InvalidStateError":
-								return DatabaseError.new("couldNotAccessObjectStore", error);
-						}
-					}
-				}
+				error => DatabaseError.new("objectStoreGetFrom", error)
 			);
 
-			req.onerror = e => {
-				throw DatabaseError.new("getError", e);
-			};
-
+			req.onerror = event => reject(DatabaseError.new("objectStoreGetFrom", event));
 			req.onsuccess = () => {
 				const result = req.result as CachedQuery | undefined;
 				if (result === undefined) return resolve(null);
@@ -251,17 +171,15 @@ export class Database {
 	 * @returns Whether the value was successfully set.
 	 * @throws {DatabaseError} If the data could not be cached.
 	 */
-	set(data: CachedQuery) {
-		return this.transact<boolean>("readwrite", (store, resolve) => {
-			const req = store.put(data);
+	set(data: CachedQuery): Oath<void, DatabaseError> {
+		return this.transact("readwrite", (store, resolve, reject) => {
+			const req = Oath.mapException(
+				() => store.put(data),
+				error => DatabaseError.new("objectStoreInsertInto", error)
+			);
 
-			req.onerror = e => {
-				throw DatabaseError.new("setError", e);
-			};
-
-			req.onsuccess = () => {
-				resolve(true);
-			};
+			req.onerror = event => reject(DatabaseError.new("objectStoreInsertInto", event));
+			req.onsuccess = () => resolve();
 		});
 	}
 }
@@ -269,56 +187,21 @@ export class Database {
 /** Errors which could occur while opening a new connection to the {@link IDBDatabase}. */
 class DatabaseError extends MessageBoxError {
 	private static readonly ERROR_MAP = {
-		// database open request
-		invalidDatabaseVersion: ["Requested database version is invalid.", TypeError],
-		connectionError: ["Could not connect to the local database.", Event],
-		upgradeBlocked: [
-			"Database attempted to upgrade, however other database connections are open.",
-			IDBVersionChangeEvent
-		],
+		databaseOpen: "Connection to the database could not be opened.",
 
-		// object store creation
-		invalidKeyPath: ["Invalid key path provided.", TypeError],
-		objectStoreAlreadyExists: [
-			"Attempted to create an object store with a name is already in use.",
-			DOMException
-		],
-		autoIncrementAndKeyPathProvided: [
-			"Both 'autoIncrement' and 'keyPath' options cannot be provided. Choose one to be used.",
-			DOMException
-		],
-		creationFromNonUpgrade: [
-			"Attempted to create a new object store outside of an upgrade event.",
-			DOMException
-		],
-		inactiveTransaction: ["Upgrade transaction is not in an active state.", DOMException],
+		objectStoreCreate: "Object store could not be created.",
+		objectStoreGet: "Object store could not be found.",
+		objectStoreGetFrom: "Data could not be retrieved from object store.",
+		objectStoreInsertInto: "Data could not be inserted into object store.",
 
-		// transaction open
-		invalidMode: ["Transaction 'mode' is invalid.", TypeError],
-		databaseClosed: ["This connection to the database has been closed.", DOMException],
-		nonExistentObjectStore: ["One or more requested object stores do not exist.", DOMException],
-		missingObjectStore: ["No object stores requested in this transaction.", DOMException],
+		transactionOpen: "Transaction could not be opened.",
+		transactionCommit: "Transaction could not be committed."
+	} as const satisfies Record<string, string>;
 
-		// object store fetch
-		objectStoreOutOfScope: [
-			"Attempted to access an object store out scope of it's transaction.",
-			DOMException
-		],
-		couldNotAccessObjectStore: ["Could not access requested object store.", DOMException],
-
-		// transaction commit
-		transactionAlreadyClosed: ["Transaction has already been closed.", DOMException],
-
-		// generic
-		getError: ["Could not retrieve data from the database.", Event],
-		setError: ["Could to insert data into the database.", Event],
-		unknownError: ["An unknown database error has occurred.", Error]
-	} as const satisfies Record<string, [string, Constructor<unknown>]>;
-
-	static new<Key extends keyof typeof DatabaseError.ERROR_MAP>(
-		error: Key,
-		cause: InstanceType<(typeof DatabaseError.ERROR_MAP)[Key][1]>
-	) {
-		return new DatabaseError(DatabaseError.ERROR_MAP[error][0], { cause });
+	static new<Key extends keyof typeof DatabaseError.ERROR_MAP>(stage: Key, cause: unknown) {
+		const message = DatabaseError.ERROR_MAP[stage];
+		return new DatabaseError(message, { cause });
 	}
 }
+
+console.log(DatabaseError);
