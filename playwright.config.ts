@@ -7,7 +7,7 @@ export default defineConfig({
 	// application setup
 	use: {
 		baseURL: "http://localhost:2357/merge",
-		trace: "on-first-retry"
+		trace: process.env.CI ? "on-first-retry" : "on"
 	},
 	webServer: {
 		command: "yarn merge build && yarn merge deploy && serve -l 2357",

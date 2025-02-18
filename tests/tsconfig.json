@@ -2,8 +2,11 @@
   "extends": "../tsconfig.json",
   "compilerOptions": {
     "noEmit": true,
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@/*": ["../src/scripts/*"]
+    }
   },
   "exclude": ["../src/**/*"],
-  "include": ["./**/*.test.ts"]
+  "include": ["./**/*.test.ts", "./**/*.mock.ts"]
 }

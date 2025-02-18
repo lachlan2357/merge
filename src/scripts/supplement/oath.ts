@@ -3,10 +3,12 @@ export type Constructor<T> = new (...data: any[]) => T;
 
 type OathResolveFunction<T> = (value: T | Promise<T>) => void;
 type OathRejectFunction<E> = (value: E) => void;
+type OathChuckFunction = (value: unknown) => void;
 type OathFunction<T, E> = (
 	this: void,
 	resolve: OathResolveFunction<T>,
-	reject: OathRejectFunction<E>
+	reject: OathRejectFunction<E>,
+	chuck: OathChuckFunction
 ) => void;
 type OathFunctionSync<T> = (this: void) => T;
 type OathFunctionAsync<T> = (this: void) => Promise<T>;
@@ -88,29 +90,19 @@ export class Oath<T, E extends Error> {
 	 * @returns A new {@link Oath} with the successful result mapped.
 	 */
 	map<U>(fn: OathMapFn<T, U, E>): Oath<U, E> {
-		return new Oath<U, E>(this.ErrorConstructor, (resolve, reject) => {
-			this.run()
-				.then(([value, error]) => {
-					if (error !== OATH_NULL) throw error;
-					else if (value === OATH_NULL) throw OathError.noValueNorError();
-					else {
-						const newValue = fn(value);
-						if (newValue instanceof Oath) return newValue.run();
-						else resolve(newValue);
-					}
-				})
-				.then(awaited => {
-					if (awaited === undefined) return;
-
-					const [value, error] = awaited;
-					if (error !== OATH_NULL) throw error;
-					else if (value !== OATH_NULL) resolve(value);
+		return Oath.fromAsync(this.ErrorConstructor, async () => {
+			const [value, error] = await this.run();
+			if (error !== OATH_NULL) throw error;
+			else if (value === OATH_NULL) throw OathError.noValueNorError();
+			else {
+				const newValue = fn(value);
+				if (newValue instanceof Oath) {
+					const [nestedValue, nestedError] = await newValue.run();
+					if (nestedError !== OATH_NULL) throw nestedError;
+					else if (nestedValue !== OATH_NULL) return nestedValue;
 					else throw OathError.noValueNorError();
-				})
-				.catch(e => {
-					if (e instanceof this.ErrorConstructor) reject(e);
-					else throw e;
-				});
+				} else return newValue;
+			}
 		});
 	}
 
@@ -126,17 +118,11 @@ export class Oath<T, E extends Error> {
 	 * @returns A new {@link Oath} with the error result mapped.
 	 */
 	mapError<F extends Error>(error: Constructor<F>, fn: OathMapErrorFn<E, F>): Oath<T, F> {
-		return new Oath<T, F>(error, (resolve, reject) => {
-			this.run()
-				.then(([value, error]) => {
-					if (value !== OATH_NULL) resolve(value);
-					else if (error === OATH_NULL) throw OathError.noValueNorError();
-					else throw fn(error) ?? error;
-				})
-				.catch(e => {
-					if (e instanceof error) reject(e);
-					else throw e;
-				});
+		return Oath.fromAsync(error, async () => {
+			const [value, oldError] = await this.run();
+			if (oldError !== OATH_NULL) throw fn(oldError) ?? oldError;
+			else if (value !== OATH_NULL) return value;
+			else throw OathError.noValueNorError();
 		});
 	}
 
@@ -146,13 +132,37 @@ export class Oath<T, E extends Error> {
 	 * @returns The result of this {@link Oath} - either a successful or error result.
 	 */
 	async run(): Promise<OathResult<T, E>> {
-		try {
-			const result = await new Promise<T>(this.oathFn);
-			return [result, OATH_NULL];
-		} catch (e) {
-			if (e instanceof this.ErrorConstructor) return [OATH_NULL, e];
-			else throw e;
-		}
+		return new Promise((resolve, reject) => {
+			const oathResolve: OathResolveFunction<T> = data => {
+				if (data instanceof Promise) {
+					data.then(awaitedData => {
+						resolve([awaitedData, OATH_NULL]);
+					}).catch(error => {
+						if (error instanceof this.ErrorConstructor) {
+							oathReject(error);
+						} else {
+							oathChuck(error);
+						}
+					});
+				} else resolve([data, OATH_NULL]);
+			};
+
+			const oathReject: OathRejectFunction<E> = error => {
+				resolve([OATH_NULL, error]);
+			};
+
+			const oathChuck: OathChuckFunction = error => {
+				// eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
+				reject(error);
+			};
+
+			try {
+				this.oathFn(oathResolve, oathReject, reject);
+			} catch (error) {
+				if (error instanceof this.ErrorConstructor) oathReject(error);
+				else oathChuck(error);
+			}
+		});
 	}
 
 	/**
@@ -168,12 +178,14 @@ export class Oath<T, E extends Error> {
 	 * @returns The new {@link Oath}.
 	 */
 	static fromAsync<T, E extends Error>(error: Constructor<E>, fn: OathFunctionAsync<T>) {
-		return new Oath<T, E>(error, (resolve, reject) => {
+		return new Oath<T, E>(error, (resolve, reject, chuck) => {
 			fn()
-				.then(data => resolve(data))
+				.then(data => {
+					resolve(data);
+				})
 				.catch(e => {
 					if (e instanceof error) reject(e);
-					else throw e;
+					else chuck(e);
 				});
 		});
 	}
