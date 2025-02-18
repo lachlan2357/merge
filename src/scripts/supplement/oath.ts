@@ -72,6 +72,22 @@ export class Oath<T, E extends Error> {
 	 * requires calling `resolve(...)` to return from the function. To instead use the modern
 	 * async/await syntax, see {@link Oath.fromAsync()}.
 	 *
+	 * Instead of two callbacks like a {@link Promise} has with typed `resolve(...)` and untyped
+	 * `reject(...)`, an {@link Oath} callback executor has three.
+	 *
+	 * - `resolve(...)` should be called when returning a successful value result. This is similar to
+	 *   {@link Promise Promise's} `resolve(...)`.
+	 * - `reject(...)` should be called when an expected error occurs to return the error as a value.
+	 *   Note this is different from {@link Promise Promise's} `reject(...)` which is used for any
+	 *   errors.
+	 * - `chuck(...)` should be called when an unexpected error occurs. This method shares behaviour
+	 *   with {@link Promise Promise's} `reject(...)` as it will throw the error.
+	 *
+	 * Be wary of using the callback syntax with nested {@link Promise Promises} as a `throw` from a
+	 * nested {@link Promise} will reject that promise, but not any parent promises. This can be
+	 * avoided by ensuring no nested {@link Promise Promises} ever throw an exception, instead
+	 * calling the {@link OathChuckFunction} (`chuck(...)`) instead.
+	 *
 	 * @param error The type of error to treat as an expected error.
 	 * @param fn The function to run to evaluate the {@link Oath}.
 	 */
