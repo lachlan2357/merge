@@ -12,7 +12,7 @@ test.describe("simple oath", () => {
 			expect(error, "error not present").toBe(OATH_NULL);
 		});
 
-		test("return an expected error", async () => {
+		test("reject an expected error", async () => {
 			const syntaxError = new SyntaxError("Something expected went wrong.");
 			const [value, error] = await new Oath<string, SyntaxError>(SyntaxError, ({ reject }) =>
 				reject(syntaxError)
