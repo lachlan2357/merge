@@ -62,7 +62,7 @@ export class Database {
 	 * @throws {DatabaseError} If a connection to the database could not be retrieved.
 	 */
 	static connect(): Oath<Database, DatabaseError> {
-		return new Oath(DatabaseError, (resolve, reject) => {
+		return new Oath(DatabaseError, ({ resolve, reject }) => {
 			const request = Oath.mapException(
 				() => window.indexedDB.open(Database.DB_NAME, Database.DB_VERSION),
 				error => DatabaseError.new("databaseOpen", error)

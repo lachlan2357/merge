@@ -1,9 +1,102 @@
 import { Oath, OATH_NULL } from "@/supplement/oath.ts";
 import { expect, test } from "@playwright/test";
 
+test.describe("simple oath", () => {
+	test.describe("callback syntax", () => {
+		test("return a value", async () => {
+			const [value, error] = await new Oath<string, Error>(Error, ({ resolve }) =>
+				resolve("Hello, World!")
+			).run();
+
+			expect(value, "value correct").toBe("Hello, World!");
+			expect(error, "error not present").toBe(OATH_NULL);
+		});
+
+		test("return an expected error", async () => {
+			const syntaxError = new SyntaxError("Something expected went wrong.");
+			const [value, error] = await new Oath<string, SyntaxError>(SyntaxError, ({ reject }) =>
+				reject(syntaxError)
+			).run();
+
+			expect(value, "no value returned").toBe(OATH_NULL);
+			expect(error, "error correct").toBe(syntaxError);
+		});
+
+		test("throw an expected error", async () => {
+			const syntaxError = new SyntaxError("Something expected went wrong.");
+			const [value, error] = await new Oath<string, SyntaxError>(SyntaxError, () => {
+				throw syntaxError;
+			}).run();
+
+			expect(value, "no value returned").toBe(OATH_NULL);
+			expect(error, "error correct").toBe(syntaxError);
+		});
+
+		test("chuck an unexpected error", async () => {
+			const rangeError = new RangeError("Something unexpected happened.");
+			const oath = new Oath<string, SyntaxError>(SyntaxError, ({ chuck }) =>
+				chuck(rangeError)
+			);
+
+			await expect(oath.run()).rejects.toThrow(rangeError);
+		});
+
+		test("throw an unexpected error", async () => {
+			const rangeError = new RangeError("Something unexpected happened.");
+			const oath = new Oath<string, SyntaxError>(SyntaxError, () => {
+				throw rangeError;
+			});
+
+			await expect(oath.run()).rejects.toThrow(rangeError);
+		});
+	});
+
+	test.describe("async/await syntax", () => {
+		test("return a value", async () => {
+			const [value, error] = await Oath.fromAsync<string, Error>(
+				Error,
+				// eslint-disable-next-line @typescript-eslint/require-await
+				async () => "Hello, World!"
+			).run();
+
+			expect(value, "value correct").toBe("Hello, World!");
+			expect(error, "error not present").toBe(OATH_NULL);
+		});
+
+		test("throw an expected error", async () => {
+			const syntaxError = new SyntaxError("Something expected went wrong.");
+			const [value, error] = await Oath.fromAsync<string, SyntaxError>(
+				SyntaxError,
+				// eslint-disable-next-line @typescript-eslint/require-await
+				async () => {
+					throw syntaxError;
+				}
+			).run();
+
+			expect(value, "no value returned").toBe(OATH_NULL);
+			expect(error, "error correct").toBe(syntaxError);
+		});
+
+		test("throw an unexpected error", async () => {
+			const rangeError = new RangeError("Something unexpected happened.");
+			const oath = Oath.fromAsync<string, SyntaxError>(
+				SyntaxError,
+				// eslint-disable-next-line @typescript-eslint/require-await
+				async () => {
+					throw rangeError;
+				}
+			);
+
+			await expect(oath.run()).rejects.toThrow(rangeError);
+		});
+	});
+});
+
 test.describe("various mappings", () => {
 	test("basic map", async () => {
-		const [value, error] = await new Oath<string, Error>(Error, resolve => resolve("Hello"))
+		const [value, error] = await new Oath<string, Error>(Error, ({ resolve }) =>
+			resolve("Hello")
+		)
 			.map(hello => `${hello}, World!`)
 			.map(helloWorld => `${helloWorld} Today is a good day!`)
 			.run();
@@ -13,7 +106,7 @@ test.describe("various mappings", () => {
 	});
 
 	test("map until error", async () => {
-		const [value, error] = await new Oath<string, TypeError>(TypeError, resolve =>
+		const [value, error] = await new Oath<string, TypeError>(TypeError, ({ resolve }) =>
 			resolve("Hello")
 		)
 			.map(hello => `${hello}, World!`)
@@ -109,5 +202,14 @@ test.describe("expected vs unexpected errors", () => {
 		expect(error, "error correct type").toBeInstanceOf(SyntaxError);
 		expect(error, "error correct message").toHaveProperty("message", "Again unexpected.");
 		expect(error, "error correct cause").toHaveProperty("cause", cause);
+	});
+
+	test("value type of OATH_NULL should not throw", async () => {
+		const [value, error] = await new Oath<typeof OATH_NULL, Error>(Error, ({ resolve }) =>
+			resolve(OATH_NULL)
+		).run();
+
+		expect(value).toBe(OATH_NULL);
+		expect(error).toBe(OATH_NULL);
 	});
 });

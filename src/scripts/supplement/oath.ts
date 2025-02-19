@@ -1,15 +1,14 @@
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Constructor<T> = new (...data: any[]) => T;
+export type Constructor<T> = new (...data: never[]) => T;
 
 type OathResolveFunction<T> = (value: T | Promise<T>) => void;
 type OathRejectFunction<E> = (value: E) => void;
 type OathChuckFunction = (value: unknown) => void;
-type OathFunction<T, E> = (
-	this: void,
-	resolve: OathResolveFunction<T>,
-	reject: OathRejectFunction<E>,
-	chuck: OathChuckFunction
-) => void;
+type OathResolvers<T, E> = {
+	resolve: OathResolveFunction<T>;
+	reject: OathRejectFunction<E>;
+	chuck: OathChuckFunction;
+};
+type OathFunction<T, E> = (this: void, resolvers: OathResolvers<T, E>) => void;
 type OathFunctionSync<T> = (this: void) => T;
 type OathFunctionAsync<T> = (this: void) => Promise<T>;
 
@@ -21,6 +20,23 @@ type OathMapErrorFn<E, F> = (old: E) => F | undefined;
 
 /**
  * Alternative to a bare {@link Promise} for handling asynchronous functions.
+ *
+ * The premise of {@link Oath} is to provide an experience similar to a bare {@link Promise} except
+ * with expected errors being typed and returned as a value instead of thrown. When
+ * {@link run() running} an {@link Oath}, there are three outcomes, each of which can be triggered
+ * using callback syntax using `resolve(...)`, `reject(...)` and `chuck(...)` respectively, and
+ * triggered using async/await syntax by either returning a value (equivalent to `resolve(...)`) or
+ * throwing an error (equivalent to `reject(...)` and `chuck(...)` with the error being
+ * automatically sorted).
+ *
+ * - If the oath completes successfully, the value will be returned in a tuple `[value, OATH_NULL]`.
+ * - If the oath completes unsuccessfully due to an expected error, or an expected error is thrown
+ *   during execution, the error will be returned in a tuple `[OATH_NULL, error]`.
+ * - If the oath completes unsuccessfully due to an unexpected error, or an unexpected error is thrown
+ *   during execution, the exception will not be caught and will have to be dealt with by the
+ *   calling function.
+ *
+ * ## Comparison to {@link Promise}
  *
  * {@link Oath} provides key advantages over using a {@link Promise}.
  *
@@ -41,6 +57,62 @@ type OathMapErrorFn<E, F> = (old: E) => F | undefined;
  *
  * - If any error returned by a {@link Oath} will be immediately thrown, there is little purpose in
  *   using an {@link Oath} as this behaviour is given as default with a {@link Promise}.
+ *
+ * ## Potential Pitfalls
+ *
+ * ### TypeScript Duck-Typing Issues
+ *
+ * Because of TypeScript's duck-typing, some built-in {@link Error} types are treated as all being
+ * equal in TypeScript but not equal in JavaScript. For example, {@link SyntaxError} and
+ * {@link TypeError} are both defined as interfaces in TypeScript, leading to the ability to use them
+ * interchangeably at the type level.
+ *
+ * So this is valid TypeScript.
+ *
+ * ```js
+ * const syntaxError: SyntaxError = new TypeError();`
+ * ```
+ *
+ * However in JavaScript you get a different story.
+ *
+ * ```js
+ * assert(syntaxError instanceof SyntaxError); // false
+ * ```
+ *
+ * This can lead to situations where TypeScript does not pick up that a returned value in, for
+ * example, {@link mapError} is not the same as the declared expected value.
+ *
+ * ### Using {@link OATH_NULL} as the success type
+ *
+ * Executing an {@link Oath} returns an {@link OathResult} with either the first or second item set,
+ * corresponding to a value or an error, respectively. Checking for one automatically allows the
+ * second to be inferred.
+ *
+ * ```js
+ * const [value, error] = await new Oath<string, Error>(Error, () => {...});
+ * if (error !== OATH_NULL) return error;
+ * assert(typeof value === "string"); // true
+ * ```
+ *
+ * To allow all regular values to be used as possible value returns, the symbol {@link OATH_NULL} is
+ * used to designate a missing value. With regular use, this will not invisible (except for checking
+ * a value/error's equality to this special null value), however it is discouraged to use
+ * {@link OATH_NULL} as the type for either the value or error as this can cause some potentially
+ * unexpected and unpredictable behaviour. Using chained methods (e.g., {@link map()}) on an
+ * {@link Oath} with a successful value returned as {@link OATH_NULL} will throw a {@link OathError} as
+ * determining whether it was successful or not is impossible.
+ *
+ * ```js
+ * const [value, error] = await new Oath<typeof OATH_NULL, Error>(Error, resolve => resolve(OATH_NULL));
+ * if (value === OATH_NULL) {
+ *     // this will always be run, even if there is no error and a 'successful' result is hit
+ *     // this also means type narrowing for `error` cannot be used
+ *     assert(error instanceof Error) // not always true
+ * }
+ * ```
+ *
+ * There is currently no effective mechanism in TypeScript to concretely disallow this, so for now,
+ * it is syntactically valid but practically dubious.
  */
 export class Oath<T, E extends Error> {
 	/**
@@ -107,18 +179,20 @@ export class Oath<T, E extends Error> {
 	 */
 	map<U>(fn: OathMapFn<T, U, E>): Oath<U, E> {
 		return Oath.fromAsync(this.ErrorConstructor, async () => {
+			// fetch value, re-throwing errors
 			const [value, error] = await this.run();
 			if (error !== OATH_NULL) throw error;
-			else if (value === OATH_NULL) throw OathError.noValueNorError();
-			else {
-				const newValue = fn(value);
-				if (newValue instanceof Oath) {
-					const [nestedValue, nestedError] = await newValue.run();
-					if (nestedError !== OATH_NULL) throw nestedError;
-					else if (nestedValue !== OATH_NULL) return nestedValue;
-					else throw OathError.noValueNorError();
-				} else return newValue;
-			}
+			if (value === OATH_NULL) throw OathError.noValueNorError();
+
+			// convert value, returning if not a promise
+			const newValue = fn(value);
+			if (!(newValue instanceof Oath)) return newValue;
+
+			// await the promise, handling the result
+			const [nestedValue, nestedError] = await newValue.run();
+			if (nestedError !== OATH_NULL) throw nestedError;
+			if (nestedValue !== OATH_NULL) return nestedValue;
+			else throw OathError.noValueNorError();
 		});
 	}
 
@@ -149,34 +223,27 @@ export class Oath<T, E extends Error> {
 	 */
 	async run(): Promise<OathResult<T, E>> {
 		return new Promise((resolve, reject) => {
-			const oathResolve: OathResolveFunction<T> = data => {
-				if (data instanceof Promise) {
-					data.then(awaitedData => {
-						resolve([awaitedData, OATH_NULL]);
-					}).catch(error => {
-						if (error instanceof this.ErrorConstructor) {
-							oathReject(error);
-						} else {
-							oathChuck(error);
-						}
-					});
-				} else resolve([data, OATH_NULL]);
-			};
-
-			const oathReject: OathRejectFunction<E> = error => {
-				resolve([OATH_NULL, error]);
-			};
-
-			const oathChuck: OathChuckFunction = error => {
+			const resolvers: OathResolvers<T, E> = {
+				resolve: data => {
+					if (data instanceof Promise) {
+						data.then(awaitedData => {
+							resolve([awaitedData, OATH_NULL]);
+						}).catch(error => {
+							if (error instanceof this.ErrorConstructor) resolvers.reject(error);
+							else resolvers.chuck(error);
+						});
+					} else resolve([data, OATH_NULL]);
+				},
+				reject: error => resolve([OATH_NULL, error]),
 				// eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
-				reject(error);
+				chuck: error => reject(error)
 			};
 
 			try {
-				this.oathFn(oathResolve, oathReject, reject);
+				this.oathFn(resolvers);
 			} catch (error) {
-				if (error instanceof this.ErrorConstructor) oathReject(error);
-				else oathChuck(error);
+				if (error instanceof this.ErrorConstructor) resolvers.reject(error);
+				else resolvers.chuck(error);
 			}
 		});
 	}
@@ -194,7 +261,7 @@ export class Oath<T, E extends Error> {
 	 * @returns The new {@link Oath}.
 	 */
 	static fromAsync<T, E extends Error>(error: Constructor<E>, fn: OathFunctionAsync<T>) {
-		return new Oath<T, E>(error, (resolve, reject, chuck) => {
+		return new Oath<T, E>(error, ({ resolve, reject, chuck }) => {
 			fn()
 				.then(data => {
 					resolve(data);
@@ -206,6 +273,18 @@ export class Oath<T, E extends Error> {
 		});
 	}
 
+	/**
+	 * Execute a {@link fn} as if it were an {@link OathFunction} but synchronously.
+	 *
+	 * Sometimes, an synchronous function is required however the benefits of {@link Oath} are
+	 * desired. In this case, calling {@link sync} may be of use. This method provides no flow
+	 * control as that can be done synchronously inside {@link fn}.
+	 *
+	 * @param error The type of error to treat as an expected error.
+	 * @param fn The synchronous function to run to evaluate to an {@link OathResult}.
+	 * @returns The evaluated {@link OathResult}.
+	 * @throws {unknown} If an unexpected exception was thrown in {@link fn}.
+	 */
 	static sync<T, E extends Error>(
 		error: Constructor<E>,
 		fn: OathFunctionSync<T>
@@ -221,18 +300,20 @@ export class Oath<T, E extends Error> {
 	/**
 	 * Execute a function, mapping any exceptions thrown.
 	 *
+	 * The {@link mapFn} is not required to be exhaustive. In cases where it returns a mapped value,
+	 * that value will be thrown, else the original error will be re-thrown.
+	 *
 	 * @param fn The function to execute.
-	 * @param catchFn The mapping function to attempt to convert the thrown error.
-	 * @returns The value returned by {@link fn}.
-	 * @throws {E} If an exception was thrown during execution of {@link fn}.
+	 * @param mapFn The mapping function to attempt to convert the thrown error.
+	 * @returns The value returned by {@link fn} if no exceptions were thrown.
+	 * @throws {E} If the error could be successfully mapped.
+	 * @throws {unknown} If the error could not be successfully mapped.
 	 */
-	static mapException<T, E extends Error>(fn: () => T, catchFn: (error: unknown) => E | void) {
+	static mapException<T, E extends Error>(fn: () => T, mapFn: (error: unknown) => E | void) {
 		try {
 			return fn();
 		} catch (error) {
-			const newError = catchFn(error);
-			if (newError !== undefined) throw newError;
-			else throw error;
+			throw mapFn(error) ?? error;
 		}
 	}
 }
