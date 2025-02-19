@@ -4,9 +4,10 @@
     "noEmit": true,
     "allowImportingTsExtensions": true,
     "paths": {
-      "@/*": ["../src/scripts/*"]
+      "@/*": ["../src/scripts/*"],
+      "lib/*": ["./_lib/*"]
     }
   },
   "exclude": ["../src/**/*"],
-  "include": ["./**/*.spec.ts", "./**/*.test.ts", "./**/*.mock.ts"]
+  "include": ["./**/*.spec.ts", "./**/*.test.ts", "./**/*.mock.ts", "./_lib/**/*.ts"]
 }

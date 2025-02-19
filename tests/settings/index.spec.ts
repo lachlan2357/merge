@@ -1,5 +1,8 @@
-import { test, expect } from "@playwright/test";
-import * as lib from "../lib.ts";
+import { test, expect as baseExpect } from "@playwright/test";
+import * as lib from "lib/index.ts";
+import { localStorageExtensions } from "lib/extensions.ts";
+
+const expect = baseExpect.extend(localStorageExtensions);
 
 test.afterEach(async ({ page }) => {
 	await lib.clearLocalStorage(page);
@@ -11,20 +14,38 @@ test.describe("colour scheme agnostic", () => {
 	});
 
 	test("check localstorage set properly", async ({ page }) => {
-		const ls = await page.evaluate(() => localStorage);
-		const endpoint = new URL("https://overpass-api.de/api/interpreter").toString();
+		const defaultEndpoint = new URL("https://overpass-api.de/api/interpreter");
 
-		expect.soft(ls["left-hand-traffic"], "left-hand-traffic should be false").toBe("false");
-		expect.soft(ls["overpass-endpoint"], "overpass-endpoint should be default").toBe(endpoint);
-		expect.soft(ls["first-launch"], "first-launch should be true").toBe("true");
-		expect.soft(ls["ignore-cache"], "ignore-cache should not be saved").toBe(undefined);
+		await expect
+			.soft(page, "left-hand-traffic should be false")
+			.toHaveLocalStorageValue("left-hand-traffic", false);
+		await expect
+			.soft(page, "overpass-endpoint should be default")
+			.toHaveLocalStorageValue("overpass-endpoint", defaultEndpoint);
+		await expect
+			.soft(page, "first-launch should be true")
+			.toHaveLocalStorageValue("first-launch", true);
+		await expect
+			.soft(page, "ignore-cache should not be saved")
+			.toHaveLocalStorageValue("ignore-cache", undefined);
+	});
+
+	test("first launch unset after popup dismissal", async ({ page }) => {
+		// check pre-close
+		await expect
+			.soft(page, "first launch should be set before popup dismissal")
+			.toHaveLocalStorageValue("first-launch", true);
+
+		// check after popup closed
+		await page.locator("#popup-close").click();
+		await expect
+			.soft(page, "first-launch should be cleared after popup dismissal")
+			.toHaveLocalStorageValue("first-launch", false);
 	});
 
 	test("check settings menu and storage are in-sync", async ({ page }) => {
-		// close welcome popup
+		// close welcome popup and open settings popup
 		await page.locator("#popup-close").click();
-
-		// open settings popup
 		await page.locator("#settings").click();
 
 		// find all `<popup-container>`s
@@ -71,8 +92,12 @@ test.describe("light mode ui", () => {
 	});
 
 	test("light mode detection on load", async ({ page }) => {
-		const ls = await lib.getLocalStorage(page);
-		expect.soft(ls["dark-mode"], "should detect as light mode").toBe("false");
+		await expect
+			.soft(page, "should detect as light mode")
+			.toHaveLocalStorageValue("dark-mode", false);
+
+		const html = page.locator("html");
+		await expect.soft(html).toHaveAttribute("data-dark-mode", "false");
 	});
 });
 
@@ -83,7 +108,11 @@ test.describe("dark mode ui", () => {
 	});
 
 	test("dark mode detection on load", async ({ page }) => {
-		const ls = await lib.getLocalStorage(page);
-		expect.soft(ls["dark-mode"], "should detect as dark mode").toBe("true");
+		await expect
+			.soft(page, "should detect as dark mode")
+			.toHaveLocalStorageValue("dark-mode", true);
+
+		const html = page.locator("html");
+		await expect.soft(html).toHaveAttribute("data-dark-mode", "true");
 	});
 });
