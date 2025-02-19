@@ -5,6 +5,9 @@ import { createCustomElement, getElement } from "../supplement/elements.js";
 /** The {@link HTMLDialogElement} to render the popup in. */
 export const POPUP_DIALOG = getElement("popup", HTMLDialogElement);
 
+/** Event signature for running a function when the popup is closed. */
+type PopupCloseEvent = (event: HTMLElementEventMap["close"]) => void;
+
 /** Define a popup window to be displayed. */
 export abstract class Popup {
 	/** The title of the popup, to be displayed at the top of the window. */
@@ -24,8 +27,12 @@ export abstract class Popup {
 	 */
 	abstract build(): Array<HTMLElement>;
 
-	/** Display this popup window in the {@link POPUP_DIALOG}. */
-	display() {
+	/**
+	 * Display this popup window in the {@link POPUP_DIALOG}.
+	 *
+	 * @param onClose An optional event to run when the {@link HTMLDialogElement} closes.
+	 */
+	display(onClose?: PopupCloseEvent) {
 		// purge all existing children
 		while (POPUP_DIALOG.lastChild !== null) POPUP_DIALOG.lastChild.remove();
 
@@ -56,6 +63,9 @@ export abstract class Popup {
 		POPUP_DIALOG.append(header, main);
 		POPUP_DIALOG.showModal();
 		POPUP_DIALOG.scrollTop = 0;
+
+		// add event listeners
+		if (onClose !== undefined) POPUP_DIALOG.addEventListener("close", onClose, { once: true });
 	}
 
 	/** Close the popup dialog. */

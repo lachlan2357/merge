@@ -15,6 +15,5 @@ new Effect(() => (window.location.hash = `#${State.currentRelationId.get()}`));
 
 // first time popup
 if (Settings.get("firstLaunch")) {
-	WELCOME_POPUP.display();
-	Settings.set("firstLaunch", false);
+	WELCOME_POPUP.display(() => Settings.set("firstLaunch", false));
 }
