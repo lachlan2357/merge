@@ -8,5 +8,5 @@
     }
   },
   "exclude": ["../src/**/*"],
-  "include": ["./**/*.test.ts", "./**/*.mock.ts"]
+  "include": ["./**/*.spec.ts", "./**/*.test.ts", "./**/*.mock.ts"]
 }

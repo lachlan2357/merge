@@ -43,7 +43,7 @@ const customConfig = {
 		}
 	},
 
-	ignores: ["**/*.js", "**/*.mjs", "**/*.cjs"]
+	ignores: ["**/*.js", "**/*.mjs", "**/*.cjs", "*.config.ts"]
 };
 
 const config = [
