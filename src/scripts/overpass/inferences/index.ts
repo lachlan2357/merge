@@ -5,11 +5,11 @@ import {
 	OsmString,
 	OsmUnsignedInteger
 } from "../osm-values.js";
-import { MergeWayTag, MergeWayTags, MergeWayTagsIn } from "../structures-processed.js";
-import { TagWarning, WarningMap } from "../warnings.js";
+import type { MergeWayTag, MergeWayTags, MergeWayTagsIn } from "../structures-processed.js";
+import { TagWarning, type WarningMap } from "../warnings.js";
 import { InferenceCollection } from "./collection.js";
 import { InferenceBuilder } from "./builder.js";
-import { InferenceGraph, Nodes } from "./graph.js";
+import { InferenceGraph, type Nodes } from "./graph.js";
 
 /**
  * Perform all available {@link allInferences inferences} on {@link tags}.

@@ -12,7 +12,12 @@
 
     /* build options */
     "outDir": "./dist/scripts",
+
+    /* swc compatibility */
+    "isolatedModules": true,
     "esModuleInterop": true,
+    "verbatimModuleSyntax": true,
+    "useDefineForClassFields": true,
 
     /* strictness */
     "forceConsistentCasingInFileNames": true,

@@ -1,5 +1,5 @@
-import { MergeWayTag, MergeWayTagIn, MergeWayTagsIn } from "../structures-processed.js";
-import { UnknownInference } from "./builder.js";
+import type { MergeWayTag, MergeWayTagIn, MergeWayTagsIn } from "../structures-processed.js";
+import type { UnknownInference } from "./builder.js";
 
 /** Type of nodes to store in the {@link InferenceGraph}. */
 export type Nodes = Array<UnknownInference<MergeWayTag>>;

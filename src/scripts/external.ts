@@ -60,7 +60,6 @@ export const way = {
 export const relation = {
 	/** Open the currently loaded relation in OpenStreetMap. */
 	iD() {
-		console.log("id-ing");
 		const relationId = State.currentRelationId.get();
 		if (relationId === undefined) return;
 

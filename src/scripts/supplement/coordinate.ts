@@ -1,5 +1,5 @@
 import { State } from "../state/index.js";
-import { OverpassNode } from "../overpass/structures.js";
+import type { OverpassNode } from "../overpass/structures.js";
 
 /**
  * Allow a {@link Coordinate} to perform math functions with a specific {@link Coordinate} variant.

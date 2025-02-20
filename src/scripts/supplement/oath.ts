@@ -1,4 +1,4 @@
-import { Constructor } from "./index.js";
+import type { Constructor } from "./index.js";
 
 /**
  * Resolver methods available during the execution of an {@link Oath}.

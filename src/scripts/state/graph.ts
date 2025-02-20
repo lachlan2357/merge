@@ -1,5 +1,5 @@
 import { MessageBoxError } from "../messages.js";
-import { Compute, Store, Computed, Effect } from "./index.js";
+import { type Compute, Store, Computed, Effect } from "./index.js";
 
 /**
  * The type that this graph recognises as a dependency.

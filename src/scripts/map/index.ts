@@ -1,5 +1,11 @@
 import { laneLength, metresToPixels } from "../conversions.js";
-import { DrawnElement, drawArrow, drawLine, drawPolygon, getSurfaceColour } from "../drawing.js";
+import {
+	type DrawnElement,
+	drawArrow,
+	drawLine,
+	drawPolygon,
+	getSurfaceColour
+} from "../drawing.js";
 import * as Sidebar from "./sidebar.js";
 import * as Settings from "../settings/index.js";
 import { Effect, State } from "../state/index.js";

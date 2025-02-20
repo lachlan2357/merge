@@ -3,7 +3,12 @@ import { CANVAS } from "../map/index.js";
 import * as MessageBox from "../messages.js";
 import * as Settings from "../settings/index.js";
 import { State } from "../state/index.js";
-import { OverpassNode, OverpassRelation, OverpassResponse, OverpassWay } from "./structures.js";
+import type {
+	OverpassNode,
+	OverpassRelation,
+	OverpassResponse,
+	OverpassWay
+} from "./structures.js";
 import { process } from "./process.js";
 import { OATH_NULL } from "../supplement/oath.js";
 /**

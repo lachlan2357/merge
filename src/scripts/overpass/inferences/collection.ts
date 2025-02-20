@@ -1,13 +1,13 @@
 import { OsmMaybe, OsmValue } from "../osm-values.js";
-import {
+import type {
 	InferencesMade,
 	MergeWayTag,
 	MergeWayTags,
 	MergeWayTagsIn
 } from "../structures-processed.js";
 import { TagWarning } from "../warnings.js";
-import { UnknownInference } from "./builder.js";
-import { TransformFn, ValidationFn } from "./interfaces.js";
+import type { UnknownInference } from "./builder.js";
+import type { TransformFn, ValidationFn } from "./interfaces.js";
 
 /**
  * Define how a certain tag can be inferred.

@@ -1,4 +1,4 @@
-import { MergeWayTag, MergeWayTags } from "../structures-processed.js";
+import type { MergeWayTag, MergeWayTags } from "../structures-processed.js";
 import { TagWarning } from "../warnings.js";
 
 /** Function signature for transform functions. */

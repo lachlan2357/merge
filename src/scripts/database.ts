@@ -1,6 +1,6 @@
 import { MessageBoxError } from "./messages.js";
-import { OverpassResponse } from "./overpass/structures.js";
-import { Oath } from "./supplement/oath.js";
+import type { OverpassResponse } from "./overpass/structures.js";
+import { Oath, OATH_NULL } from "./supplement/oath.js";
 
 /** Structure of how a cached query is stored in the IndexedDB database. */
 type CachedQuery = {
@@ -133,7 +133,7 @@ export class Database {
 					error => DatabaseError.new("transactionCommit", error)
 				);
 			});
-			if (commitError !== null) console.warn(commitError);
+			if (commitError !== OATH_NULL) console.warn(commitError);
 			return data;
 		});
 	}
@@ -203,5 +203,3 @@ class DatabaseError extends MessageBoxError {
 		return new DatabaseError(message, { cause });
 	}
 }
-
-console.log(DatabaseError);

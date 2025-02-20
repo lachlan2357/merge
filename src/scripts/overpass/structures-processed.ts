@@ -6,9 +6,9 @@ import {
 	OsmString,
 	OsmUnsignedInteger,
 	OsmValue,
-	OsmInnerValue
+	type OsmInnerValue
 } from "./osm-values.js";
-import { OverpassNode, OverpassWay } from "./structures.js";
+import { type OverpassNode, type OverpassWay } from "./structures.js";
 
 /**
  * Representing a record of tag-values where each tag may be unset.

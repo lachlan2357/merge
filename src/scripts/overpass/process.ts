@@ -5,10 +5,10 @@ import {
 	OsmString,
 	OsmUnsignedInteger,
 	OsmValue,
-	OsmInnerValue
+	type OsmInnerValue
 } from "./osm-values.js";
-import { OverpassNode, OverpassWay, OverpassRelation } from "./structures.js";
-import {
+import type { OverpassNode, OverpassWay, OverpassRelation } from "./structures.js";
+import type {
 	MergeData,
 	MergePartial,
 	MergeWay,

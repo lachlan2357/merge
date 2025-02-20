@@ -1,5 +1,11 @@
-import { OsmInner, OsmMaybe, OsmValue, OsmValueForTag, OsmInnerValue } from "../osm-values.js";
 import {
+	type OsmInner,
+	OsmMaybe,
+	OsmValue,
+	type OsmValueForTag,
+	type OsmInnerValue
+} from "../osm-values.js";
+import type {
 	Certain,
 	MergeCertain,
 	MergeWayTag,
