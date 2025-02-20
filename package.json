@@ -18,7 +18,7 @@
     "doc": "typedoc",
     "check-all": "yarn check-ts && yarn lint && yarn knip && yarn format && yarn doc",
     "generate-icons": "realfavicon generate ./assets/merge.png favicon-settings.json favicon-output.json ./assets/icons",
-    "merge": "node cli/index.js"
+    "merge": "node --experimental-strip-types ./cli"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",

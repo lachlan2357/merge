@@ -1,4 +1,3 @@
-import { PROCESS_COMPLETE } from "./index.js";
 import { exec } from "child_process";
 import express from "express";
 import { readFileSync, rmSync, watch } from "fs";
@@ -18,7 +17,9 @@ const port = Object.freeze({
 const ws = new WebSocketServer({ port: port.websocket });
 
 /** Alert all websocket instances of the application to reload their page as updates have occurred. */
-const sendReload = () => ws.clients.forEach(client => client.send("reload"));
+function sendReload() {
+	ws.clients.forEach(client => client.send("reload"));
+}
 
 /** JavaScript code to inject into the HTML file in order for automatic reloading to function. */
 const jsInject = `
@@ -43,7 +44,11 @@ const PATHS = {
 	tsConfig: "./tsconfig.json"
 };
 
-/** Open a development server with automatic change-reloading. */
+/**
+ * Open a development server with automatic change-reloading.
+ *
+ * @returns A {@link Promise} that resolves when this function completes.
+ */
 export default async function () {
 	// start recompilation listeners, waiting for them to finish before starting server
 	const htmlStart = startHtmlListener();
@@ -94,20 +99,28 @@ export default async function () {
 	});
 
 	// host server
-	app.listen(port.server, () => {
+	const server = app.listen(port.server, () => {
 		console.log(`Listening on port ${port.server}.`);
 		console.log("Enter 'q' to exit");
 	});
 
 	// setup readline to detect keypresses of 'q' or 'ctrl + c' to quit
+	const { promise, resolve } = Promise.withResolvers<void>();
 	readline.emitKeypressEvents(process.stdin);
 	if (process.stdin.isTTY) process.stdin.setRawMode(true);
 
 	process.stdin.addListener("keypress", event => {
-		if (event === "q" || event === "\x03") throw PROCESS_COMPLETE;
+		if (event === "q" || event === "\x03") resolve();
 	});
+
+	return promise;
 }
 
+/**
+ * Start a listener to send an alert when any HTML files change.
+ *
+ * @returns A {@link Promise} that resolves when this listener is initialised.
+ */
 function startHtmlListener() {
 	const watcher = watch(PATHS.html, { recursive: true });
 	watcher.addListener("change", () => sendReload());
@@ -120,9 +133,14 @@ let scssInitialised = false;
 const scssWatching = /^Sass is watching for changes\. Press Ctrl-C to stop\.$/;
 const scssRecompiled = /\[[^\]]+\] Compiled .+?\.scss to (.+\.css)\./;
 
+/**
+ * Start a scss watch compiler and listener to send an alert when any SCSS files change.
+ *
+ * @returns A {@link Promise} that resolves when this listener is initialised.
+ */
 function startScssListener() {
 	// setup promise for initialisation
-	const { promise, resolve } = Promise.withResolvers();
+	const { promise, resolve } = Promise.withResolvers<void>();
 
 	// remove any previously compiled files from the directory
 	rmSync(PATHS.tempCss, { recursive: true, force: true });
@@ -151,13 +169,18 @@ function startScssListener() {
 
 let tscInitialised = false;
 
-const swcCompiled = /^Successfully compiled: (\d+) files with swc \([^\)]+\)$/;
+const swcCompiled = /^Successfully compiled: (\d+) files with swc \([^)]+\)$/;
 const swcCompileFailed = /^Failed to compile (\d+) files with swc.$/;
-const swcCompiledFile = /^Successfully compiled ([^ ]+) with swc \([^\)]+\)$/;
+const swcCompiledFile = /^Successfully compiled ([^ ]+) with swc \([^)]+\)$/;
 
+/**
+ * Start a watcher and listener to send an alert when any TypeScript files change.
+ *
+ * @returns A {@link Promise} that resolves when this listener is initialised.
+ */
 function startSwcListener() {
 	// setup promise for initialisation
-	const { promise, resolve } = Promise.withResolvers();
+	const { promise, resolve } = Promise.withResolvers<void>();
 
 	// remove any previously compiled files from the directory
 	rmSync(PATHS.tempJs, { recursive: true, force: true });
@@ -176,6 +199,7 @@ function startSwcListener() {
 	});
 
 	process.stderr.on("data", data => {
+		if (!tscInitialised) return;
 		if (typeof data !== "string") return;
 		const stderr = data.trim();
 
@@ -199,6 +223,11 @@ function startSwcListener() {
 	return promise;
 }
 
+/**
+ * Start a listener to send an alert when any asset files change.
+ *
+ * @returns A {@link Promise} that resolves when this listener is initialised.
+ */
 function startAssetListener() {
 	const watcher = watch(PATHS.assets, { recursive: true });
 	watcher.addListener("change", () => sendReload());
