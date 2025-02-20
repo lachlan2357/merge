@@ -3,6 +3,12 @@ import { Constructor } from "./index.js";
 /**
  * Resolver methods available during the execution of an {@link Oath}.
  *
+ * The three resolver methods are.
+ *
+ * - {@link resolve()}: to return a successful value.
+ * - {@link reject()}: to return an expected error.
+ * - {@link chuck()}: to throw an unexpected error.
+ *
  * @template T The success type of the {@link Oath}.
  * @template E The expected error type of the {@link Oath}.
  */
@@ -48,6 +54,9 @@ interface OathResolvers<T, E> {
  * It is imperative that all possible paths defined in this function must, at some point, either
  * call one of the available {@link resolvers} or throw an exception. In the event that neither of
  * these occur, the {@link Oath} will never complete.
+ *
+ * Throwing an exception will cause it to be classed as either 'expected' or 'unexpected' by the
+ * implementation of the function.
  *
  * @template T The success type of the {@link Oath}.
  * @template E The expected error type of the {@link Oath}.
