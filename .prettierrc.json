@@ -19,7 +19,7 @@
       }
     },
     {
-      "files": "*.json",
+      "files": ["*.json", ".swcrc"],
       "options": {
         "tabWidth": 2,
         "useTabs": false

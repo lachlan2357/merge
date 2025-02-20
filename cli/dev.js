@@ -6,33 +6,21 @@ import * as process from "process";
 import * as readline from "readline";
 import { WebSocketServer } from "ws";
 
-/**
- * Port declarations for the development server.
- */
+/** Port declarations for the development server. */
 const port = Object.freeze({
-	/**
-	 * The port the application will be hosted on, to visit in a browser.
-	 */
+	/** The port the application will be hosted on, to visit in a browser. */
 	server: 3000,
-	/**
-	 * The port the communication between server and application travel on.
-	 */
+	/** The port the communication between server and application travel on. */
 	websocket: 3001
 });
 
-/**
- * The websocket server used to communicate to the application to alert it when to reload.
- */
+/** The websocket server used to communicate to the application to alert it when to reload. */
 const ws = new WebSocketServer({ port: port.websocket });
 
-/**
- * Alert all websocket instances of the application to reload their page as updates have occurred.
- */
+/** Alert all websocket instances of the application to reload their page as updates have occurred. */
 const sendReload = () => ws.clients.forEach(client => client.send("reload"));
 
-/**
- * JavaScript code to inject into the HTML file in order for automatic reloading to function.
- */
+/** JavaScript code to inject into the HTML file in order for automatic reloading to function. */
 const jsInject = `
 	<script>
 		const ws = new WebSocket("ws://localhost:${port.websocket}");
@@ -41,11 +29,9 @@ const jsInject = `
 			if (message === "reload") window.location.reload();
 		});
 	</script>
-</body`;
+</body>`;
 
-/**
- * All base-paths for various file/folder locations.
- */
+/** All base-paths for various file/folder locations. */
 const PATHS = {
 	html: "./src/pages",
 	scss: "./src/styles",
@@ -53,17 +39,16 @@ const PATHS = {
 	assets: "./assets",
 	tempCss: "./cli/temp_css",
 	tempJs: "./cli/temp_js",
+	tempJsSwc: `./cli/temp_js/scripts`,
 	tsConfig: "./tsconfig.json"
 };
 
-/**
- * Open a development server with automatic change-reloading.
- */
+/** Open a development server with automatic change-reloading. */
 export default async function () {
 	// start recompilation listeners, waiting for them to finish before starting server
 	const htmlStart = startHtmlListener();
 	const cssStart = startScssListener();
-	const tscStart = startTscListener();
+	const tscStart = startSwcListener();
 	const assetStart = startAssetListener();
 	await Promise.all([htmlStart, cssStart, tscStart, assetStart]);
 
@@ -94,7 +79,7 @@ export default async function () {
 	// serve js files
 	app.get("/merge/scripts/*", (req, res) => {
 		const path = req.path.split("/").splice(3).join("/");
-		res.sendFile(path, { root: PATHS.tempJs });
+		res.sendFile(path, { root: PATHS.tempJsSwc });
 	});
 
 	// serve asset files
@@ -166,30 +151,48 @@ function startScssListener() {
 
 let tscInitialised = false;
 
-const tscRecompiled = /^[^-]+- Found (\d+) errors\. Watching for file changes\.$/;
+const swcCompiled = /^Successfully compiled: (\d+) files with swc \([^\)]+\)$/;
+const swcCompileFailed = /^Failed to compile (\d+) files with swc.$/;
+const swcCompiledFile = /^Successfully compiled ([^ ]+) with swc \([^\)]+\)$/;
 
-function startTscListener() {
+function startSwcListener() {
 	// setup promise for initialisation
 	const { promise, resolve } = Promise.withResolvers();
 
 	// remove any previously compiled files from the directory
-	rmSync("./temp_js", { recursive: true, force: true });
+	rmSync(PATHS.tempJs, { recursive: true, force: true });
 
-	const process = exec(`tsc --watch -p ${PATHS.tsConfig} --outDir ${PATHS.tempJs}`);
+	const process = exec(`yarn swc ${PATHS.ts} -d ${PATHS.tempJs}  --strip-leading-paths --watch`);
+
 	process.stdout.on("data", data => {
 		if (typeof data !== "string") return;
 		const stdout = data.trim();
 
-		const tscMatch = tscRecompiled.exec(stdout);
-		if (tscMatch !== null) {
-			const numErrors = tscMatch[1];
-			if (!tscInitialised && numErrors === "0") {
-				console.log("TSC initialised.");
-				tscInitialised = true;
-				resolve();
-			} else console.log(`TSC re-generated with ${numErrors} errors.`);
+		if (stdout === "Watching for file changes.") {
+			console.log("SWC initialised");
+			tscInitialised = true;
+			resolve();
+		}
+	});
 
-			if (tscInitialised) sendReload();
+	process.stderr.on("data", data => {
+		if (typeof data !== "string") return;
+		const stderr = data.trim();
+
+		const swcFile = swcCompiledFile.exec(stderr);
+		const swcFiles = swcCompiled.exec(stderr);
+		const swcFilesFailed = swcCompileFailed.exec(stderr);
+
+		if (swcFiles !== null) {
+			console.log(`SWC successfully built ${swcFiles[1]} files.`);
+			sendReload();
+		} else if (swcFile !== null) {
+			console.log("SWC successfully built 1 file.");
+			sendReload();
+		} else if (swcFilesFailed !== null) {
+			console.log(`SWC failed to compile ${swcFilesFailed[1]} files.`);
+		} else {
+			console.error("SWC detected an error while compiling");
 		}
 	});
 

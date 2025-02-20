@@ -3,9 +3,7 @@ import deploy from "./deploy.js";
 import dev from "./dev.js";
 import process from "node:process";
 
-/**
- * CLI Application entrypoint.
- */
+/** CLI Application entrypoint. */
 async function main() {
 	// read cli arguments
 	const args = process.argv.splice(2);
@@ -40,9 +38,7 @@ async function main() {
  */
 export const PROCESS_COMPLETE = Symbol("Process complete");
 
-/**
- * Error type to be used by the application to differentiate between errors that are predicable.
- */
+/** Error type to be used by the application to differentiate between errors that are predicable. */
 export class AppError extends Error {}
 
 process.addListener("uncaughtException", e => {
