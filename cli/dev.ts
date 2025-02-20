@@ -38,11 +38,15 @@ const PATHS = {
 	scss: "./src/styles",
 	ts: "./src/scripts",
 	assets: "./assets",
+	waiting: "./cli/pages/waiting.html",
 	tempCss: "./cli/temp_css",
 	tempJs: "./cli/temp_js",
 	tempJsSwc: `./cli/temp_js/scripts`,
 	tsConfig: "./tsconfig.json"
 };
+
+/** Whether all components have been initialised as the project is ready to be served. */
+let allInitialised = false;
 
 /**
  * Open a development server with automatic change-reloading.
@@ -50,14 +54,17 @@ const PATHS = {
  * @returns A {@link Promise} that resolves when this function completes.
  */
 export default async function () {
-	// start recompilation listeners, waiting for them to finish before starting server
-	const htmlStart = startHtmlListener();
-	const cssStart = startScssListener();
-	const tscStart = startSwcListener();
-	const assetStart = startAssetListener();
-	await Promise.all([htmlStart, cssStart, tscStart, assetStart]);
-
 	const app = express();
+
+	// waiting page for when project is still compiling
+	app.get("*", (req, res, next) => {
+		if (allInitialised) return next();
+
+		// send waiting page
+		const file = readFileSync(PATHS.waiting).toString();
+		const injectedFile = file.replace("</body>", jsInject);
+		res.send(injectedFile);
+	});
 
 	// redirect `/` to `/merge/index.html`
 	app.get("/", (req, res) => {
@@ -67,7 +74,6 @@ export default async function () {
 	// serve html files
 	app.get("/merge/:filename.html", (req, res) => {
 		const filename = req.params["filename"];
-		// res.sendFile(`${filename}.html`, { root: "../src/pages" });
 		const file = readFileSync(`${PATHS.html}/${filename}.html`).toString();
 
 		// inject ws into page
@@ -99,19 +105,35 @@ export default async function () {
 	});
 
 	// host server
-	const server = app.listen(port.server, () => {
+	const serverStart = Promise.withResolvers<void>();
+	app.listen(port.server, () => {
 		console.log(`Listening on port ${port.server}.`);
 		console.log("Enter 'q' to exit");
+		serverStart.resolve();
 	});
+	await serverStart.promise;
 
 	// setup readline to detect keypresses of 'q' or 'ctrl + c' to quit
-	const { promise, resolve } = Promise.withResolvers<void>();
+	const { promise, resolve, reject } = Promise.withResolvers<void>();
 	readline.emitKeypressEvents(process.stdin);
 	if (process.stdin.isTTY) process.stdin.setRawMode(true);
 
 	process.stdin.addListener("keypress", event => {
 		if (event === "q" || event === "\x03") resolve();
 	});
+
+	// start recompilation listeners, waiting for them to finish before starting server
+	const htmlStart = startHtmlListener();
+	const cssStart = startScssListener();
+	const tscStart = startSwcListener();
+	const assetStart = startAssetListener();
+	Promise.all([htmlStart, cssStart, tscStart, assetStart])
+		.then(() => {
+			console.log("All initialised.");
+			allInitialised = true;
+			sendReload();
+		})
+		.catch(error => reject(error));
 
 	return promise;
 }
@@ -125,11 +147,10 @@ function startHtmlListener() {
 	const watcher = watch(PATHS.html, { recursive: true });
 	watcher.addListener("change", () => sendReload());
 
-	console.log("HTML initialised.");
+	console.log("> HTML initialised.");
 	return Promise.resolve();
 }
 
-let scssInitialised = false;
 const scssWatching = /^Sass is watching for changes\. Press Ctrl-C to stop\.$/;
 const scssRecompiled = /\[[^\]]+\] Compiled .+?\.scss to (.+\.css)\./;
 
@@ -151,14 +172,13 @@ function startScssListener() {
 		const stdout = data.trim();
 
 		if (scssWatching.test(stdout)) {
-			console.log("SCSS initialised.");
-			scssInitialised = true;
+			console.log("> SCSS initialised.");
 			resolve();
 			return;
 		}
 
 		const scssMatch = scssRecompiled.exec(stdout);
-		if (scssMatch !== null && scssInitialised) {
+		if (scssMatch !== null && allInitialised) {
 			console.log("SCSS re-generated.");
 			sendReload();
 		}
@@ -166,8 +186,6 @@ function startScssListener() {
 
 	return promise;
 }
-
-let tscInitialised = false;
 
 const swcCompiled = /^Successfully compiled: (\d+) files with swc \([^)]+\)$/;
 const swcCompileFailed = /^Failed to compile (\d+) files with swc.$/;
@@ -192,14 +210,13 @@ function startSwcListener() {
 		const stdout = data.trim();
 
 		if (stdout === "Watching for file changes.") {
-			console.log("SWC initialised");
-			tscInitialised = true;
+			console.log("> SWC initialised.");
 			resolve();
 		}
 	});
 
 	process.stderr.on("data", data => {
-		if (!tscInitialised) return;
+		if (!allInitialised) return;
 		if (typeof data !== "string") return;
 		const stderr = data.trim();
 
@@ -216,7 +233,7 @@ function startSwcListener() {
 		} else if (swcFilesFailed !== null) {
 			console.log(`SWC failed to compile ${swcFilesFailed[1]} files.`);
 		} else {
-			console.error("SWC detected an error while compiling");
+			console.error("SWC detected an error while compiling.");
 		}
 	});
 
@@ -232,6 +249,6 @@ function startAssetListener() {
 	const watcher = watch(PATHS.assets, { recursive: true });
 	watcher.addListener("change", () => sendReload());
 
-	console.log("Assets initialised.");
+	console.log("> Assets initialised.");
 	return Promise.resolve();
 }
