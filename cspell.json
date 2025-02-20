@@ -17,6 +17,7 @@
     "stylelint",
     "trivago",
     "tsbuildinfo",
+    "unhandlable",
     "wayid"
   ]
 }

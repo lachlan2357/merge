@@ -1,25 +1,155 @@
-export type Constructor<T> = new (...data: never[]) => T;
+import { Constructor } from "./index.js";
 
-type OathResolveFunction<T> = (value: T | Promise<T>) => void;
-type OathRejectFunction<E> = (value: E) => void;
-type OathChuckFunction = (value: unknown) => void;
-type OathResolvers<T, E> = {
-	resolve: OathResolveFunction<T>;
-	reject: OathRejectFunction<E>;
-	chuck: OathChuckFunction;
-};
+/**
+ * Resolver methods available during the execution of an {@link Oath}.
+ *
+ * @template T The success type of the {@link Oath}.
+ * @template E The expected error type of the {@link Oath}.
+ */
+interface OathResolvers<T, E> {
+	/**
+	 * Mark a value as the successful result of an {@link Oath}.
+	 *
+	 * Similar to the `resolve(...)` executor of a {@link Promise}, this method should be called when
+	 * the execution of an {@link OathFunction} has been successful, even if no return value is
+	 * desired.
+	 *
+	 * @param value The value to mark as successful.
+	 */
+	resolve: (value: T | Promise<T>) => void;
+
+	/**
+	 * Mark a value as the unsuccessful result of an {@link Oath}.
+	 *
+	 * This method acts as a useful middle-ground between the `resolve(...)` and `reject(...)`
+	 * executors of a {@link Promise}. This method should be called when an 'expected' error is
+	 * encountered during the normal execution of an {@link OathFunction}.
+	 *
+	 * @param error The expected error that was encountered.
+	 */
+	reject: (error: E) => void;
+
+	/**
+	 * Mark a value as causing an unhandlable error within an {@link Oath}.
+	 *
+	 * Similar to the `reject(...)` executor of a {@link Promise}, this method should be called when
+	 * an 'unexpected' error is encountered during the execution of an {@link OathFunction}. Often,
+	 * this method can be used as a fallback case when an error is caught but not recognised as an
+	 * 'expected' error.
+	 *
+	 * @param error The unexpected error that was encountered.
+	 */
+	chuck: (error: unknown) => void;
+}
+
+/**
+ * Signature for defining a function to be executed as an {@link Oath}.
+ *
+ * It is imperative that all possible paths defined in this function must, at some point, either
+ * call one of the available {@link resolvers} or throw an exception. In the event that neither of
+ * these occur, the {@link Oath} will never complete.
+ *
+ * @template T The success type of the {@link Oath}.
+ * @template E The expected error type of the {@link Oath}.
+ * @param resolvers The methods in which this {@link OathFunction} can be resolved.
+ * @throws {OathError} If the oath is defined in an invalid way.
+ * @throws {E} If an expected error occurs.
+ * @throws {unknown} If an unexpected error occurs.
+ */
 type OathFunction<T, E> = (this: void, resolvers: OathResolvers<T, E>) => void;
+
+/**
+ * An synchronous interpretation of {@link OathFunction}.
+ *
+ * Instead of using function-based {@link OathResolvers}, returning a successful value is done by
+ * returning the value from the function. All errors, no matter if they are 'expected' or
+ * 'unexpected', are returned by throwing them. It is up to users of this function to determine how
+ * to handle the difference between these two error classes.
+ *
+ * @template T The success type of the {@link Oath}.
+ * @throws {OathError} If the oath is defined in an invalid way.
+ * @throws {unknown} If an unexpected error occurs.
+ * @see {@link Oath.sync()} for the canonical use of this function.
+ */
 type OathFunctionSync<T> = (this: void) => T;
+
+/**
+ * An asynchronous interpretation of {@link OathFunction} using the modern async/await syntax.
+ *
+ * Instead of using function-based {@link OathResolvers}, returning a successful value is done by
+ * returning the value from the function. All errors, no matter if they are 'expected' or
+ * 'unexpected', are returned by throwing them. It is up to users of this function to determine how
+ * to handle the difference between these two error classes.
+ *
+ * Directly returning a {@link Promise} will also have its value handled in the same manner: anything
+ * resolved will be returned as a successful value and anything rejected will be classed as either
+ * 'expected' or 'unexpected' by the user of this function.
+ *
+ * @template T The success type of the {@link Oath}.
+ * @throws {OathError} If the oath is defined in an invalid way.
+ * @throws {unknown} If an unexpected error occurs.
+ * @see {@link Oath.sync()} for the canonical use of this function.
+ */
 type OathFunctionAsync<T> = (this: void) => Promise<T>;
 
-export const OATH_NULL = Symbol("Representing a null return value in an OathResult.");
-export type OathResult<T, E> = [T, typeof OATH_NULL] | [typeof OATH_NULL, E];
+/**
+ * Symbol to designate that either the value or error returned from an {@link Oath} is null.
+ *
+ * The signature of an {@link Oath} result is one of two states: a tuple where either the first or
+ * second value is {@link OATH_NULL}. This allows clients of {@link OathResult} to determine which
+ * state is returned by evaluating which of the tuple values are {@link OATH_NULL}.
+ *
+ * A {@link Symbol} has been used for this purpose to eliminate potential conflicts with desired
+ * value or error types. For example, if `null` was used instead, it would cause successful
+ * execution of an {@link OathResult} with a return type of `T | null` to possibly return the tuple
+ * `[null, null]`, rendering it impossible to determine whether the {@link Oath} has resolved a value
+ * or an error. Using a symbol mitigates this issue, however it should be noted that while it
+ * remains possible to define an {@link OathResult} with a return type of `typeof OATH_NULL`, this is
+ * strongly discouraged as it results in the same indeterminate {@link OathResult} and not allow
+ * TypeScript to restrict the value or error.
+ */
+export const OATH_NULL = Symbol("Representing an empty returned value/error in an OathResult.");
 
+/**
+ * Return type of {@link Oath.run() running} an {@link Oath}.
+ *
+ * A returned type can be in one of two states:
+ *
+ * - `[`T`, OATH_NULL]` is returned upon the successful execution of the {@link Oath}, with the first
+ *   item in the tuple containing the value returned.
+ * - `[OATH_NULL, E]` is returned upon the unsuccessful execution of the {@link Oath} caused by an
+ *   'expected' error, with the second value in the tuple containing the error encountered.
+ *
+ * Checking either tuple item against {@link OATH_NULL} will automatically restrict the type of the
+ * other and should be used like Go-style error checking.
+ *
+ * @template T The success type of the {@link Oath}.
+ * @template E The expected error type of the {@link Oath}.
+ * @see {@link OATH_NULL} for why it is used as the 'empty' value and why it should not be used as {@link T}.
+ */
+type OathResult<T, E> = [T, typeof OATH_NULL] | [typeof OATH_NULL, E];
+
+/**
+ * Function signature for defining a function to map a successful value to another.
+ *
+ * @template T The success type of the current {@link Oath}.
+ * @template U The success type to map to.
+ * @template E The expected error type of the {@link Oath}.
+ */
 type OathMapFn<T, U, E extends Error> = (old: T) => U | Oath<U, E>;
+
+/**
+ * Function signature for defining a function to map an error to another.
+ *
+ * @template E The error type of the {@link Oath}.
+ * @template F The error type to map to.
+ */
 type OathMapErrorFn<E, F> = (old: E) => F | undefined;
 
 /**
  * Alternative to a bare {@link Promise} for handling asynchronous functions.
+ *
+ * ## Premise
  *
  * The premise of {@link Oath} is to provide an experience similar to a bare {@link Promise} except
  * with expected errors being typed and returned as a value instead of thrown. When
@@ -36,7 +166,7 @@ type OathMapErrorFn<E, F> = (old: E) => F | undefined;
  *   during execution, the exception will not be caught and will have to be dealt with by the
  *   calling function.
  *
- * ## Comparison to {@link Promise}
+ * ## Advantages to {@link Promise}
  *
  * {@link Oath} provides key advantages over using a {@link Promise}.
  *
@@ -53,6 +183,8 @@ type OathMapErrorFn<E, F> = (old: E) => F | undefined;
  *   function run just as a {@link Promise} usually does. This allows for more flexibility with
  *   allowing extensibility of promises before they are executed and awaited.
  *
+ * ## Disadvantages to {@link Promise}
+ *
  * However there are circumstances where a bare {@link Promise} may be desirable.
  *
  * - If any error returned by a {@link Oath} will be immediately thrown, there is little purpose in
@@ -64,8 +196,8 @@ type OathMapErrorFn<E, F> = (old: E) => F | undefined;
  *
  * Because of TypeScript's duck-typing, some built-in {@link Error} types are treated as all being
  * equal in TypeScript but not equal in JavaScript. For example, {@link SyntaxError} and
- * {@link TypeError} are both defined as interfaces in TypeScript, leading to the ability to use them
- * interchangeably at the type level.
+ * {@link TypeError} are both defined as empty interfaces extending {@link Error} in TypeScript,
+ * leading to the ability to use them interchangeably at the type level.
  *
  * So this is valid TypeScript.
  *
@@ -80,39 +212,15 @@ type OathMapErrorFn<E, F> = (old: E) => F | undefined;
  * ```
  *
  * This can lead to situations where TypeScript does not pick up that a returned value in, for
- * example, {@link mapError} is not the same as the declared expected value.
+ * example, {@link mapError()} is not the same as the declared expected value.
  *
  * ### Using {@link OATH_NULL} as the success type
  *
- * Executing an {@link Oath} returns an {@link OathResult} with either the first or second item set,
- * corresponding to a value or an error, respectively. Checking for one automatically allows the
- * second to be inferred.
+ * {@link OATH_NULL} should never be used as the success type {@link T} of an {@link Oath}. See
+ * {@link OATH_NULL} for more information.
  *
- * ```js
- * const [value, error] = await new Oath<string, Error>(Error, () => {...});
- * if (error !== OATH_NULL) return error;
- * assert(typeof value === "string"); // true
- * ```
- *
- * To allow all regular values to be used as possible value returns, the symbol {@link OATH_NULL} is
- * used to designate a missing value. With regular use, this will not invisible (except for checking
- * a value/error's equality to this special null value), however it is discouraged to use
- * {@link OATH_NULL} as the type for either the value or error as this can cause some potentially
- * unexpected and unpredictable behaviour. Using chained methods (e.g., {@link map()}) on an
- * {@link Oath} with a successful value returned as {@link OATH_NULL} will throw a {@link OathError} as
- * determining whether it was successful or not is impossible.
- *
- * ```js
- * const [value, error] = await new Oath<typeof OATH_NULL, Error>(Error, resolve => resolve(OATH_NULL));
- * if (value === OATH_NULL) {
- *     // this will always be run, even if there is no error and a 'successful' result is hit
- *     // this also means type narrowing for `error` cannot be used
- *     assert(error instanceof Error) // not always true
- * }
- * ```
- *
- * There is currently no effective mechanism in TypeScript to concretely disallow this, so for now,
- * it is syntactically valid but practically dubious.
+ * @template T The success type of the {@link Oath}.
+ * @template E The expected error type of the {@link Oath}.
  */
 export class Oath<T, E extends Error> {
 	/**
@@ -125,6 +233,8 @@ export class Oath<T, E extends Error> {
 	 *   exception and instead returns the error as a value.
 	 * - If the exception is not an instance of {@link ErrorConstructor}, the exception will be caught
 	 *   and re-thrown.
+	 *
+	 * @see {@link OathFunction} for more information.
 	 */
 	private readonly oathFn: OathFunction<T, E>;
 
@@ -144,17 +254,6 @@ export class Oath<T, E extends Error> {
 	 * requires calling `resolve(...)` to return from the function. To instead use the modern
 	 * async/await syntax, see {@link Oath.fromAsync()}.
 	 *
-	 * Instead of two callbacks like a {@link Promise} has with typed `resolve(...)` and untyped
-	 * `reject(...)`, an {@link Oath} callback executor has three.
-	 *
-	 * - `resolve(...)` should be called when returning a successful value result. This is similar to
-	 *   {@link Promise Promise's} `resolve(...)`.
-	 * - `reject(...)` should be called when an expected error occurs to return the error as a value.
-	 *   Note this is different from {@link Promise Promise's} `reject(...)` which is used for any
-	 *   errors.
-	 * - `chuck(...)` should be called when an unexpected error occurs. This method shares behaviour
-	 *   with {@link Promise Promise's} `reject(...)` as it will throw the error.
-	 *
 	 * Be wary of using the callback syntax with nested {@link Promise Promises} as a `throw` from a
 	 * nested {@link Promise} will reject that promise, but not any parent promises. This can be
 	 * avoided by ensuring no nested {@link Promise Promises} ever throw an exception, instead
@@ -162,6 +261,7 @@ export class Oath<T, E extends Error> {
 	 *
 	 * @param error The type of error to treat as an expected error.
 	 * @param fn The function to run to evaluate the {@link Oath}.
+	 * @see {@link OathFunction} for how this function should be defined.
 	 */
 	constructor(error: Constructor<E>, fn: OathFunction<T, E>) {
 		this.oathFn = fn;
@@ -171,9 +271,10 @@ export class Oath<T, E extends Error> {
 	/**
 	 * Map a successful result from this {@link Oath} to another value.
 	 *
-	 * Provided this {@link Oath} does not throw an exception, the provided {@link fn} will be run on
+	 * Provided this {@link Oath} returns a successful value, the provided {@link fn} will be run on
 	 * the result of this {@link Oath}.
 	 *
+	 * @template U The type to map the successful value of this {@link Oath} to.
 	 * @param fn The function to run on a successful result from this {@link Oath}.
 	 * @returns A new {@link Oath} with the successful result mapped.
 	 */
@@ -184,11 +285,11 @@ export class Oath<T, E extends Error> {
 			if (error !== OATH_NULL) throw error;
 			if (value === OATH_NULL) throw OathError.noValueNorError();
 
-			// convert value, returning if not a promise
+			// convert value, returning if new value is not an oath
 			const newValue = fn(value);
 			if (!(newValue instanceof Oath)) return newValue;
 
-			// await the promise, handling the result
+			// run the oath, handling the result
 			const [nestedValue, nestedError] = await newValue.run();
 			if (nestedError !== OATH_NULL) throw nestedError;
 			if (nestedValue !== OATH_NULL) return nestedValue;
@@ -203,6 +304,7 @@ export class Oath<T, E extends Error> {
 	 * run on the error of this {@link Oath}. In the case where {@link fn} does not return a result
 	 * (instead returning `void`), the error will be treated as unexpected and be re-thrown.
 	 *
+	 * @template F The type to map the expected error of this {@link Oath} to.
 	 * @param error The error type to map the error result to.
 	 * @param fn The function to determine how to map the error.
 	 * @returns A new {@link Oath} with the error result mapped.
@@ -219,7 +321,12 @@ export class Oath<T, E extends Error> {
 	/**
 	 * Execute this {@link Oath}.
 	 *
+	 * To execute this {@link Oath}, it is converted to a {@link Promise} and run, with the
+	 * {@link OathResolvers} being mapped to {@link Promise} resolvers. Thus, the returned value of
+	 * this method must be awaited before use.
+	 *
 	 * @returns The result of this {@link Oath} - either a successful or error result.
+	 * @throws {unknown} If an unexpected error occurs.
 	 */
 	async run(): Promise<OathResult<T, E>> {
 		return new Promise((resolve, reject) => {
@@ -252,10 +359,13 @@ export class Oath<T, E extends Error> {
 	 * Import an asynchronous function into an {@link Oath}.
 	 *
 	 * This method provides an alternative way of constructing an {@link Oath} using the modern
-	 * async/await syntax. Instead of calling `resolve(...)` or `reject(...)` as in a regular
-	 * {@link Oath}, resolving is done through returning a value from the function, and rejecting is
-	 * done through throwing an exception.
+	 * async/await syntax. Instead of calling `resolve(...)`, `reject(...)` or `chuck(...)` as in a
+	 * regular {@link Oath}, resolving is done through returning a value from the function, and both
+	 * rejecting and chucking is done through throwing an exception, with the error to be classed as
+	 * 'expected' or 'unexpected' based on its prototype.
 	 *
+	 * @template T The success type of the {@link Oath}.
+	 * @template E The expected error type of the {@link Oath}.
 	 * @param error The type of error to treat as an expected error.
 	 * @param fn The asynchronous function to run to evaluate the {@link Oath}.
 	 * @returns The new {@link Oath}.
@@ -278,8 +388,12 @@ export class Oath<T, E extends Error> {
 	 *
 	 * Sometimes, an synchronous function is required however the benefits of {@link Oath} are
 	 * desired. In this case, calling {@link sync} may be of use. This method provides no flow
-	 * control as that can be done synchronously inside {@link fn}.
+	 * control as that can be done synchronously inside {@link fn}, so returning a successful value
+	 * is done by returning a value from the function, and both 'expected' and 'unexpected' errors
+	 * are done by throwing them, with them being classed based on its prototype.
 	 *
+	 * @template T The success type of the {@link Oath}.
+	 * @template E The expected error type of the {@link Oath}.
 	 * @param error The type of error to treat as an expected error.
 	 * @param fn The synchronous function to run to evaluate to an {@link OathResult}.
 	 * @returns The evaluated {@link OathResult}.
@@ -303,6 +417,8 @@ export class Oath<T, E extends Error> {
 	 * The {@link mapFn} is not required to be exhaustive. In cases where it returns a mapped value,
 	 * that value will be thrown, else the original error will be re-thrown.
 	 *
+	 * @template T The success type of the {@link Oath}.
+	 * @template E The expected error type of the {@link Oath}.
 	 * @param fn The function to execute.
 	 * @param mapFn The mapping function to attempt to convert the thrown error.
 	 * @returns The value returned by {@link fn} if no exceptions were thrown.
@@ -324,7 +440,8 @@ class OathError extends Error {
 	 * Error for when an {@link Oath} returns neither a successful or error result.
 	 *
 	 * This type of error usually indicates an issue with a provided {@link OathFunction}, possibly
-	 * returning `null` as a valid successful value.
+	 * returning {@link OATH_NULL} as a valid successful value. See {@link OATH_NULL} for why this is
+	 * problematic.
 	 *
 	 * @returns The constructed error.
 	 */
