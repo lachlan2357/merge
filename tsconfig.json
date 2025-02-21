@@ -7,11 +7,11 @@
     "lib": ["DOM", "ES2024"],
     "types": [],
 
-    /* disallow JavaScript */
+    /* disallow javascript */
     "allowJs": false,
 
-    /* build options */
-    "outDir": "./dist/scripts",
+    /* disable building using tsc */
+    "noEmit": true,
 
     /* swc compatibility */
     "isolatedModules": true,

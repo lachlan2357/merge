@@ -1,4 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const UNIT_TESTS = "**/*.test.ts";
 const BROWSER_TESTS = "**/*.spec.ts";
@@ -13,8 +16,8 @@ export default defineConfig({
 		trace: process.env.CI ? "on-first-retry" : "on"
 	},
 	webServer: {
-		command: "yarn merge build && yarn merge deploy && serve -l 2357",
-		url: "http://localhost:2357/merge",
+		command: "yarn merge preview",
+		url: `http://localhost:${process.env.PREVIEW_PORT}/merge`,
 		reuseExistingServer: !process.env.CI
 	},
 

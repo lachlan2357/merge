@@ -1,4 +1,7 @@
-import { expect, Locator, Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 /**
  * Navigate a {@link page} back to home, refreshing it in the process.
@@ -6,7 +9,7 @@ import { expect, Locator, Page } from "@playwright/test";
  * @param page The page to navigate.
  */
 export async function navigateHome(page: Page) {
-	await page.goto("http://localhost:2357/merge/index.html");
+	await page.goto(`http://localhost:${process.env["PREVIEW_PORT"]}/merge/index.html`);
 }
 
 /**

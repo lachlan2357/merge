@@ -4,22 +4,18 @@ import { readFileSync, rmSync, watch } from "fs";
 import * as process from "process";
 import * as readline from "readline";
 import { WebSocketServer } from "ws";
+import dotenv from "dotenv";
+
+// ensure dotenv is configured
+dotenv.config();
 
 /** Port declarations for the development server. */
 const port = Object.freeze({
 	/** The port the application will be hosted on, to visit in a browser. */
-	server: 3000,
+	server: Number(process.env.SERVE_PORT),
 	/** The port the communication between server and application travel on. */
-	websocket: 3001
+	websocket: Number(process.env.WS_PORT)
 });
-
-/** The websocket server used to communicate to the application to alert it when to reload. */
-const ws = new WebSocketServer({ port: port.websocket });
-
-/** Alert all websocket instances of the application to reload their page as updates have occurred. */
-function sendReload() {
-	ws.clients.forEach(client => client.send("reload"));
-}
 
 /** JavaScript code to inject into the HTML file in order for automatic reloading to function. */
 const jsInject = `
@@ -43,7 +39,7 @@ const PATHS = {
 	tempJs: "./cli/temp_js",
 	tempJsSwc: `./cli/temp_js/scripts`,
 	tsConfig: "./tsconfig.json"
-};
+} as const;
 
 /** Whether all components have been initialised as the project is ready to be served. */
 let allInitialised = false;
@@ -53,7 +49,12 @@ let allInitialised = false;
  *
  * @returns A {@link Promise} that resolves when this function completes.
  */
-export default async function () {
+export async function dev() {
+	// start websocket
+	const ws = new WebSocketServer({ port: port.websocket });
+	const sendReload = () => ws.clients.forEach(client => client.send("reload"));
+
+	// setup express server
 	const app = express();
 
 	// waiting page for when project is still compiling
@@ -123,10 +124,10 @@ export default async function () {
 	});
 
 	// start recompilation listeners, waiting for them to finish before starting server
-	const htmlStart = startHtmlListener();
-	const cssStart = startScssListener();
-	const tscStart = startSwcListener();
-	const assetStart = startAssetListener();
+	const htmlStart = startHtmlListener(sendReload);
+	const cssStart = startScssListener(sendReload);
+	const tscStart = startSwcListener(sendReload);
+	const assetStart = startAssetListener(sendReload);
 	Promise.all([htmlStart, cssStart, tscStart, assetStart])
 		.then(() => {
 			console.log("All initialised.");
@@ -141,9 +142,10 @@ export default async function () {
 /**
  * Start a listener to send an alert when any HTML files change.
  *
+ * @param sendReload The function to call when a file change occurs.
  * @returns A {@link Promise} that resolves when this listener is initialised.
  */
-function startHtmlListener() {
+function startHtmlListener(sendReload: () => void) {
 	const watcher = watch(PATHS.html, { recursive: true });
 	watcher.addListener("change", () => sendReload());
 
@@ -157,9 +159,10 @@ const scssRecompiled = /\[[^\]]+\] Compiled .+?\.scss to (.+\.css)\./;
 /**
  * Start a scss watch compiler and listener to send an alert when any SCSS files change.
  *
+ * @param sendReload The function to call when a file change occurs.
  * @returns A {@link Promise} that resolves when this listener is initialised.
  */
-function startScssListener() {
+function startScssListener(sendReload: () => void) {
 	// setup promise for initialisation
 	const { promise, resolve } = Promise.withResolvers<void>();
 
@@ -194,16 +197,17 @@ const swcCompiledFile = /^Successfully compiled ([^ ]+) with swc \([^)]+\)$/;
 /**
  * Start a watcher and listener to send an alert when any TypeScript files change.
  *
+ * @param sendReload The function to call when a file change occurs.
  * @returns A {@link Promise} that resolves when this listener is initialised.
  */
-function startSwcListener() {
+function startSwcListener(sendReload: () => void) {
 	// setup promise for initialisation
 	const { promise, resolve } = Promise.withResolvers<void>();
 
 	// remove any previously compiled files from the directory
 	rmSync(PATHS.tempJs, { recursive: true, force: true });
 
-	const process = exec(`yarn swc ${PATHS.ts} -d ${PATHS.tempJs}  --strip-leading-paths --watch`);
+	const process = exec(`yarn swc ${PATHS.ts} -d ${PATHS.tempJs} --strip-leading-paths --watch`);
 
 	process.stdout.on("data", data => {
 		if (typeof data !== "string") return;
@@ -243,9 +247,10 @@ function startSwcListener() {
 /**
  * Start a listener to send an alert when any asset files change.
  *
+ * @param sendReload The function to call when a file change occurs.
  * @returns A {@link Promise} that resolves when this listener is initialised.
  */
-function startAssetListener() {
+function startAssetListener(sendReload: () => void) {
 	const watcher = watch(PATHS.assets, { recursive: true });
 	watcher.addListener("change", () => sendReload());
 

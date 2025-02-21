@@ -9,9 +9,10 @@
   },
   "license": "GPL-3.0-only",
   "private": true,
-  "main": "index.ts",
+  "main": "./src/index.ts",
   "type": "module",
   "dependencies": {
+    "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "ws": "^8.18.0"
   },

@@ -1,7 +1,10 @@
-import build from "./build.ts";
-import deploy from "./deploy.ts";
-import dev from "./dev.ts";
-import process from "node:process";
+import process from "process";
+import dotenv from "dotenv";
+
+import { dev } from "./dev.ts";
+import { build } from "./build.ts";
+import { deploy } from "./deploy.ts";
+import { serve } from "./serve.ts";
 
 /**
  * CLI Application entrypoint.
@@ -9,6 +12,9 @@ import process from "node:process";
  * @returns A {@link Promise} that will be resolved once the application completes.
  */
 async function main() {
+	// load dotenv
+	dotenv.config();
+
 	// read cli arguments
 	const args = process.argv.splice(2);
 	if (args.length > 1)
@@ -22,12 +28,24 @@ async function main() {
 
 	// perform command
 	switch (command) {
-		case "dev":
-			return await dev();
-		case "build":
-			return build();
-		case "deploy":
-			return deploy();
+		case "dev": {
+			await dev();
+			break;
+		}
+		case "build": {
+			await build();
+			break;
+		}
+		case "deploy": {
+			await deploy();
+			break;
+		}
+		case "preview": {
+			await build();
+			await deploy();
+			await serve();
+			break;
+		}
 		default:
 			throw new Error(`Unrecognised command ${command}.`);
 	}

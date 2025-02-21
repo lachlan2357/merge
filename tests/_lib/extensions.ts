@@ -1,4 +1,4 @@
-import { ExpectMatcherState, MatcherReturnType, Page } from "@playwright/test";
+import type { ExpectMatcherState, MatcherReturnType, Page } from "@playwright/test";
 import * as lib from "lib/index.ts";
 
 type ExtensionObject = Record<string, ExtensionFunction>;
