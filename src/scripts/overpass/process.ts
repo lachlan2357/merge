@@ -1,12 +1,5 @@
 import { MessageBoxError } from "../messages.js";
-import {
-	OsmBoolean,
-	OsmMaybe,
-	OsmString,
-	OsmUnsignedInteger,
-	OsmValue,
-	type OsmInnerValue
-} from "./osm-values.js";
+import { OsmBoolean, OsmMaybe, OsmString, OsmUnsignedInteger, OsmValue } from "./osm-values.js";
 import type { OverpassNode, OverpassWay, OverpassRelation } from "./structures.js";
 import type {
 	MergeData,
