@@ -1,10 +1,14 @@
-import { exec } from "child_process";
 import express from "express";
-import { readFileSync, rmSync, watch } from "fs";
+import { readFileSync } from "fs";
 import * as process from "process";
 import * as readline from "readline";
 import { WebSocketServer } from "ws";
 import dotenv from "dotenv";
+import { requestPathToFilePath } from "./lib/paths.ts";
+import * as transformers from "./lib/transformers.ts";
+import chokidar from "chokidar";
+import { CacheMap } from "./lib/cache.ts";
+import * as lib from "./lib/promise.ts";
 
 // ensure dotenv is configured
 dotenv.config();
@@ -41,8 +45,7 @@ const PATHS = {
 	tsConfig: "./tsconfig.json"
 } as const;
 
-/** Whether all components have been initialised as the project is ready to be served. */
-let allInitialised = false;
+const FILE_CACHE = new CacheMap();
 
 /**
  * Open a development server with automatic change-reloading.
@@ -50,22 +53,19 @@ let allInitialised = false;
  * @returns A {@link Promise} that resolves when this function completes.
  */
 export async function dev() {
-	// start websocket
+	// start reload listeners
 	const ws = new WebSocketServer({ port: port.websocket });
 	const sendReload = () => ws.clients.forEach(client => client.send("reload"));
 
+	const watchers = [
+		startHtmlListener(sendReload),
+		startScssListener(sendReload),
+		startSwcListener(sendReload),
+		startAssetListener(sendReload)
+	];
+
 	// setup express server
 	const app = express();
-
-	// waiting page for when project is still compiling
-	app.get("*", (req, res, next) => {
-		if (allInitialised) return next();
-
-		// send waiting page
-		const file = readFileSync(PATHS.waiting).toString();
-		const injectedFile = file.replace("</body>", jsInject);
-		res.send(injectedFile);
-	});
 
 	// redirect `/` to `/merge/index.html`
 	app.get("/", (req, res) => {
@@ -83,15 +83,35 @@ export async function dev() {
 	});
 
 	// serve css files
-	app.get("/merge/styles/:filename.css", (req, res) => {
-		const path = req.path.split("/").splice(3).join("/");
-		res.sendFile(path, { root: PATHS.tempCss });
+	app.get("/merge/styles/*", async (req, res) => {
+		// find css file
+		const relativePath = requestPathToFilePath(req.path);
+		const path = `${PATHS.scss}/${relativePath}`;
+		let body: string;
+
+		// retrieve from cache or transform
+		const fromCache = FILE_CACHE.get(path);
+		if (fromCache !== undefined) body = fromCache;
+		else body = await transformers.scss(path, FILE_CACHE);
+
+		// send response
+		res.status(200).contentType("text/css").send(body);
 	});
 
 	// serve js files
-	app.get("/merge/scripts/*", (req, res) => {
-		const path = req.path.split("/").splice(3).join("/");
-		res.sendFile(path, { root: PATHS.tempJsSwc });
+	app.get("/merge/scripts/*", async (req, res) => {
+		// find ts file
+		const relativePath = requestPathToFilePath(req.path);
+		const path = `${PATHS.ts}/${relativePath}`;
+		let body: string;
+
+		// retrieve from cache or transform
+		const fromCache = FILE_CACHE.get(path);
+		if (fromCache !== undefined) body = fromCache;
+		else body = await transformers.ts(path, FILE_CACHE);
+
+		// send response
+		res.status(200).contentType("text/javascript").send(body);
 	});
 
 	// serve asset files
@@ -120,21 +140,15 @@ export async function dev() {
 	if (process.stdin.isTTY) process.stdin.setRawMode(true);
 
 	process.stdin.addListener("keypress", event => {
-		if (event === "q" || event === "\x03") resolve();
+		if (event === "q" || event === "\x03") {
+			Promise.all([
+				lib.promisify(callback => ws.close(callback)),
+				...watchers.map(watcher => watcher.close())
+			])
+				.then(() => resolve())
+				.catch(reject);
+		}
 	});
-
-	// start recompilation listeners, waiting for them to finish before starting server
-	const htmlStart = startHtmlListener(sendReload);
-	const cssStart = startScssListener(sendReload);
-	const tscStart = startSwcListener(sendReload);
-	const assetStart = startAssetListener(sendReload);
-	Promise.all([htmlStart, cssStart, tscStart, assetStart])
-		.then(() => {
-			console.log("All initialised.");
-			allInitialised = true;
-			sendReload();
-		})
-		.catch(error => reject(error));
 
 	return promise;
 }
@@ -143,117 +157,70 @@ export async function dev() {
  * Start a listener to send an alert when any HTML files change.
  *
  * @param sendReload The function to call when a file change occurs.
- * @returns A {@link Promise} that resolves when this listener is initialised.
+ * @returns The HTML watcher.
  */
 function startHtmlListener(sendReload: () => void) {
-	const watcher = watch(PATHS.html, { recursive: true });
-	watcher.addListener("change", () => sendReload());
-
-	console.log("> HTML initialised.");
-	return Promise.resolve();
+	return chokidar
+		.watch(PATHS.html)
+		.on("change", () => sendReload())
+		.on("unlink", () => sendReload())
+		.on("error", console.error);
 }
-
-const scssWatching = /^Sass is watching for changes\. Press Ctrl-C to stop\.$/;
-const scssRecompiled = /\[[^\]]+\] Compiled .+?\.scss to (.+\.css)\./;
 
 /**
  * Start a scss watch compiler and listener to send an alert when any SCSS files change.
  *
  * @param sendReload The function to call when a file change occurs.
- * @returns A {@link Promise} that resolves when this listener is initialised.
+ * @returns The SCSS watcher.
  */
 function startScssListener(sendReload: () => void) {
-	// setup promise for initialisation
-	const { promise, resolve } = Promise.withResolvers<void>();
-
-	// remove any previously compiled files from the directory
-	rmSync(PATHS.tempCss, { recursive: true, force: true });
-
-	const process = exec(`sass --watch ${PATHS.scss}:${PATHS.tempCss} --no-source-map`);
-	process.stdout.on("data", data => {
-		if (typeof data !== "string") return;
-		const stdout = data.trim();
-
-		if (scssWatching.test(stdout)) {
-			console.log("> SCSS initialised.");
-			resolve();
-			return;
-		}
-
-		const scssMatch = scssRecompiled.exec(stdout);
-		if (scssMatch !== null && allInitialised) {
-			console.log("SCSS re-generated.");
+	return chokidar
+		.watch(PATHS.scss)
+		.on("change", path => {
+			transformers
+				.scss(path, FILE_CACHE)
+				.then(() => sendReload())
+				.catch(console.error);
+		})
+		.on("unlink", path => {
+			FILE_CACHE.delete(path);
 			sendReload();
-		}
-	});
-
-	return promise;
+		})
+		.on("error", console.error);
 }
-
-const swcCompiled = /^Successfully compiled: (\d+) files with swc \([^)]+\)$/;
-const swcCompileFailed = /^Failed to compile (\d+) files with swc.$/;
-const swcCompiledFile = /^Successfully compiled ([^ ]+) with swc \([^)]+\)$/;
 
 /**
  * Start a watcher and listener to send an alert when any TypeScript files change.
  *
  * @param sendReload The function to call when a file change occurs.
- * @returns A {@link Promise} that resolves when this listener is initialised.
+ * @returns The TypeScript watcher.
  */
 function startSwcListener(sendReload: () => void) {
-	// setup promise for initialisation
-	const { promise, resolve } = Promise.withResolvers<void>();
-
-	// remove any previously compiled files from the directory
-	rmSync(PATHS.tempJs, { recursive: true, force: true });
-
-	const process = exec(`yarn swc ${PATHS.ts} -d ${PATHS.tempJs} --strip-leading-paths --watch`);
-
-	process.stdout.on("data", data => {
-		if (typeof data !== "string") return;
-		const stdout = data.trim();
-
-		if (stdout === "Watching for file changes.") {
-			console.log("> SWC initialised.");
-			resolve();
-		}
-	});
-
-	process.stderr.on("data", data => {
-		if (!allInitialised) return;
-		if (typeof data !== "string") return;
-		const stderr = data.trim();
-
-		const swcFile = swcCompiledFile.exec(stderr);
-		const swcFiles = swcCompiled.exec(stderr);
-		const swcFilesFailed = swcCompileFailed.exec(stderr);
-
-		if (swcFiles !== null) {
-			console.log(`SWC successfully built ${swcFiles[1]} files.`);
+	return chokidar
+		.watch(PATHS.ts)
+		.on("change", path => {
+			transformers
+				.ts(path, FILE_CACHE)
+				.then(() => sendReload())
+				.catch(console.error);
+		})
+		.on("unlink", path => {
+			FILE_CACHE.delete(path);
 			sendReload();
-		} else if (swcFile !== null) {
-			console.log("SWC successfully built 1 file.");
-			sendReload();
-		} else if (swcFilesFailed !== null) {
-			console.log(`SWC failed to compile ${swcFilesFailed[1]} files.`);
-		} else {
-			console.error("SWC detected an error while compiling.");
-		}
-	});
-
-	return promise;
+		})
+		.on("error", console.error);
 }
 
 /**
  * Start a listener to send an alert when any asset files change.
  *
  * @param sendReload The function to call when a file change occurs.
- * @returns A {@link Promise} that resolves when this listener is initialised.
+ * @returns The asset watcher.
  */
 function startAssetListener(sendReload: () => void) {
-	const watcher = watch(PATHS.assets, { recursive: true });
-	watcher.addListener("change", () => sendReload());
-
-	console.log("> Assets initialised.");
-	return Promise.resolve();
+	return chokidar
+		.watch(PATHS.assets)
+		.on("change", () => sendReload())
+		.on("unlink", () => sendReload())
+		.on("error", console.error);
 }

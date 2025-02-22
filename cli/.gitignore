@@ -1,6 +1,9 @@
 # server-generated files
 temp_*
 
+# locally overridden types
+/src/types
+
 # node
 node_modules
 
