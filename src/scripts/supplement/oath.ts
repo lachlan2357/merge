@@ -365,6 +365,24 @@ export class Oath<T, E extends Error> {
 	}
 
 	/**
+	 * Execute this {@link Oath}, throwing any error instead of returning it.
+	 *
+	 * This method translates an {@link Oath} back to {@link Promise}-like behaviour. This should be
+	 * used in cases where exceptions are to be bubbled.
+	 *
+	 * @returns The successful value of the {@link Oath}.
+	 * @throws {E} If an expected error occurs.
+	 * @throws {OathError} If both value and error are {@link OATH_NULL}.
+	 * @throws {unknown} If an unexpected error occurs.
+	 */
+	async runAndThrow(): Promise<T> {
+		const [value, error] = await this.run();
+		if (error !== OATH_NULL) throw error;
+		if (value !== OATH_NULL) return value;
+		else throw OathError.noValueNorError();
+	}
+
+	/**
 	 * Import an asynchronous function into an {@link Oath}.
 	 *
 	 * This method provides an alternative way of constructing an {@link Oath} using the modern

@@ -1,5 +1,5 @@
 import type { ExpectMatcherState, MatcherReturnType, Page } from "@playwright/test";
-import * as lib from "lib/index.ts";
+import * as ls from "lib/local-storage.ts";
 
 type ExtensionObject = Record<string, ExtensionFunction>;
 type ExtensionFunction = (
@@ -17,8 +17,7 @@ interface ToString {
 export const localStorageExtensions = {
 	async toHaveLocalStorageValue(page: Page, key: string, expected: ToString | undefined) {
 		// retrieve current state of localStorage
-		const ls = await lib.getLocalStorage(page);
-		const storedValue = ls[key];
+		const storedValue = (await ls.getLocalStorage(page))[key];
 		const passedValue = expected?.toString();
 
 		// determine if values match

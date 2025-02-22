@@ -1,11 +1,12 @@
 import { test, expect as baseExpect } from "@playwright/test";
 import * as lib from "lib/index.ts";
+import * as ls from "lib/local-storage.ts";
 import { localStorageExtensions } from "lib/extensions.ts";
 
 const expect = baseExpect.extend(localStorageExtensions);
 
 test.afterEach(async ({ page }) => {
-	await lib.clearLocalStorage(page);
+	await ls.clearLocalStorage(page);
 });
 
 test.describe("colour scheme agnostic", () => {
@@ -71,11 +72,11 @@ test.describe("colour scheme agnostic", () => {
 
 			switch (inputType) {
 				case "checkbox": {
-					await lib.checkCheckbox(page, input, settingsKey);
+					await ls.checkCheckbox(page, input, settingsKey);
 					break;
 				}
 				case "url": {
-					await lib.checkUrl(page, input, settingsKey);
+					await ls.checkUrl(page, input, settingsKey);
 					break;
 				}
 				default:

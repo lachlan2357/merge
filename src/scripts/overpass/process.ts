@@ -57,7 +57,7 @@ export function process(allNodes: Map<number, OverpassNode>, allWays: Map<number
 			turnLanesForward: compile(tags, "turnLanesForward"),
 			turnLanesBackward: compile(tags, "turnLanesBackward"),
 			surface: compile(tags, "surface")
-		} satisfies Record<string, OsmValue<OsmInnerValue>>;
+		};
 
 		// format compiled tags
 		const warnings = performTransforms(compiledTags);

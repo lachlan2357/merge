@@ -1,9 +1,8 @@
-import { MessageBoxError } from "./messages.js";
 import type { OverpassResponse } from "./overpass/structures.js";
 import { Oath, OATH_NULL } from "./supplement/oath.js";
 
 /** Structure of how a cached query is stored in the IndexedDB database. */
-type CachedQuery = {
+export type CachedQuery = {
 	/** The request string that was sent to the Overpass API. */
 	request: string;
 	/** The response string that was retrieved from the Overpass API. */
@@ -185,7 +184,7 @@ export class Database {
 }
 
 /** Errors which could occur while opening a new connection to the {@link IDBDatabase}. */
-class DatabaseError extends MessageBoxError {
+class DatabaseError extends Error {
 	private static readonly ERROR_MAP = {
 		databaseOpen: "Connection to the database could not be opened.",
 

@@ -29,7 +29,7 @@ export async function overpassSearch(searchTerm: string) {
 			.map(database => database.get(queryString))
 			.run();
 
-		if (error !== OATH_NULL) error.display();
+		if (error !== OATH_NULL) console.error(error);
 		else response = data;
 	}
 
@@ -140,7 +140,7 @@ async function fetchFromApi(queryString: string) {
 		const [_, error] = await Database.connect()
 			.map(database => database.set(data))
 			.run();
-		if (error !== OATH_NULL) error.display();
+		if (error !== OATH_NULL) console.error(error);
 	}
 
 	Settings.set("ignoreCache", false);

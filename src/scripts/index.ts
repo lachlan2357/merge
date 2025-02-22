@@ -7,11 +7,14 @@ import { Effect, State } from "./state/index.js";
 // display a message on the message popup when a JS error occurs
 window.addEventListener("error", () => displayMessage("error"));
 
-// permalinks
+// setup and process permalink
 const hash = window.location.hash;
 const id = Number(hash.substring(1));
 if (hash.length > 0 && !isNaN(id)) await loadSearchBox(id.toString());
-new Effect(() => (window.location.hash = `#${State.currentRelationId.get()}`));
+new Effect(() => {
+	const hash = State.currentRelationId.get()?.toString() ?? "";
+	window.location.hash = hash;
+});
 
 // first time popup
 if (Settings.get("firstLaunch")) {

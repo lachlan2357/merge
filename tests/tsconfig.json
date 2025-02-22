@@ -5,9 +5,9 @@
     "allowImportingTsExtensions": true,
     "paths": {
       "@/*": ["../src/scripts/*"],
-      "lib/*": ["./_lib/*"]
+      "lib/*": ["./lib/*"]
     }
   },
   "exclude": ["../src/**/*"],
-  "include": ["./**/*.spec.ts", "./**/*.test.ts", "./**/*.mock.ts", "./_lib/**/*.ts"]
+  "include": ["./**/*.spec.ts", "./**/*.test.ts", "./**/*.mock.ts", "./lib/**/*.ts"]
 }
