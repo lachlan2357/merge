@@ -1,17 +1,16 @@
 import { MessageBoxError } from "../messages.js";
-import { OsmBoolean, OsmMaybe, OsmString, OsmUnsignedInteger, OsmValue } from "../types/osm.js";
+import { OsmBoolean, OsmString, OsmUnsignedInteger, OsmValue } from "./osm-values.js";
 import { performInferences, performTransforms } from "./inferences/index.js";
 /**
- * Process {@link OverpassNode Nodes}, {@link OverpassWay Ways} and
+ * Process {@link OverpassNode Nodes} and {@link OverpassWay Ways} and
  * {@link OverpassRelation Relations} into data the map can use to display.
  *
  * @param allNodes All {@link OverpassNode OverpassNodes} to process.
  * @param allWays All {@link OverpassWay OverpassWays} to process.
  * @returns The processed {@link MergeData}.
- */
-export function process(allNodes, allWays) {
+ */ export function process(allNodes, allWays) {
     const data = new Map();
-    for (const [id, way] of allWays) {
+    for (const [id, way] of allWays){
         // initial compilation of tag data, to be inferred
         const tagsRaw = way.tags;
         const tags = {
@@ -58,38 +57,15 @@ export function process(allNodes, allWays) {
  *
  * @param tags The object containing the {@link Partial} tags.
  * @param tag The specific tag to compile.
- * @throws {TagError} If the tag could not be compiled.
  * @returns The compiled tag.
- */
-function compile(tags, tag) {
+ * @throws {TagError} If the tag could not be compiled.
+ */ function compile(tags, tag) {
     const value = tags[tag];
-    if (!value.isSet())
-        throw new MissingTagError(tag);
+    if (!value.isSet()) throw new MissingTagError(tag);
     return value.get();
 }
-/**
- * Determine whether the value of a tag has been set.
- *
- * A tag is deemed to be set if its value is neither `null` or `undefined`.
- *
- * @param tag The tag to check if set.
- * @returns Whether the tag has its value set.
- */
-export function isEq(tag, cmp) {
-    if (tag === undefined)
-        return false;
-    if (tag instanceof OsmMaybe) {
-        if (!tag.isSet())
-            return false;
-        else
-            return tag.get().eq(cmp);
-    }
-    else {
-        return tag.eq(cmp);
-    }
-}
 class MissingTagError extends MessageBoxError {
-    constructor(tag) {
+    constructor(tag){
         super(`Tag '${tag}' is missing and could not be inferred.`);
     }
 }

@@ -5,10 +5,10 @@ import { SETTINGS_POPUP } from "../popup/settings.js";
 import { SHARE_POPUP } from "../popup/share.js";
 import { WARNINGS_POPUP } from "../popup/warnings.js";
 import { getElement } from "../supplement/elements.js";
-import { CANVAS } from "./canvas.js";
+import { CANVAS } from "./index.js";
 class MapButton {
     element;
-    constructor(id) {
+    constructor(id){
         this.element = getElement(id, HTMLButtonElement);
     }
     setAction(event, action) {
@@ -17,15 +17,15 @@ class MapButton {
     }
 }
 // map controls
-export const ZOOM_IN_BUTTON = new MapButton("zoom-in").setAction("click", () => CANVAS.zoom("in", "button"));
-export const ZOOM_OUT_BUTTON = new MapButton("zoom-out").setAction("click", () => CANVAS.zoom("out", "button"));
-export const ZOOM_RESET_BUTTON = new MapButton("zoom-reset").setAction("click", () => CANVAS.centre());
-export const FULLSCREEN_BUTTON = new MapButton("fullscreen").setAction("click", () => CANVAS.toggleFullscreen());
+new MapButton("zoom-in").setAction("click", ()=>CANVAS.zoom("in", "button"));
+new MapButton("zoom-out").setAction("click", ()=>CANVAS.zoom("out", "button"));
+new MapButton("zoom-reset").setAction("click", ()=>CANVAS.centre());
+new MapButton("fullscreen").setAction("click", ()=>CANVAS.toggleFullscreen());
 // popup toggles
-export const ADVANCED_BUTTON = new MapButton("advanced").setAction("click", () => ADVANCED_POPUP.display());
-export const SETTINGS_BUTTON = new MapButton("settings").setAction("click", () => SETTINGS_POPUP.display());
-export const SHARE_BUTTON = new MapButton("share").setAction("click", () => SHARE_POPUP.display());
-export const HELP_BUTTON = new MapButton("help").setAction("click", () => HELP_POPUP.display());
-export const ABOUT_BUTTON = new MapButton("about").setAction("click", () => ABOUT_POPUP.display());
+new MapButton("advanced").setAction("click", ()=>ADVANCED_POPUP.display());
+new MapButton("settings").setAction("click", ()=>SETTINGS_POPUP.display());
+new MapButton("share").setAction("click", ()=>SHARE_POPUP.display());
+new MapButton("help").setAction("click", ()=>HELP_POPUP.display());
+new MapButton("about").setAction("click", ()=>ABOUT_POPUP.display());
 // warnings
-export const WARNINGS_BUTTON = new MapButton("warnings").setAction("click", () => WARNINGS_POPUP.display());
+new MapButton("warnings").setAction("click", ()=>WARNINGS_POPUP.display());

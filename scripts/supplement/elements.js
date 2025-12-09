@@ -1,20 +1,22 @@
 /**
+ * Constructor signature of a {@link HTMLElement} or any children.
+ *
+ * This constructor type is valid for any class inheriting from {@link HTMLElement}, including
+ * WebComponents.
+ */ /**
  * Create an instance of a custom element of a specified class.
  *
  * @param constructor The constructor for the class of the element to create.
  * @returns The created element.
- */
-export function createCustomElement(constructor) {
+ * @throws {ElementError} If the element could not be created.
+ */ export function createCustomElement(constructor) {
     // ensure tag for custom element is registered
     const tagName = customElements.getName(constructor);
-    if (tagName === null)
-        throw ElementError.nonExistantCustomElement(constructor);
+    if (tagName === null) throw ElementError.nonExistantCustomElement(constructor);
     // create custom element and ensure class is correct
     const element = document.createElement(tagName);
-    if (element instanceof constructor)
-        return element;
-    else
-        throw ElementError.incorrectCreatedInstanceType(tagName, constructor, element);
+    if (element instanceof constructor) return element;
+    else throw ElementError.incorrectCreatedInstanceType(tagName, constructor, element);
 }
 /**
  * Retrieve an element from the DOM, ensuring it is of an expected class.
@@ -25,68 +27,56 @@ export function createCustomElement(constructor) {
  *
  * @param id The ID of the element to retrieve.
  * @param constructor The expected type of the element.
- * @param parent The parent to search for an element in. If omitted, search is done globally.
- * @throws {ElementError} If the retrieval was unsuccessful.
  * @returns The element if successfully found.
- */
-export function getElement(id, constructor) {
+ * @throws {ElementError} If the retrieval was unsuccessful.
+ */ export function getElement(id, constructor) {
     // find element
     const element = document.getElementById(id);
-    if (element === null)
-        throw ElementError.notFound(id);
+    if (element === null) throw ElementError.notFound(id);
     // check element is of correct type
-    if (element instanceof constructor)
-        return element;
-    else
-        throw ElementError.incorrectType(id, element, constructor);
+    if (element instanceof constructor) return element;
+    else throw ElementError.incorrectType(id, element, constructor);
 }
-/**
- * Errors which could occur during element retrieval.
- */
-class ElementError extends Error {
+/** Errors which could occur during element retrieval. */ class ElementError extends Error {
     /**
-     * Construct an error for when an element could not be found by ID.
-     *
-     * @param id The ID of the element.
-     * @returns The constructed {@link ElementError}.
-     */
-    static notFound(id) {
+	 * Construct an error for when an element could not be found by ID.
+	 *
+	 * @param id The ID of the element.
+	 * @returns The constructed {@link ElementError}.
+	 */ static notFound(id) {
         return new ElementError(`Element with ID '${id}' could not be found.`);
     }
     /**
-     * Construct an error for when an element is not of the correct class.
-     *
-     * @param id The ID of the element.
-     * @param element The element which was found.
-     * @param constructor The expected class of the element.
-     * @returns The constructed {@link ElementError}.
-     */
-    static incorrectType(id, element, constructor) {
+	 * Construct an error for when an element is not of the correct class.
+	 *
+	 * @param id The ID of the element.
+	 * @param element The element which was found.
+	 * @param constructor The expected class of the element.
+	 * @returns The constructed {@link ElementError}.
+	 */ static incorrectType(id, element, constructor) {
         return new ElementError(`Element with ID '${id}' has tag '${element.tagName.toLowerCase()}' and is not an instance of '${constructor.name}'.`);
     }
     /**
-     * Construct an error for when a custom element is created without being registered.
-     *
-     * @param constructor The element that was requested to be created.
-     * @returns The constructed {@link ElementError}.
-     */
-    static nonExistantCustomElement(constructor) {
+	 * Construct an error for when a custom element is created without being registered.
+	 *
+	 * @param constructor The element that was requested to be created.
+	 * @returns The constructed {@link ElementError}.
+	 */ static nonExistantCustomElement(constructor) {
         return new ElementError(`'${constructor.name}' as not been registered as a custom element and cannot be initialised.`);
     }
     /**
-     * Construct an error for when a WebComponent was created with an incorrect class.
-     *
-     * @param tagName The tag used to create the element.
-     * @param constructor The constructor which should have been used to create the WebComponent.
-     * @param element The element that was created.
-     * @returns The constructed {@link ElementError}.
-     */
-    static incorrectCreatedInstanceType(tagName, constructor, element) {
+	 * Construct an error for when a WebComponent was created with an incorrect class.
+	 *
+	 * @param tagName The tag used to create the element.
+	 * @param constructor The constructor which should have been used to create the WebComponent.
+	 * @param element The element that was created.
+	 * @returns The constructed {@link ElementError}.
+	 */ static incorrectCreatedInstanceType(tagName, constructor, element) {
         // attempt to extract class name from element
         let className = element.toString();
         const matches = /\[object (.+?)\]/.exec(className);
-        if (matches !== null)
-            className = matches[1];
+        const classNameOpt = matches?.[1];
+        if (classNameOpt !== undefined) className = classNameOpt;
         return new ElementError(`WebComponent '${tagName.toLowerCase()}' did not create element with prototype of '${constructor.name}', instead created '${className}'.`);
     }
 }

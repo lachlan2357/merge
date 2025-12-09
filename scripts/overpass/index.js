@@ -1,33 +1,33 @@
 import { Database } from "../database.js";
-import { CANVAS } from "../map/canvas.js";
-import { MESSAGE_BOX, MessageBoxError } from "../messages.js";
+import { CANVAS } from "../map/index.js";
+import * as MessageBox from "../messages.js";
 import * as Settings from "../settings/index.js";
 import { State } from "../state/index.js";
 import { process } from "./process.js";
+import { OATH_NULL } from "../supplement/oath.js";
 /**
  * Request the Overpass API for the required search.
  *
  * @param searchTerm The user's search term.
  * @throws {OverpassError} If the search was unsuccessful.
- */
-export async function overpassSearch(searchTerm) {
+ */ export async function overpassSearch(searchTerm) {
     // construct query string
     const queryString = buildQuery(searchTerm);
     let response = null;
     // check database for cached result, if applicable
     const skipDatabase = Settings.get("ignoreCache");
     if (!skipDatabase) {
-        const database = await Database.connect();
-        response = await database.get(queryString);
+        const [data, error] = await Database.connect().map((database)=>database.get(queryString)).run();
+        if (error !== OATH_NULL) console.error(error);
+        else response = data;
     }
-    // request from Overpass API if required
-    if (response === null)
-        response = await fetchFromApi(queryString);
+    // request from Overpass API if database yielded no result or an error
+    if (response === null) response = await fetchFromApi(queryString);
     // transform data into a useable state
     const transformedData = transform(response);
     const processedData = process(transformedData.nodes, transformedData.ways);
     // set map data
-    State.currentRelationId.set(transformedData.relations[0].id);
+    State.currentRelationId.set(transformedData.relation.id);
     State.data.set(processedData);
     State.allWays.set(transformedData.ways);
     CANVAS.centre();
@@ -37,19 +37,15 @@ export async function overpassSearch(searchTerm) {
  *
  * @param searchTerm The search term to build the query for.
  * @returns The query string.
- */
-function buildQuery(searchTerm) {
+ * @throws {OverpassError} If the query could not be built.
+ */ function buildQuery(searchTerm) {
     const roadName = searchTerm;
     const roadNumber = Number(searchTerm);
     // validate input
-    if (roadName.length === 0)
-        throw OverpassError.MALFORMED_SEARCH;
-    if (roadName.includes('"'))
-        throw OverpassError.ILLEGAL_CHARACTER;
+    if (roadName.length === 0) throw OverpassError.MALFORMED_SEARCH;
+    if (roadName.includes('"')) throw OverpassError.ILLEGAL_CHARACTER;
     // choose search mode depending if relation name or id is given
-    const searchMode = isNaN(roadNumber)
-        ? `<has-kv k="name" v="${roadName}"/>`
-        : `<id-query type="relation" ref="${roadName}"/>`;
+    const searchMode = isNaN(roadNumber) ? `<has-kv k="name" v="${roadName}"/>` : `<id-query type="relation" ref="${roadName}"/>`;
     // construct query
     const queryString = `<osm-script output="json"><union><query type="relation">${searchMode}</query><recurse type="relation-way"/><recurse type="way-node"/><recurse type="node-way"/></union><print/></osm-script>`;
     return queryString;
@@ -60,15 +56,15 @@ function buildQuery(searchTerm) {
  *
  * @param response The {@link OverpassResponse} direct from an API or Database call.
  * @returns The sorted {@link OverpassNode Nodes}, {@link OverpassWay Ways} and
- * {@link OverpassRelation Relations}.
- */
-function transform(response) {
+ *   {@link OverpassRelation Relations}.
+ * @throws {OverpassError} If the {@link response} is not valid for this application's purpose.
+ */ function transform(response) {
     const nodes = new Map();
     const ways = new Map();
     const relations = new Array();
     // sort response into nodes, ways and relations
-    for (const element of response.elements) {
-        switch (element.type) {
+    for (const element of response.elements){
+        switch(element.type){
             case "node":
                 nodes.set(element.id, element);
                 break;
@@ -82,26 +78,25 @@ function transform(response) {
     }
     // ensure only 1 relation was returned
     const relation = relations[0];
-    if (relation === undefined)
-        throw OverpassError.NO_RESULT;
-    if (relations.length > 1)
-        throw OverpassError.MULTIPLE_RELATIONS;
+    if (relation === undefined) throw OverpassError.NO_RESULT;
+    if (relations.length > 1) throw OverpassError.MULTIPLE_RELATIONS;
     // remove all ways that aren't part to the relation
-    const keepWayIds = relation.members.map(member => member.ref);
-    for (const key of ways.keys())
-        if (!keepWayIds.includes(key))
-            ways.delete(key);
-    return { nodes, ways, relations };
+    const keepWayIds = relation.members.map((member)=>member.ref);
+    for (const key of ways.keys())if (!keepWayIds.includes(key)) ways.delete(key);
+    return {
+        nodes,
+        ways,
+        relation
+    };
 }
 /**
  * Perform a fetch request to the Overpass API.
  *
  * @param queryString The query string to request from the API.
- * @throws {OverpassError} If the request was unsuccessful.
  * @returns The response from this query.
- */
-async function fetchFromApi(queryString) {
-    MESSAGE_BOX.display("overpassDownload");
+ * @throws {OverpassError} If the request was unsuccessful.
+ */ async function fetchFromApi(queryString) {
+    MessageBox.displayMessage("overpassDownload");
     // perform api request
     const req = await fetch(Settings.get("endpoint"), {
         method: "POST",
@@ -109,16 +104,20 @@ async function fetchFromApi(queryString) {
     });
     // retrieve json body
     const json = await req.json();
-    if (json === undefined)
-        throw OverpassError.REQUEST_ERROR;
-    // cache response data
-    const database = await Database.connect();
-    if (json.elements.length > 0)
-        await database.set({ request: queryString, value: JSON.stringify(json) });
+    if (json === undefined) throw OverpassError.REQUEST_ERROR;
+    // cache response data if response yielded any data
+    if (json.elements.length > 0) {
+        const data = {
+            request: queryString,
+            value: JSON.stringify(json)
+        };
+        const [_, error] = await Database.connect().map((database)=>database.set(data)).run();
+        if (error !== OATH_NULL) console.error(error);
+    }
     Settings.set("ignoreCache", false);
     return json;
 }
-export class OverpassError extends MessageBoxError {
+class OverpassError extends MessageBox.MessageBoxError {
     static MALFORMED_SEARCH = new OverpassError("Invalid search term.");
     static ILLEGAL_CHARACTER = new OverpassError("Currently, double quotes in search terms are not supported.");
     static NO_RESULT = new OverpassError("Search returned no results.");

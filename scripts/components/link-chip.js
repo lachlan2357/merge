@@ -370,94 +370,57 @@ function applyDecs2203RFactory() {
 function _apply_decs_2203_r(targetClass, memberDecs, classDecs, parentClass) {
     return (_apply_decs_2203_r = applyDecs2203RFactory())(targetClass, memberDecs, classDecs, parentClass);
 }
-function _identity(x) {
-    return x;
-}
 var _dec, _initClass, _CustomHTMLElement;
+import { ElementBuilder } from "../elements.js";
+import { createCustomElement } from "../supplement/elements.js";
+import { FontAwesomeIcon } from "./icon.js";
 import { CustomHTMLElement } from "./index.js";
-let _FontAwesomeIcon;
-_dec = CustomHTMLElement.registerCustomElement("fa-icon");
-new class extends _identity {
-    constructor(){
-        super(_FontAwesomeIcon), _initClass();
+let _LinkChip;
+_dec = CustomHTMLElement.registerCustomElement("link-chip");
+class LinkChip extends (_CustomHTMLElement = CustomHTMLElement) {
+    static{
+        ({ c: [_LinkChip, _initClass] } = _apply_decs_2203_r(this, [], [
+            _dec
+        ], _CustomHTMLElement));
+    }
+    /** The {@link HTMLAnchorElement} acting as the actual link. */ anchor = new ElementBuilder("a");
+    /** The {@link HTMLSpanElement} for the link label. */ text = new ElementBuilder("span");
+    /** The {@link FontAwesomeIcon} to add. */ icon = createCustomElement(FontAwesomeIcon);
+    connectedCallback() {
+        this.anchor.addClasses("link-chip");
+        this.anchor.children(this.text.build(), this.icon);
+        this.append(this.anchor.build());
+    }
+    /**
+	 * Set the URL of the chip.
+	 *
+	 * @param url The URL to set.
+	 * @returns This object for method chaining.
+	 */ setUrl(url) {
+        this.anchor.href(url).setExternalLink();
+        return this;
+    }
+    /**
+	 * Set the label of this chip.
+	 *
+	 * @param text The label text to set.
+	 * @returns This object for method chaining.
+	 */ setLabel(text) {
+        this.text.text(text);
+        return this;
+    }
+    /**
+	 * Set the icon for this chip.
+	 *
+	 * @param family The icon family to set.
+	 * @param icon The icon to set.
+	 * @returns This object for method chaining.
+	 */ setIcon(family, icon) {
+        this.icon.setFamily(family).setIcon(icon);
+        return this;
     }
     static{
-        class FontAwesomeIcon extends (_CustomHTMLElement = CustomHTMLElement) {
-            static{
-                ({ c: [_FontAwesomeIcon, _initClass] } = _apply_decs_2203_r(this, [], [
-                    _dec
-                ], _CustomHTMLElement));
-            }
-            /** Attributes to watch for {@link attributeChangedCallback()}. */ static observedAttributes = [
-                "family",
-                "icon",
-                "animation"
-            ];
-            /** Underlying {@link HTMLElement} which FontAwesome uses to display icons. */ icon = document.createElement("i");
-            connectedCallback() {
-                const shadow = this.attachShadow({
-                    mode: "closed"
-                });
-                // set default family if none is specified
-                if (this.getAttribute("family") === null) this.setFamily("solid");
-                // required stylesheets
-                const fontawesomeCss = document.createElement("link");
-                fontawesomeCss.href = "/merge/fontawesome/css/all.min.css";
-                fontawesomeCss.rel = "stylesheet";
-                shadow.append(fontawesomeCss, this.icon);
-            }
-            attributeChangedCallback(attribute, oldValue, newValue) {
-                switch(attribute){
-                    case "family":
-                    case "icon":
-                    case "animation":
-                        {
-                            if (oldValue !== null) this.icon.classList.remove(`fa-${oldValue}`);
-                            if (newValue !== null) this.icon.classList.add(`fa-${newValue}`);
-                            break;
-                        }
-                    default:
-                        return super.attributeChangedCallback(attribute, oldValue, newValue);
-                }
-            }
-            /**
-	 * Set the family for the icon in this container.
-	 *
-	 * The {@link family} needs to be a valid FontAwesome family. See https://fontawesome.com/icons
-	 * for available families.
-	 *
-	 * @param family The name of the family.
-	 * @returns This object for method chaining.
-	 */ setFamily(family) {
-                this.setAttribute("family", family);
-                return this;
-            }
-            /**
-	 * Set the icon for this container.
-	 *
-	 * The {@link icon} needs to be a valid FontAwesome icon. See https://fontawesome.com/icons/ for
-	 * available icons.
-	 *
-	 * @param icon The name of the icon.
-	 * @returns This object for method chaining.
-	 */ setIcon(icon) {
-                this.setAttribute("icon", icon);
-                return this;
-            }
-            /**
-	 * Set the animation for this container.
-	 *
-	 * {@link animation} needs to be a valid FontAwesome animation. See
-	 * https://docs.fontawesome.com/web/style/animate for available animations.
-	 *
-	 * @param animation The name of the animation.
-	 * @returns This object for method chaining.
-	 */ setAnimation(animation) {
-                if (animation === null) this.removeAttribute("animation");
-                else this.setAttribute("animation", animation ?? "");
-                return this;
-            }
-        }
+        _initClass();
     }
-}();
-export { _FontAwesomeIcon as FontAwesomeIcon };
+}
+export { _LinkChip as LinkChip };

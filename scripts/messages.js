@@ -11,35 +11,37 @@ const appMsgMap = {
     error: "Something went wrong."
 };
 const element = getElement("messages", HTMLDivElement);
-export function displayMessage(key) {
-    const message = appMsgMap[key];
-    displayMessageString(message);
-}
-export async function displayMessageString(msg) {
-    const messageText = new ElementBuilder("p").text(msg).build();
-    const message = new ElementBuilder("div")
-        .class("message-box")
-        .children(messageText)
-        .attribute("visible", "")
-        .build();
-    element.append(message);
-    await new Promise(resolve => setTimeout(resolve, 5000));
-    message.setAttribute("closing", "");
-    message.addEventListener("animationend", () => {
-        message.removeAttribute("closing");
-        message.removeAttribute("visible");
-        message.parentElement?.removeChild(message);
-    }, { once: true });
-}
-export const MESSAGE_BOX = {
-    display: displayMessage,
-    displayString: displayMessageString
-};
 /**
- * An error type that can directly send the contents of it's error to the {@link Message} box.
- */
-export class MessageBoxError extends Error {
-    display() {
-        displayMessageString(this.message);
+ * Display a application message.
+ *
+ * @param key The key of the message to display.
+ */ export function displayMessage(key) {
+    const message = appMsgMap[key];
+    displayString(message);
+}
+/**
+ * Display a custom message.
+ *
+ * @param msg The message to display.
+ */ export function displayString(msg) {
+    // display message
+    const messageText = new ElementBuilder("p").text(msg).build();
+    const message = new ElementBuilder("div").addClasses("message-box").children(messageText).attribute("visible", "").build();
+    element.append(message);
+    // remove message after timeout
+    setTimeout(()=>{
+        message.setAttribute("closing", "");
+        message.addEventListener("animationend", ()=>{
+            message.removeAttribute("closing");
+            message.removeAttribute("visible");
+            message.parentElement?.removeChild(message);
+        }, {
+            once: true
+        });
+    }, 5000);
+}
+/** An error type that can directly send the contents of it's error to the message box. */ export class MessageBoxError extends Error {
+    /** Display this error in the message box. */ display() {
+        displayString(this.message);
     }
 }

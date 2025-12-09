@@ -1,10 +1,12 @@
 import { ElementBuilder } from "../elements.js";
 import { Popup } from "./index.js";
-export class AdvancedPopup extends Popup {
+/** Popup definition for the advanced screen. */ class AdvancedPopup extends Popup {
     title = "Advanced";
     build() {
         const advanced = new ElementBuilder("p").text("Coming soon. Stay Tuned.").build();
-        return [advanced];
+        return [
+            advanced
+        ];
     }
 }
-export const ADVANCED_POPUP = new AdvancedPopup();
+/** Instance of {@link AdvancedPopup}. */ export const ADVANCED_POPUP = new AdvancedPopup();
