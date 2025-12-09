@@ -1,22 +1,31 @@
-# file backups, legacy, etc.
+# builds
+dist
+merge
+
+# documentation
+docs
+
+# tests, playwright, etc.
+test-results
+playwright-report
+
+# file backups, legacy, logs, etc.
 *.backup
 *.old
-old
-
-output.html
-branchChecking.*
-inputs
+*.log
 
 # misc markdown
 todo.md
 
-# python
-cache
-*.py
-
 # node
 node_modules
-dist
-merge
-todo.md
+
+# yarn
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
 yarn-error.*

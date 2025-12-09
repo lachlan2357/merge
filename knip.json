@@ -1,0 +1,11 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": ["./src/scripts/index.ts"],
+  "project": ["./src/scripts/**/*.ts"],
+  "rules": {
+    "devDependencies": "off",
+    "nsExports": "warn",
+    "nsTypes": "warn",
+    "classMembers": "warn"
+  }
+}

@@ -1,5 +1,18 @@
+# server-generated files
+temp_*
+
+# locally overridden types
+/src/types
+
 # node
 node_modules
 
-# server-generated files
-temp_*
+# yarn
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+yarn-error.*

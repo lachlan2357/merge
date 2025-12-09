@@ -1,6 +1,6 @@
 import { metresToPixels } from "./conversions.js";
-import { CANVAS } from "./map/canvas.js";
-import { WorldCoordinate } from "./types/coordinate.js";
+import { CANVAS } from "./map/index.js";
+import { WorldCoordinate } from "./supplement/coordinate.js";
 
 const surfaceColours = new Map([
 	["asphalt", "#222233"],
@@ -13,23 +13,44 @@ const surfaceColours = new Map([
 
 const defaultSurfaceColour = "#000000";
 
+/**
+ * Retrieve the colour of a way surface.
+ *
+ * @param surface The surface to retrieve the colour of.
+ * @returns The colour of the surface.
+ */
 export function getSurfaceColour(surface?: string) {
 	if (surface === undefined) return defaultSurfaceColour;
 	return surfaceColours.get(surface) ?? defaultSurfaceColour;
 }
 
+/** Structure to represent a way that has been drawn to the canvas. */
 export type DrawnElement = {
+	/** The ID of this way. */
 	wayId: number;
+	/** The {@link Path2D} that was used to draw this way. */
 	path: Path2D;
 };
 
+/** Structure of all settings to control how a path is drawn to the canvas. */
 type DrawingSettings = {
+	/** The thickness, or width, of lines. */
 	thickness?: number;
+	/** The colour of lines. */
 	colour?: string;
+	/** The colour of the area fill. */
 	fill?: string;
+	/** The cap of how lines are ended/joined. */
 	cap?: CanvasLineCap;
 };
 
+/**
+ * Draw a line on the canvas.
+ *
+ * @param coordStart The start coordinate of the line.
+ * @param coordEnd The end coordinate of the line.
+ * @param settings Settings definition for the line.
+ */
 export function drawLine(
 	coordStart: WorldCoordinate,
 	coordEnd: WorldCoordinate,
@@ -48,18 +69,32 @@ export function drawLine(
 	applyStyle(context, settings);
 }
 
+/**
+ * Draw a polygon on the canvas.
+ *
+ * @param coordinates Coordinates of all vertices of the polygon.
+ * @param settings Settings definition for the line.
+ * @returns The path object of what was drawn.
+ * @throws {DrawError} If the polygon could not be drawn.
+ */
 export function drawPolygon(coordinates: Array<WorldCoordinate>, settings: DrawingSettings) {
 	const context = setStyle(settings);
 
 	// convert to screen coordinates
 	const coords = coordinates.map(world => world.toScreen());
 	const start = coords[0];
+	if (start === undefined) throw DrawError.polygonNotEnoughVertices(coords.length);
 
 	// draw
 	const path = new Path2D();
 
 	path.moveTo(...start.get());
-	for (let i = 1; i < coords.length; i++) path.lineTo(...coords[i].get());
+	for (let i = 0; i < coords.length; i++) {
+		const coord = coords[i];
+		if (coord === undefined) break;
+
+		path.lineTo(...coord.get());
+	}
 
 	path.closePath();
 	applyStyle(context, settings, path);
@@ -67,6 +102,15 @@ export function drawPolygon(coordinates: Array<WorldCoordinate>, settings: Drawi
 	return path;
 }
 
+/**
+ * Draw an arrow on the canvas.
+ *
+ * @param type The type of arrow to draw.
+ * @param width The width to draw the arrow with.
+ * @param length The height to draw the arrow with.
+ * @param centre The coordinate of the centre of the arrow.
+ * @param angle The angle to draw the arrow at.
+ */
 export function drawArrow(
 	type: "left" | "right" | "through",
 	width: number,
@@ -182,6 +226,12 @@ export function drawArrow(
 	}
 }
 
+/**
+ * Set the canvas context to draw in a particular style.
+ *
+ * @param settings Settings definition for the line.
+ * @returns The canvas rendering context.
+ */
 function setStyle(settings: DrawingSettings) {
 	const context = CANVAS.getContext();
 
@@ -193,6 +243,13 @@ function setStyle(settings: DrawingSettings) {
 	return context;
 }
 
+/**
+ * Apply a style to a drawn element.
+ *
+ * @param context The canvas rendering context.
+ * @param settings Settings definition for the line.
+ * @param path The path to style, if applicable.
+ */
 function applyStyle(context: CanvasRenderingContext2D, settings: DrawingSettings, path?: Path2D) {
 	if (path === undefined) {
 		if (settings.fill !== undefined) context.fill();
@@ -200,5 +257,13 @@ function applyStyle(context: CanvasRenderingContext2D, settings: DrawingSettings
 	} else {
 		if (settings.fill !== undefined) context.fill(path);
 		if (settings.colour !== undefined) context.stroke(path);
+	}
+}
+
+class DrawError extends Error {
+	static polygonNotEnoughVertices(numVertices: number) {
+		return new DrawError(
+			`Drawing a polygon requires at least 1 vertex, however ${numVertices} vertices were provided.`
+		);
 	}
 }

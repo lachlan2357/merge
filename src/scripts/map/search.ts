@@ -7,11 +7,21 @@ const SEARCH_FORM = getElement("search-form", HTMLFormElement);
 const SEARCH_BOX = getElement("relation-name", HTMLInputElement);
 const SEARCH_ICON = getElement("search-icon", FontAwesomeIcon);
 
+/**
+ * Load a value into the search box and immediately perform a search.
+ *
+ * @param searchTerm The value to load.
+ */
 export async function loadSearchBox(searchTerm: string) {
 	SEARCH_BOX.value = searchTerm;
 	await search(searchTerm);
 }
 
+/**
+ * Set the status of the search button's icon.
+ *
+ * @param searching The search status.
+ */
 function setSearching(searching: boolean) {
 	// set icon
 	const icon = searching ? "circle-notch" : "magnifying-glass";
@@ -22,7 +32,7 @@ function setSearching(searching: boolean) {
 	SEARCH_ICON.setAnimation(animation);
 }
 
-SEARCH_FORM.addEventListener("submit", async e => {
+SEARCH_FORM.addEventListener("submit", e => {
 	e.preventDefault();
 
 	try {
@@ -36,13 +46,18 @@ SEARCH_FORM.addEventListener("submit", async e => {
 		if (searchTerm === undefined) throw SearchError.EMPTY_SEARCH_TERM;
 
 		// search
-		await search(searchTerm);
+		search(searchTerm).catch(e => console.error(e));
 	} catch (error) {
 		if (error instanceof MessageBoxError) error.display();
 		else console.error(error);
 	}
 });
 
+/**
+ * Search for certain term.
+ *
+ * @param searchTerm The term to search for.
+ */
 async function search(searchTerm: string) {
 	// set searching state
 	setSearching(true);

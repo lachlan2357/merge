@@ -1,13 +1,11 @@
-import { DrawnElement } from "../drawing.js";
-import { MultiplierData } from "../map/canvas.js";
-import { ScreenCoordinate } from "../types/coordinate.js";
-import { OverpassWay } from "../types/overpass.js";
-import { MergeData } from "../types/processed.js";
+import type { DrawnElement } from "../drawing.js";
+import type { MultiplierData } from "../map/index.js";
+import { ScreenCoordinate } from "../supplement/coordinate.js";
+import type { OverpassWay } from "../overpass/structures.js";
+import type { MergeData } from "../overpass/structures-processed.js";
 import { GraphItem } from "./graph.js";
 
-/**
- * Ability to perform calculations when dependent information changes.
- */
+/** Ability to perform calculations when dependent information changes. */
 export interface Compute {
 	/**
 	 * Recalculate the value stored in this container and perform any effects.
@@ -15,14 +13,15 @@ export interface Compute {
 	 * In most situations, this method will be called automatically by containers this container is
 	 * dependent on, however it can also be called manually if desired.
 	 *
-	 * It is imperative that this method calls both {@link GraphItem.beginCalculation}
-	 * and {@link GraphItem.finishCalculation} when it begins and finishes a calculation it if
-	 * wishes to utility the automatic dependency management system.
+	 * It is imperative that this method calls both {@link GraphItem.beginCalculation} and
+	 * {@link GraphItem.finishCalculation} when it begins and finishes a calculation it if wishes to
+	 * utility the automatic dependency management system.
 	 */
 	compute(): void;
 }
 
-export type ComputeFn<T> = () => T;
+/** Signature of a computation function. */
+type ComputeFn<T> = () => T;
 
 /**
  * A state container that can only store data.
@@ -31,9 +30,7 @@ export type ComputeFn<T> = () => T;
  * some data and have that data retrievable.
  */
 export class Store<T> extends GraphItem {
-	/**
-	 * The underlying data in this container.
-	 */
+	/** The underlying data in this container. */
 	protected data: T;
 
 	/**
@@ -51,9 +48,11 @@ export class Store<T> extends GraphItem {
 	 *
 	 * The value returned by this method does not undergo any copying apart from that in which is
 	 * already performed by JavaScript. So, for all non-object values, the return value will be
-	 * passed by value, and for all object values, passed by reference. For this reason, even
-	 * though objects can be retrieved through this method and subsequently modified, they should
-	 * never be as doing so will bypass the state management from this container.
+	 * passed by value, and for all object values, passed by reference. For this reason, even though
+	 * objects can be retrieved through this method and subsequently modified, they should never be
+	 * as doing so will bypass the state management from this container.
+	 *
+	 * @returns The data stored in this container.
 	 */
 	get() {
 		this.wasAccessed();
@@ -73,7 +72,7 @@ export class Atomic<T> extends Store<T> {
 	 *
 	 * This method discards whatever value is previously stored, overwriting it with whatever value
 	 * is passed to it. In cases where the value should be modified instead of overwritten, see
-	 * {@link Atomic.setDynamic()}
+	 * {@link Atomic.setDynamic()}.
 	 *
 	 * @param value The new value to store.
 	 */
@@ -108,29 +107,23 @@ export class Atomic<T> extends Store<T> {
  * This state container should be used to augment {@link Atomic} containers by automatically
  * recalculating values to ensure they stay up-to-date.
  *
- * In cases where no data is needed to be stored, but something needs computing, it is preferred
- * to use an {@link Effect} container instead.
+ * In cases where no data is needed to be stored, but something needs computing, it is preferred to
+ * use an {@link Effect} container instead.
  */
 export class Computed<T> extends Store<T> implements Compute {
-	/**
-	 * The function to compute a new value for this container.
-	 */
+	/** The function to compute a new value for this container. */
 	protected computeFn: ComputeFn<T>;
 
 	/**
 	 * Create a {@link Computed} container by defining a compute function.
 	 *
-	 * It is crucial to ensure all state containers used within the {@link computeFn} are specified
-	 * in the {@link dependencies} array, otherwise the computed value may not be recalculated when
-	 * it should be.
-	 *
-	 * It is also imperative not to create a circular dependency, for example by having two
-	 * computed values dependent on each other. If this occurs, a call to compute this value will
-	 * result in an infinite loop. Currently, there is no inbuilt mechanism to detect this, so it
-	 * is up to implementers to ensure this does not occur.
+	 * A computed value does not require its dependencies listed as automatic dependency discovery
+	 * will take place on the first run of the computation. However, it is imperative to not create
+	 * a circular dependency as doing so will result in an infinite loop. There is no built-in
+	 * method of detecting circular dependencies, so it is up to clients to ensure this does not
+	 * occur.
 	 *
 	 * @param computeFn The function that will be used to compute new values.
-	 * @param dependencies All dependencies of this computation.
 	 */
 	constructor(computeFn: ComputeFn<T>) {
 		super(computeFn());
@@ -158,16 +151,13 @@ export class Computed<T> extends Store<T> implements Compute {
  * use an {@link Computed} container instead.
  */
 export class Effect extends GraphItem implements Compute {
-	/**
-	 * The function to perform effects for this container.
-	 */
+	/** The function to perform effects for this container. */
 	protected effectFn: ComputeFn<void>;
 
 	/**
 	 * Create a {@link Effect} container by defining an effect function.
 	 *
 	 * @param effectFn The function that will be used to perform effects.
-	 * @param dependencies All dependencies of this computation.
 	 */
 	constructor(effectFn: ComputeFn<void>) {
 		super();
@@ -185,27 +175,63 @@ export class Effect extends GraphItem implements Compute {
 	}
 }
 
-/**
- * Central state storage for the application.
- */
+/** Central state storage for the application. */
 export class State {
 	// atomics
-	static readonly data: Atomic<MergeData | undefined> = new Atomic(undefined);
-	static readonly currentRelationId: Atomic<number | undefined> = new Atomic(undefined);
-	static readonly drawnElements: Atomic<Array<DrawnElement>> = new Atomic(new Array());
-	static readonly selectedWay: Atomic<number> = new Atomic(-1);
-	static readonly allWays: Atomic<Map<number, OverpassWay>> = new Atomic(new Map());
-	static readonly canvasDimensions: Atomic<ScreenCoordinate> = new Atomic(new ScreenCoordinate());
-	static readonly canvasOffset: Atomic<ScreenCoordinate> = new Atomic(new ScreenCoordinate());
-	static readonly mousePos: Atomic<ScreenCoordinate> = new Atomic(new ScreenCoordinate());
-	static readonly mouseDownPos: Atomic<ScreenCoordinate> = new Atomic(new ScreenCoordinate());
-	static readonly mouseOffset: Atomic<ScreenCoordinate> = new Atomic(new ScreenCoordinate());
-	static readonly zoomOffset: Atomic<ScreenCoordinate> = new Atomic(new ScreenCoordinate());
-	static readonly mouseDown: Atomic<boolean> = new Atomic(false);
-	static readonly mouseMoved: Atomic<boolean> = new Atomic(false);
-	static readonly zoom: Atomic<number> = new Atomic(0);
+
+	/** The data used to render the current map. */
+	static readonly data = new Atomic<MergeData | undefined>(undefined);
+
+	/** The ID of the relation currently drawn on the map. */
+	static readonly currentRelationId = new Atomic<number | undefined>(undefined);
+
+	/** All elements currently drawn on the map. */
+	static readonly drawnElements = new Atomic(new Array<DrawnElement>());
+
+	/** The way that is currently selected for inspection. */
+	static readonly selectedWay = new Atomic(-1);
+
+	/** All ways that are part of the current relation. */
+	static readonly allWays = new Atomic(new Map<number, OverpassWay>());
+
+	/** The dimensions that the canvas raster should be drawn at. */
+	static readonly canvasDimensions = new Atomic(new ScreenCoordinate());
+
+	/** The offset of the canvas relative to the page. */
+	static readonly canvasOffset = new Atomic(new ScreenCoordinate());
+
+	/** The current mouse position. */
+	static readonly mousePos = new Atomic(new ScreenCoordinate());
+
+	/** The position of the mouse when the left mouse button started to be pressed. */
+	static readonly mouseDownPos = new Atomic(new ScreenCoordinate());
+
+	/**
+	 * The offset of the mouse relative to {@link mouseDownPos}.
+	 *
+	 * TODO: this should probably be a computed value.
+	 */
+	static readonly mouseOffset = new Atomic(new ScreenCoordinate());
+
+	/** The offset of the map caused by zooming in/out. */
+	static readonly zoomOffset = new Atomic(new ScreenCoordinate());
+
+	/** Whether the mouse is currently being held down. */
+	static readonly mouseDown = new Atomic(false);
+
+	/**
+	 * Whether the mouse has moved since being held down.
+	 *
+	 * TODO: this should probably be a computed value.
+	 */
+	static readonly mouseMoved = new Atomic(false);
+
+	/** The current zoom factor of the map. */
+	static readonly zoom = new Atomic(0);
 
 	// computed
+
+	/** The multiplier data for the current map. */
 	static readonly multiplier: Computed<MultiplierData> = new Computed((): MultiplierData => {
 		let maxLat = 0,
 			minLat = 0,
@@ -241,14 +267,17 @@ export class State {
 		return { minLat, maxLat, minLon, maxLon, multiplier };
 	});
 
+	/** The raw value of the combined {@link multiplier} and {@link zoom}. */
 	static readonly totalMultiplierRaw = new Computed(() => {
 		return this.multiplier.get().multiplier + this.zoom.get();
 	});
 
+	/** The processed value of {@link totalMultiplierRaw} to provide a better zooming experience. */
 	static readonly totalMultiplier = new Computed(() => {
 		return this.totalMultiplierRaw.get() ** 2;
 	});
 
+	/** The total offset of the map inside the canvas. */
 	static readonly offset = new Computed(() => {
 		const totalMultiplierCache = this.totalMultiplier.get();
 		const { minLon, maxLon, minLat, maxLat } = this.multiplier.get();

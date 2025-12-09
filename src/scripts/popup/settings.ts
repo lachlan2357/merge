@@ -5,7 +5,8 @@ import * as Settings from "../settings/index.js";
 import { createCustomElement } from "../supplement/elements.js";
 import { Popup } from "./index.js";
 
-export class SettingsPopup extends Popup {
+/** Popup definition for the settings screen. */
+class SettingsPopup extends Popup {
 	protected readonly title = "Settings";
 
 	build(): Array<HTMLElement> {
@@ -20,7 +21,7 @@ export class SettingsPopup extends Popup {
 			const heading = new ElementBuilder("h3").text(setting.name).build();
 			const resetIcon = createCustomElement(FontAwesomeIcon).setIcon("arrow-rotate-right");
 			const resetButton = new ElementBuilder("button")
-				.class("reset-button")
+				.addClasses("reset-button")
 				.event("click", () => setting.reset())
 				.tooltip("Reset", "bottom")
 				.children(resetIcon)
@@ -28,7 +29,7 @@ export class SettingsPopup extends Popup {
 
 			// main
 			const description = new ElementBuilder("p")
-				.class("setting-title")
+				.addClasses("setting-title")
 				.text(setting.description)
 				.build();
 			const inputElement = setting.inputElement.build();
@@ -44,4 +45,5 @@ export class SettingsPopup extends Popup {
 	}
 }
 
+/** Instance of {@link SettingsPopup}. */
 export const SETTINGS_POPUP = new SettingsPopup();

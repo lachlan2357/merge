@@ -1,25 +1,18 @@
 import { MessageBoxError } from "../messages.js";
-import {
-	OsmBoolean,
-	OsmMaybe,
-	OsmString,
-	OsmUnsignedInteger,
-	OsmValue,
-	ToString
-} from "../types/osm.js";
-import { OverpassNode, OverpassWay } from "../types/overpass.js";
-import {
+import { OsmBoolean, OsmMaybe, OsmString, OsmUnsignedInteger, OsmValue } from "./osm-values.js";
+import type { OverpassNode, OverpassWay, OverpassRelation } from "./structures.js";
+import type {
 	MergeData,
 	MergePartial,
 	MergeWay,
 	MergeWayTag,
 	MergeWayTags,
 	MergeWayTagsIn
-} from "../types/processed.js";
+} from "./structures-processed.js";
 import { performInferences, performTransforms } from "./inferences/index.js";
 
 /**
- * Process {@link OverpassNode Nodes}, {@link OverpassWay Ways} and
+ * Process {@link OverpassNode Nodes} and {@link OverpassWay Ways} and
  * {@link OverpassRelation Relations} into data the map can use to display.
  *
  * @param allNodes All {@link OverpassNode OverpassNodes} to process.
@@ -57,7 +50,7 @@ export function process(allNodes: Map<number, OverpassNode>, allWays: Map<number
 			turnLanesForward: compile(tags, "turnLanesForward"),
 			turnLanesBackward: compile(tags, "turnLanesBackward"),
 			surface: compile(tags, "surface")
-		} satisfies Record<string, OsmValue<ToString>>;
+		};
 
 		// format compiled tags
 		const warnings = performTransforms(compiledTags);
@@ -83,8 +76,8 @@ export function process(allNodes: Map<number, OverpassNode>, allWays: Map<number
  *
  * @param tags The object containing the {@link Partial} tags.
  * @param tag The specific tag to compile.
- * @throws {TagError} If the tag could not be compiled.
  * @returns The compiled tag.
+ * @throws {TagError} If the tag could not be compiled.
  */
 function compile<Tag extends MergeWayTag, Value extends MergeWayTags[Tag]>(
 	tags: MergePartial<MergeWayTags>,
@@ -93,27 +86,6 @@ function compile<Tag extends MergeWayTag, Value extends MergeWayTags[Tag]>(
 	const value = tags[tag] as OsmMaybe<Value>;
 	if (!value.isSet()) throw new MissingTagError(tag);
 	return value.get();
-}
-
-/**
- * Determine whether the value of a tag has been set.
- *
- * A tag is deemed to be set if its value is neither `null` or `undefined`.
- *
- * @param tag The tag to check if set.
- * @returns Whether the tag has its value set.
- */
-export function isEq<Value extends OsmValue<T>, T extends ToString>(
-	tag: Value | OsmMaybe<Value>,
-	cmp: Value | T
-): boolean {
-	if (tag === undefined) return false;
-	if (tag instanceof OsmMaybe) {
-		if (!tag.isSet()) return false;
-		else return tag.get().eq(cmp);
-	} else {
-		return tag.eq(cmp);
-	}
 }
 
 class MissingTagError extends MessageBoxError {

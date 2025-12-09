@@ -1,27 +1,37 @@
-import { MessageBoxError } from "./messages.js";
-import { OverpassResponse } from "./types/overpass.js";
+import type { OverpassResponse } from "./overpass/structures.js";
+import { Oath, OATH_NULL } from "./supplement/oath.js";
 
-type CachedQuery = {
+/** Structure of how a cached query is stored in the IndexedDB database. */
+export type CachedQuery = {
+	/** The request string that was sent to the Overpass API. */
 	request: string;
+	/** The response string that was retrieved from the Overpass API. */
 	value: string;
 };
 
 /**
  * A connection to the local IndexedDB database.
  *
- * Merge currently requires data persistence in order to cache responses from the Overpass API as
- * to not unnecessarily re-request the API.
+ * Merge currently requires data persistence in order to cache responses from the Overpass API as to
+ * not unnecessarily re-request the API.
  *
  * ## Usage
  *
  * Each time a connection to the database is required, a new {@link Database} object should be
- * retrieved, used while in the current scope and discarded afterwards. There is little point
- * trying to maintain an active connection.
+ * retrieved, used while in the current scope and discarded afterwards. There is little point trying
+ * to maintain an active connection.
  */
 export class Database {
+	/** Name of the IndexedDB database to use. */
 	private static readonly DB_NAME: string = "Overpass Data";
 
+	/** Current version of the database. */
+	private static readonly DB_VERSION: number = 1;
+
+	/** Name of the IndexedDB store to use for caching. */
 	private static readonly STORE_NAME: string = "overpass-cache";
+
+	/** Parameters of how to setup the IndexedDB cache store. */
 	private static readonly STORE_OPTIONS: IDBObjectStoreParameters = { keyPath: "request" };
 
 	/**
@@ -38,7 +48,7 @@ export class Database {
 	 * used internally to encapsulate one. To retrieve a valid instance, see
 	 * {@link Database.connect()}.
 	 *
-	 * @param database
+	 * @param database The raw {@link IDBDatabase} connection.
 	 */
 	private constructor(database: IDBDatabase) {
 		this.database = database;
@@ -47,37 +57,34 @@ export class Database {
 	/**
 	 * Retrieve a connection to the {@link Database} and {@link IDBDatabase}.
 	 *
+	 * @returns A connection to the database.
 	 * @throws {DatabaseError} If a connection to the database could not be retrieved.
-	 * @returns
 	 */
-	static async connect() {
-		const database = await new Promise<IDBDatabase>(resolve => {
-			const req = window.indexedDB.open(Database.DB_NAME);
+	static connect(): Oath<Database, DatabaseError> {
+		return new Oath(DatabaseError, ({ resolve, reject }) => {
+			const request = Oath.mapException(
+				() => window.indexedDB.open(Database.DB_NAME, Database.DB_VERSION),
+				error => DatabaseError.new("databaseOpen", error)
+			);
 
-			// failed connection
-			req.onerror = () => {
-				throw DatabaseError.CONNECTION_ERROR;
-			};
-
-			// blocked connection
-			req.onblocked = () => {
-				throw DatabaseError.BLOCKED_ERROR;
-			};
-
-			// upgrade database
-			req.onupgradeneeded = () => {
-				const database = req.result;
-				database.createObjectStore(Database.STORE_NAME, Database.STORE_OPTIONS);
-			};
-
-			// successful connection
-			req.onsuccess = () => {
-				const database = req.result;
-				resolve(database);
-			};
+			request.onerror = e => reject(DatabaseError.new("databaseOpen", e));
+			request.onblocked = e => reject(DatabaseError.new("databaseOpen", e));
+			request.onupgradeneeded = () => this.upgradeDatabase(request.result);
+			request.onsuccess = () => resolve(new Database(request.result));
 		});
+	}
 
-		return new Database(database);
+	/**
+	 * Upgrade the IndexedDB database to the current version defined by {@link Database}.
+	 *
+	 * @param database The database object to perform the upgrades on.
+	 * @throws {DatabaseError} If the database could not be successfully upgraded.
+	 */
+	private static upgradeDatabase(database: IDBDatabase) {
+		Oath.mapException(
+			() => database.createObjectStore(Database.STORE_NAME, Database.STORE_OPTIONS),
+			error => DatabaseError.new("objectStoreCreate", error)
+		);
 	}
 
 	/**
@@ -87,51 +94,70 @@ export class Database {
 	 * designate a function `f` which will be run on the object store inside the transaction.
 	 *
 	 * This method signature resembles that of a {@link Promise} and can be used similarly as, when
-	 * called, this method will wrap the provided function inside a promise to complete the
-	 * required actions.
+	 * called, this method will wrap the provided function inside a promise to complete the required
+	 * actions.
 	 *
 	 * @param mode The mode for this transaction.
 	 * @param fn The function for logic to perform on this transaction.
+	 * @returns The value defined by {@link fn}.
 	 */
-	private async transact<R>(
+	private transact<R>(
 		mode: IDBTransactionMode,
 		fn: (
 			store: IDBObjectStore,
 			resolve: (data: R) => void,
-			reject: (error: unknown) => void
+			reject: (error: DatabaseError) => void
 		) => void
-	): Promise<R> {
-		// open transaction
-		const transaction = this.database.transaction(Database.STORE_NAME, mode);
-		const store = transaction.objectStore(Database.STORE_NAME);
+	): Oath<R, DatabaseError> {
+		return Oath.fromAsync(DatabaseError, async () => {
+			// open transaction
+			const transaction = Oath.mapException(
+				() => this.database.transaction(Database.STORE_NAME, mode),
+				error => DatabaseError.new("transactionOpen", error)
+			);
 
-		// complete actions
-		const data = await new Promise<R>((resolve, reject) => {
-			return fn(store, resolve, reject);
+			// retrieve object store
+			const store = Oath.mapException(
+				() => transaction.objectStore(Database.STORE_NAME),
+				error => DatabaseError.new("objectStoreGet", error)
+			);
+
+			// complete transaction logic
+			const data = await new Promise<R>((resolve, reject) => fn(store, resolve, reject));
+
+			// commit and close transaction
+			const [_, commitError] = Oath.sync(DatabaseError, () => {
+				return Oath.mapException(
+					() => transaction.commit(),
+					error => DatabaseError.new("transactionCommit", error)
+				);
+			});
+			if (commitError !== OATH_NULL) console.warn(commitError);
+			return data;
 		});
-		transaction.commit();
-		return data;
 	}
 
 	/**
 	 * Retrieve cached data from the database.
 	 *
 	 * @param key The key of the cached data.
+	 * @returns The cached data from the database, if it exists.
 	 * @throws {DatabaseError} If the data could not be retrieved.
 	 */
-	async get(key: string) {
-		return this.transact<OverpassResponse | null>("readonly", (store, resolve) => {
-			const req = store.get(key);
+	get(key: string): Oath<OverpassResponse | null, DatabaseError> {
+		return this.transact("readonly", (store, resolve, reject) => {
+			const req = Oath.mapException(
+				() => store.get(key),
+				error => DatabaseError.new("objectStoreGetFrom", error)
+			);
 
-			req.onerror = () => {
-				throw DatabaseError.GET_ERROR;
-			};
-
+			req.onerror = event => reject(DatabaseError.new("objectStoreGetFrom", event));
 			req.onsuccess = () => {
-				const result: CachedQuery | undefined = req.result;
+				const result = req.result as CachedQuery | undefined;
 				if (result === undefined) return resolve(null);
 
-				const json: OverpassResponse = JSON.parse(result.value);
+				const json = JSON.parse(result.value) as OverpassResponse | undefined;
+				if (json === undefined) return resolve(null);
 				resolve(json);
 			};
 		});
@@ -141,34 +167,38 @@ export class Database {
 	 * Cache data into the database.
 	 *
 	 * @param data The data to cache.
+	 * @returns Whether the value was successfully set.
 	 * @throws {DatabaseError} If the data could not be cached.
 	 */
-	async set(data: CachedQuery) {
-		return this.transact<void>("readwrite", (store, resolve) => {
-			const req = store.put(data);
+	set(data: CachedQuery): Oath<void, DatabaseError> {
+		return this.transact("readwrite", (store, resolve, reject) => {
+			const req = Oath.mapException(
+				() => store.put(data),
+				error => DatabaseError.new("objectStoreInsertInto", error)
+			);
 
-			req.onerror = () => {
-				throw DatabaseError.SET_ERROR;
-			};
-
-			req.onsuccess = () => {
-				resolve();
-			};
+			req.onerror = event => reject(DatabaseError.new("objectStoreInsertInto", event));
+			req.onsuccess = () => resolve();
 		});
 	}
 }
 
-/**
- * Errors which could occur while opening a new connection to the {@link IDBDatabase}.
- */
-export class DatabaseError extends MessageBoxError {
-	static readonly CONNECTION_ERROR = new DatabaseError(
-		"Could not connect to the local database."
-	);
-	static readonly BLOCKED_ERROR = new DatabaseError(
-		"Database is awaiting an upgrade, however other connections are still open."
-	);
+/** Errors which could occur while opening a new connection to the {@link IDBDatabase}. */
+class DatabaseError extends Error {
+	private static readonly ERROR_MAP = {
+		databaseOpen: "Connection to the database could not be opened.",
 
-	static readonly GET_ERROR = new DatabaseError("Could not retrieve data from the database.");
-	static readonly SET_ERROR = new DatabaseError("Could not insert data into the database.");
+		objectStoreCreate: "Object store could not be created.",
+		objectStoreGet: "Object store could not be found.",
+		objectStoreGetFrom: "Data could not be retrieved from object store.",
+		objectStoreInsertInto: "Data could not be inserted into object store.",
+
+		transactionOpen: "Transaction could not be opened.",
+		transactionCommit: "Transaction could not be committed."
+	} as const satisfies Record<string, string>;
+
+	static new<Key extends keyof typeof DatabaseError.ERROR_MAP>(stage: Key, cause: unknown) {
+		const message = DatabaseError.ERROR_MAP[stage];
+		return new DatabaseError(message, { cause });
+	}
 }

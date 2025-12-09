@@ -1,7 +1,8 @@
 import { ElementBuilder } from "../elements.js";
 import { Popup } from "./index.js";
 
-export class HelpPopup extends Popup {
+/** Popup definition for the help screen. */
+class HelpPopup extends Popup {
 	protected readonly title = "Help";
 
 	build(): Array<HTMLElement> {
@@ -10,4 +11,5 @@ export class HelpPopup extends Popup {
 	}
 }
 
+/** Instance of {@link HelpPopup}. */
 export const HELP_POPUP = new HelpPopup();

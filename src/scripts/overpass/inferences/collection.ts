@@ -1,13 +1,13 @@
-import { OsmMaybe } from "../../types/osm.js";
-import {
+import { OsmMaybe, OsmValue } from "../osm-values.js";
+import type {
 	InferencesMade,
 	MergeWayTag,
 	MergeWayTags,
 	MergeWayTagsIn
-} from "../../types/processed.js";
+} from "../structures-processed.js";
 import { TagWarning } from "../warnings.js";
-import { UnknownInference } from "./builder.js";
-import { TransformFn, ValidationFn } from "./interfaces.js";
+import type { UnknownInference } from "./builder.js";
+import type { TransformFn, ValidationFn } from "./interfaces.js";
 
 /**
  * Define how a certain tag can be inferred.
@@ -19,28 +19,24 @@ import { TransformFn, ValidationFn } from "./interfaces.js";
  *
  * The five stages of inference are:
  *
- * 1. {@link calculations} are computations that can be made for the value of a tag based on the
- * values of other tags. It is crucial that these inferences, if run on the same tags object, will
- * either infer the same value or not make an inference, as absolute precision is a requirement for
- * this level of inference.
- *
- * 2. {@link fallbacks} are instructions for how to create a default value based on the values of
- * other tags. Fallbacks do not have the strict requirement for being precise like calculations,
- * thus they should be ordered in descending order of desirability.
- *
- * 3. {@link default} is the final chance for a value to be set, indicating that a tag's value is
- * completely missing with no chance of any reasonably guess to what the value should be. These
- * values are not based on any data, acting as a pure default value.
- *
- * 4. {@link formatFn} is designed to ensure the final tag's value is the most canonical version of
- * itself it can be. Sometimes, values for tags, or partial values in the case of arrays, can use
- * shortcuts in the way they are written to make it easier for mappers. The goal of format is to
- * reverse these changes to make it clearest what different values are referring to.
- *
- * 5. {@link validateFn} is used to check that the value makes sense in the context of all the other
- * tags. This is not the correct place to ensure values are "proper" (i.e., a surface is specified)
- * as a valid surface, these checks should be made in a class extending from {@link OsmValue},
- * restricting possible inner values to the "proper" ones.
+ * 1. {@link calculations}: computations that can be made for the value of a tag based on the values of
+ *    other tags. It is crucial that these inferences, if run on the same tags object, will either
+ *    infer the same value or not make an inference, as absolute precision is a requirement for this
+ *    level of inference.
+ * 2. {@link fallbacks}: instructions for how to create a default value based on the values of other
+ *    tags. Fallbacks do not have the strict requirement for being precise like calculations, thus
+ *    they should be ordered in descending order of desirability.
+ * 3. {@link defaultValue}: the final chance for a value to be set, indicating that a tag's value is
+ *    completely missing with no chance of any reasonably guess to what the value should be. These
+ *    values are not based on any data, acting as a pure default value.
+ * 4. {@link formatFn}: designed to ensure the final tag's value is the most canonical version of itself
+ *    it can be. Sometimes, values for tags, or partial values in the case of arrays, can use
+ *    shortcuts in the way they are written to make it easier for mappers. The goal of format is to
+ *    reverse these changes to make it clearest what different values are referring to.
+ * 5. {@link validateFn}: used to check that the value makes sense in the context of all the other tags.
+ *    This is not the correct place to ensure values are "proper" (i.e., a surface is specified) as
+ *    a valid surface, these checks should be made in a class extending from {@link OsmValue},
+ *    restricting possible inner values to the "proper" ones.
  *
  * A tag must, at the very least, specify a default value, however may not specify a method for any
  * of the other stages if it is not applicable.
@@ -52,16 +48,23 @@ export class InferenceCollection<
 	Tag extends MergeWayTag,
 	OsmType extends MergeWayTags[Tag] = MergeWayTags[Tag]
 > {
-	/**
-	 * The {@link MergeWayTag} this inference object is declared for.
-	 */
+	/** The {@link MergeWayTag} this inference object is declared for. */
 	readonly tag: Tag;
 
+	/** All calculations that can be made. */
 	readonly calculations: Array<UnknownInference<Tag>>;
+
+	/** All fallbacks that can be made. */
 	readonly fallbacks: Array<UnknownInference<Tag>>;
+
+	/** The default value to set for this tag in the absence of other possibilities. */
 	readonly defaultValue: MergeWayTags[Tag];
-	readonly formatFn: TransformFn<Tag>;
-	readonly validateFn: ValidationFn<Tag>;
+
+	/** The function used to format this value. */
+	readonly formatFn: TransformFn<Tag> | undefined;
+
+	/** The function used to validate this value. */
+	readonly validateFn: ValidationFn<Tag> | undefined;
 
 	/**
 	 * Define how a certain {@link tag} can be inferred.
@@ -78,8 +81,8 @@ export class InferenceCollection<
 		calculations: Array<UnknownInference<Tag>>,
 		fallbacks: Array<UnknownInference<Tag>>,
 		defaultValue: MergeWayTags[Tag],
-		formatFn: TransformFn<Tag>,
-		validateFn: ValidationFn<Tag>
+		formatFn: TransformFn<Tag> | undefined,
+		validateFn: ValidationFn<Tag> | undefined
 	) {
 		this.tag = tag;
 		this.calculations = calculations;
@@ -96,6 +99,7 @@ export class InferenceCollection<
 	 *
 	 * @param tags The current state of the existing tags.
 	 * @param inferredTags Set to keep track of tags which have had their values inferred.
+	 * @returns Whether the value was set to default.
 	 */
 	setDefault(tags: MergeWayTagsIn, inferredTags: InferencesMade) {
 		// ensure value already hasn't been inferred
@@ -114,10 +118,11 @@ export class InferenceCollection<
 	 * @param tags The final values of all tags.
 	 */
 	formatValue(tags: MergeWayTags) {
-		// ensure tag value exists
-		const value = tags[this.tag];
+		// ensure format function is provided
+		if (this.formatFn === undefined) return;
 
 		// format value
+		const value = tags[this.tag];
 		const formattedValue = this.formatFn(this.tag, value, tags);
 		if (formattedValue === undefined) return;
 		tags[this.tag] = formattedValue;
@@ -129,10 +134,12 @@ export class InferenceCollection<
 	 * @param tags The final values of all tags.
 	 * @param warnings Set to keep track of warnings for all tags.
 	 */
-	validateValue = (tags: MergeWayTags, warnings: Set<TagWarning>) => {
-		const value = tags[this.tag];
+	validateValue(tags: MergeWayTags, warnings: Set<TagWarning>) {
+		// ensure validation function is provided
+		if (this.validateFn === undefined) return;
 
 		// validate value
+		const value = tags[this.tag];
 		this.validateFn(value, tags, warnings);
-	};
+	}
 }

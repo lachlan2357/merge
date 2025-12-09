@@ -1,30 +1,39 @@
 import { laneLength, metresToPixels } from "../conversions.js";
-import { DrawnElement, drawArrow, drawLine, drawPolygon, getSurfaceColour } from "../drawing.js";
-import sidebar from "./sidebar.js";
+import {
+	type DrawnElement,
+	drawArrow,
+	drawLine,
+	drawPolygon,
+	getSurfaceColour
+} from "../drawing.js";
+import * as Sidebar from "./sidebar.js";
 import * as Settings from "../settings/index.js";
 import { Effect, State } from "../state/index.js";
 import { getElement } from "../supplement/elements.js";
 import { zoomIncrement } from "../supplement/index.js";
-import { ScreenCoordinate, WorldCoordinate } from "../types/coordinate.js";
+import { ScreenCoordinate, WorldCoordinate } from "../supplement/coordinate.js";
 import "./buttons.js";
 
+/** Structure containing all data required to calculate a zoom multiplier. */
 export type MultiplierData = {
+	/** The minimum latitude of any nodes. */
 	minLat: number;
+	/** The maximum latitude of any nodes. */
 	maxLat: number;
+	/** The minimum longitude of any nodes. */
 	minLon: number;
+	/** The maximum longitude of any nodes. */
 	maxLon: number;
+	/** The calculated multiplier. */
 	multiplier: number;
 };
 
+/** Container to control drawing the map to a {@link HTMLCanvasElement}. */
 class Canvas {
-	/**
-	 * Reference to the HTML Canvas element.
-	 */
+	/** Reference to the HTML Canvas element. */
 	private readonly element: HTMLCanvasElement;
 
-	/**
-	 * Reference to the container for the {@link element}.
-	 */
+	/** Reference to the container for the {@link element}. */
 	private readonly container: HTMLElement;
 
 	/**
@@ -56,7 +65,7 @@ class Canvas {
 			if (!State.data.get()) return;
 
 			if (!State.mouseMoved.get() && !this.checkHover()) {
-				sidebar.hide();
+				Sidebar.hide();
 				State.selectedWay.set(-1);
 			}
 
@@ -90,9 +99,7 @@ class Canvas {
 		new ResizeObserver(() => this.setResolution()).observe(this.container);
 	}
 
-	/**
-	 * Re-centre the canvas back to origin, resetting offset and zoom.
-	 */
+	/** Re-centre the canvas back to origin, resetting offset and zoom. */
 	centre() {
 		State.mouseOffset.set(new ScreenCoordinate());
 		State.zoomOffset.set(new ScreenCoordinate());
@@ -126,16 +133,12 @@ class Canvas {
 		State.zoomOffset.setDynamic(old => old.add(diff));
 	}
 
-	/**
-	 * Toggle whether the map should be displayed in fullscreen.
-	 */
+	/** Toggle whether the map should be displayed in fullscreen. */
 	toggleFullscreen() {
 		this.container.toggleAttribute("fullscreen");
 	}
 
-	/**
-	 * Draw the map onto the canvas, taking consideration of zoom, offset, etc.
-	 */
+	/** Draw the map onto the canvas, taking consideration of zoom, offset, etc. */
 	draw() {
 		// clear canvas from previous drawings
 		const dimensions = State.canvasDimensions.get();
@@ -147,7 +150,7 @@ class Canvas {
 
 		// clear any previously-drawn elements
 		context.clearRect(0, 0, dimensions.x, dimensions.y);
-		State.drawnElements.set(new Array());
+		State.drawnElements.set([]);
 
 		const drawnElementsCache = new Array<DrawnElement>();
 		dataCache.forEach((way, wayId) => {
@@ -156,10 +159,12 @@ class Canvas {
 			for (let i = 0; i < way.orderedNodes.length; i++) {
 				const thisNodeId = way.orderedNodes[i];
 				const nextNodeId = way.orderedNodes[i + 1];
+				if (thisNodeId === undefined || nextNodeId === undefined) continue;
+
 				const thisNode = way.nodes.get(thisNodeId);
 				const nextNode = way.nodes.get(nextNodeId);
 
-				if (!thisNode || !nextNode) continue;
+				if (thisNode === undefined || nextNode === undefined) continue;
 
 				const x1 = thisNode.lon;
 				const y1 = thisNode.lat;
@@ -194,54 +199,49 @@ class Canvas {
 				const nextTopCornerPos = nextPos.add(coordCoefficient);
 				const nextBtmCornerPos = nextPos.subtract(coordCoefficient);
 
-				const allPos = [
-					[
-						thisPos.x,
-						nextPos.x,
-						thisTopCornerPos.x,
-						thisBtmCornerPos.x,
-						nextTopCornerPos.x,
-						nextBtmCornerPos.x
-					],
-					[
-						thisPos.y,
-						nextPos.y,
-						thisTopCornerPos.y,
-						thisBtmCornerPos.y,
-						nextTopCornerPos.y,
-						nextBtmCornerPos.y
-					]
+				const allXPos = [
+					thisPos.x,
+					nextPos.x,
+					thisTopCornerPos.x,
+					thisBtmCornerPos.x,
+					nextTopCornerPos.x,
+					nextBtmCornerPos.x
+				];
+				const allYPos = [
+					thisPos.y,
+					nextPos.y,
+					thisTopCornerPos.y,
+					thisBtmCornerPos.y,
+					nextTopCornerPos.y,
+					nextBtmCornerPos.y
 				];
 
 				// check to see if any of the box is visible on screen
 				type Position = "above" | "in" | "below" | "unknown";
-				const allOffScreen = new Array(
-					new Array<Position>().fill("unknown", 0, 6),
-					new Array<Position>().fill("unknown", 0, 6)
-				);
+				const allOffScreen = new Matrix<Position>(2, 6, "unknown");
 
 				for (let i = 0; i < 6; i++) {
-					const xPos = new WorldCoordinate(allPos[0][i], 0).toScreen().x;
-					const yPos = new WorldCoordinate(0, allPos[1][i]).toScreen().y;
+					const xPos = allXPos[i];
+					const yPos = allYPos[i];
+					if (xPos === undefined || yPos === undefined) continue;
 
-					if (xPos < 0) allOffScreen[0][i] = "above";
-					else if (xPos > dimensions.x) allOffScreen[0][i] = "below";
-					else allOffScreen[0][i] = "in";
+					const xPosScreen = new WorldCoordinate(xPos, 0).toScreen().x;
+					const yPosScreen = new WorldCoordinate(0, yPos).toScreen().y;
 
-					if (yPos < 0) allOffScreen[1][i] = "above";
-					else if (yPos > dimensions.y) allOffScreen[1][i] = "below";
-					else allOffScreen[1][i] = "in";
+					if (xPosScreen < 0) allOffScreen.set(0, i, "above");
+					else if (xPosScreen > dimensions.x) allOffScreen.set(0, i, "below");
+					else allOffScreen.set(0, i, "in");
+
+					if (yPosScreen < 0) allOffScreen.set(1, i, "above");
+					else if (yPosScreen > dimensions.y) allOffScreen.set(1, i, "below");
+					else allOffScreen.set(1, i, "in");
 				}
 
-				const allXEqual = allOffScreen[0].every((val, _, arr) => val === arr[0]);
-				const allYEqual = allOffScreen[1].every((val, _, arr) => val === arr[0]);
-
 				// check if the entire way is offscreen
-				if (
-					(allXEqual && allOffScreen[0][0] != "in") ||
-					(allYEqual && allOffScreen[1][0] != "in")
-				)
-					continue;
+				const isOffscreen =
+					!allOffScreen.getArray(0)?.includes("in") ||
+					!allOffScreen.getArray(1)?.includes("in");
+				if (isOffscreen) continue;
 
 				const lanesForward = way.tags.lanesForward.get();
 				const lanesBackward = way.tags.lanesBackward.get();
@@ -353,9 +353,7 @@ class Canvas {
 		State.drawnElements.set(drawnElementsCache);
 	}
 
-	/**
-	 * Resize the canvas to fit it's container.
-	 */
+	/** Resize the canvas to fit it's container. */
 	setResolution() {
 		const offset = ScreenCoordinate.ofElementOffset(this.container);
 		const dimensions = ScreenCoordinate.ofElementDimensions(this.element);
@@ -383,9 +381,8 @@ class Canvas {
 		let anyHovered = false;
 
 		// check whether any paths are hovered over
-		for (let i = 0; i < drawnCache.length; i++) {
+		for (const element of drawnCache) {
 			// see if path is hovered over
-			const element = drawnCache[i];
 			const path = element.path;
 			const isHovered = context.isPointInPath(path, ...mousePos.get());
 			if (!isHovered) continue;
@@ -394,7 +391,7 @@ class Canvas {
 			// display popup if element is clicked
 			const way = State.allWays.get().get(element.wayId);
 			if (way === undefined) continue;
-			if (clicked) sidebar.show(element.wayId);
+			if (clicked) Sidebar.show(element.wayId);
 		}
 
 		return anyHovered;
@@ -404,6 +401,7 @@ class Canvas {
 	 * Retrieve the drawing context for this canvas.
 	 *
 	 * @returns The drawing context.
+	 * @throws {Error} If the canvas rending context could not be retrieved.
 	 */
 	getContext() {
 		const context = this.element.getContext("2d");
@@ -412,8 +410,70 @@ class Canvas {
 	}
 }
 
-// canvas instance
+/** Main instance of the {@link HTMLCanvasElement}. */
 export const CANVAS = new Canvas("canvas", "main");
 
 // canvas effects
 new Effect(() => CANVAS.draw());
+
+/**
+ * A two-dimension matrix of values.
+ *
+ * @template T The type of the matrix value. Currently this is restricted to primitives for proper
+ *   comparisons and copying.
+ */
+class Matrix<T extends string | number> {
+	/** The inner array storing the values of the matrix. */
+	private readonly inner: Array<Array<T>>;
+
+	/**
+	 * Initialise a new {@link Matrix}.
+	 *
+	 * @param xLength The length of the matrix in the x-dimension.
+	 * @param yLength The length of the matrix in the y-dimension.
+	 * @param defaultValue The default value to set in all matrix cells.
+	 */
+	constructor(xLength: number, yLength: number, defaultValue: T) {
+		this.inner = [];
+		for (let i = 0; i < xLength; i++) {
+			const arr = new Array<T>(yLength).fill(defaultValue);
+			this.inner.push(arr);
+		}
+	}
+
+	/**
+	 * Retrieve the value stored in a particular cell.
+	 *
+	 * @param x The x-coordinate of the cell.
+	 * @param y The y-coordinate of the cell.
+	 * @returns The value stored in the cell, if the cell exists.
+	 */
+	get(x: number, y: number) {
+		return this.getArray(x)?.[y];
+	}
+
+	/**
+	 * Retrieve the array of cells at a particular x-coordinate.
+	 *
+	 * @param x The x-coordinate of the cell.
+	 * @returns The array of cells at the x-coordinate, if the array exists.
+	 */
+	getArray(x: number) {
+		return this.inner[x];
+	}
+
+	/**
+	 * Set the value of a particular cell.
+	 *
+	 * If a particular {@link x}-{@link y} cell does not exist, nothing will be set.
+	 *
+	 * @param x The x-coordinate of the cell to set.
+	 * @param y The y-coordinate of the cell to set.
+	 * @param value The value to set the cell to.
+	 */
+	set(x: number, y: number, value: T) {
+		if (this.inner[x] === undefined) return;
+		if (this.inner[x][y] === undefined) return;
+		this.inner[x][y] = value;
+	}
+}

@@ -1,16 +1,16 @@
 import { Database } from "../database.js";
-import { CANVAS } from "../map/canvas.js";
-import { MESSAGE_BOX, MessageBoxError } from "../messages.js";
+import { CANVAS } from "../map/index.js";
+import * as MessageBox from "../messages.js";
 import * as Settings from "../settings/index.js";
 import { State } from "../state/index.js";
-import {
+import type {
 	OverpassNode,
 	OverpassRelation,
 	OverpassResponse,
 	OverpassWay
-} from "../types/overpass.js";
+} from "./structures.js";
 import { process } from "./process.js";
-
+import { OATH_NULL } from "../supplement/oath.js";
 /**
  * Request the Overpass API for the required search.
  *
@@ -25,11 +25,15 @@ export async function overpassSearch(searchTerm: string) {
 	// check database for cached result, if applicable
 	const skipDatabase = Settings.get("ignoreCache");
 	if (!skipDatabase) {
-		const database = await Database.connect();
-		response = await database.get(queryString);
+		const [data, error] = await Database.connect()
+			.map(database => database.get(queryString))
+			.run();
+
+		if (error !== OATH_NULL) console.error(error);
+		else response = data;
 	}
 
-	// request from Overpass API if required
+	// request from Overpass API if database yielded no result or an error
 	if (response === null) response = await fetchFromApi(queryString);
 
 	// transform data into a useable state
@@ -37,7 +41,7 @@ export async function overpassSearch(searchTerm: string) {
 	const processedData = process(transformedData.nodes, transformedData.ways);
 
 	// set map data
-	State.currentRelationId.set(transformedData.relations[0].id);
+	State.currentRelationId.set(transformedData.relation.id);
 	State.data.set(processedData);
 	State.allWays.set(transformedData.ways);
 
@@ -49,6 +53,7 @@ export async function overpassSearch(searchTerm: string) {
  *
  * @param searchTerm The search term to build the query for.
  * @returns The query string.
+ * @throws {OverpassError} If the query could not be built.
  */
 function buildQuery(searchTerm: string) {
 	const roadName = searchTerm;
@@ -74,7 +79,8 @@ function buildQuery(searchTerm: string) {
  *
  * @param response The {@link OverpassResponse} direct from an API or Database call.
  * @returns The sorted {@link OverpassNode Nodes}, {@link OverpassWay Ways} and
- * {@link OverpassRelation Relations}.
+ *   {@link OverpassRelation Relations}.
+ * @throws {OverpassError} If the {@link response} is not valid for this application's purpose.
  */
 function transform(response: OverpassResponse) {
 	const nodes = new Map<number, OverpassNode>();
@@ -105,18 +111,18 @@ function transform(response: OverpassResponse) {
 	const keepWayIds = relation.members.map(member => member.ref);
 	for (const key of ways.keys()) if (!keepWayIds.includes(key)) ways.delete(key);
 
-	return { nodes, ways, relations };
+	return { nodes, ways, relation };
 }
 
 /**
  * Perform a fetch request to the Overpass API.
  *
  * @param queryString The query string to request from the API.
- * @throws {OverpassError} If the request was unsuccessful.
  * @returns The response from this query.
+ * @throws {OverpassError} If the request was unsuccessful.
  */
 async function fetchFromApi(queryString: string) {
-	MESSAGE_BOX.display("overpassDownload");
+	MessageBox.displayMessage("overpassDownload");
 
 	// perform api request
 	const req = await fetch(Settings.get("endpoint"), {
@@ -125,19 +131,23 @@ async function fetchFromApi(queryString: string) {
 	});
 
 	// retrieve json body
-	const json: OverpassResponse | undefined = await req.json();
+	const json = (await req.json()) as OverpassResponse | undefined;
 	if (json === undefined) throw OverpassError.REQUEST_ERROR;
 
-	// cache response data
-	const database = await Database.connect();
-	if (json.elements.length > 0)
-		await database.set({ request: queryString, value: JSON.stringify(json) });
+	// cache response data if response yielded any data
+	if (json.elements.length > 0) {
+		const data = { request: queryString, value: JSON.stringify(json) };
+		const [_, error] = await Database.connect()
+			.map(database => database.set(data))
+			.run();
+		if (error !== OATH_NULL) console.error(error);
+	}
 
 	Settings.set("ignoreCache", false);
 	return json;
 }
 
-export class OverpassError extends MessageBoxError {
+class OverpassError extends MessageBox.MessageBoxError {
 	static readonly MALFORMED_SEARCH = new OverpassError("Invalid search term.");
 	static readonly ILLEGAL_CHARACTER = new OverpassError(
 		"Currently, double quotes in search terms are not supported."

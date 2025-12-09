@@ -4,16 +4,15 @@ import {
 	OsmDoubleArray,
 	OsmString,
 	OsmUnsignedInteger
-} from "../../types/osm.js";
-import { MergeWayTag, MergeWayTags, MergeWayTagsIn } from "../../types/processed.js";
-import { TagWarning, WarningMap } from "../warnings.js";
+} from "../osm-values.js";
+import type { MergeWayTag, MergeWayTags, MergeWayTagsIn } from "../structures-processed.js";
+import { TagWarning, type WarningMap } from "../warnings.js";
 import { InferenceCollection } from "./collection.js";
 import { InferenceBuilder } from "./builder.js";
-import { noTransform, noValidation } from "./interfaces.js";
-import { InferenceGraph, Nodes } from "./graph.js";
+import { InferenceGraph, type Nodes } from "./graph.js";
 
 /**
- * Perform all available {@link inferences} on {@link tags}.
+ * Perform all available {@link allInferences inferences} on {@link tags}.
  *
  * Inferences will be performed as specified under {@link InferenceCollection} on {@link tags}.
  *
@@ -90,17 +89,18 @@ export function performTransforms(tags: MergeWayTags): WarningMap {
 	return warningMap;
 }
 
-/**
- * All available formatters to be used by various tags.
- */
+/** All available formatters to be used by various tags. */
 const formatters = {
 	/**
 	 * Format a `turn:lanes`, `turn:lanes:*` tag value.
 	 *
+	 * @param tag The tag to format.
 	 * @param value The original value of the `turn:lanes` tag.
+	 * @param tags The current state of the tags.
 	 * @returns The formatted value of the `turn:lanes` tag.
 	 */
 	turnLanes(
+		this: void,
 		tag: MergeWayTag,
 		value: OsmDoubleArray<OsmString>,
 		tags: MergeWayTags
@@ -111,7 +111,7 @@ const formatters = {
 		// add missing lanes to turn:lanes
 		const numLanesObj = tag === "turnLanesForward" ? tags.lanesForward : tags.lanesBackward;
 		const numLanes = numLanesObj.get();
-		while (value.length < numLanes) value.push(new OsmArray(new Array(), OsmString));
+		while (value.length < numLanes) value.push(new OsmArray([], OsmString));
 
 		// convert implicit nones (empty element) to explicit nones "none"
 		return value.map(array => {
@@ -121,16 +121,15 @@ const formatters = {
 	}
 };
 
-/**
- * All available inferences to use when compiling tags.
- */
+/** All available inferences to use when compiling tags. */
 const allInferences = {
 	/**
 	 * Infer whether a way should be marked as one-way.
 	 *
 	 * @param tags The current state of the tags.
 	 * @param hasChanged State to change when a change has been made.
-	 * @param inferredTags Set of tags which have been inferred to add this tag to if changes are made.
+	 * @param inferredTags Set of tags which have been inferred to add this tag to if changes are
+	 *   made.
 	 */
 	inferOneway: new InferenceCollection(
 		"oneway",
@@ -142,7 +141,7 @@ const allInferences = {
 		],
 		[],
 		new OsmBoolean(false),
-		noTransform<"oneway">,
+		undefined,
 		(oneway, { lanesBackward }, warnings) => {
 			// oneway === true && lanes:backward !== 0
 			if (oneway.eq(true) && !lanesBackward.eq(0))
@@ -157,39 +156,42 @@ const allInferences = {
 	/**
 	 * Infer whether a junction is present.
 	 *
-	 * Note: there is no way to infer the value of `junction` to be anything other than `no`. Thus, if
-	 * the `junction` tag is missing, it will be defaulted to `no`.
+	 * Note: there is no way to infer the value of `junction` to be anything other than `no`. Thus,
+	 * if the `junction` tag is missing, it will be defaulted to `no`.
 	 *
 	 * @param tags The current state of the tags.
 	 * @param hasChanged State to change when a change has been made.
-	 * @param inferredTags Set of tags which have been inferred to add this tag to if changes are made.
+	 * @param inferredTags Set of tags which have been inferred to add this tag to if changes are
+	 *   made.
 	 */
 	inferJunction: new InferenceCollection(
 		"junction",
 		[],
 		[],
 		new OsmString("no"),
-		noTransform<"junction">,
-		noValidation
+		undefined,
+		undefined
 	),
 
 	/**
 	 * Infer whether a surface is present.
 	 *
 	 * Note: there is no way to infer the value of `surface` to be anything other than its initial
-	 * value or `unknown`. Thus, if the `surface` tag is missing, it will be defaulted to `unknown`.
+	 * value or `unknown`. Thus, if the `surface` tag is missing, it will be defaulted to
+	 * `unknown`.
 	 *
 	 * @param tags The current state of the tags.
 	 * @param hasChanged State to change when a change has been made.
-	 * @param inferredTags Set of tags which have been inferred to add this tag to if changes are made.
+	 * @param inferredTags Set of tags which have been inferred to add this tag to if changes are
+	 *   made.
 	 */
 	inferSurface: new InferenceCollection(
 		"surface",
 		[],
 		[],
 		new OsmString("unknown"),
-		noTransform<"surface">,
-		noValidation
+		undefined,
+		undefined
 	),
 
 	/**
@@ -197,7 +199,8 @@ const allInferences = {
 	 *
 	 * @param tags The current state of the tags.
 	 * @param hasChanged State to change when a change has been made.
-	 * @param inferredTags Set of tags which have been inferred to add this tag to if changes are made.
+	 * @param inferredTags Set of tags which have been inferred to add this tag to if changes are
+	 *   made.
 	 */
 	inferLanes: new InferenceCollection(
 		"lanes",
@@ -222,7 +225,7 @@ const allInferences = {
 				.setInferenceFn(tags => new OsmUnsignedInteger(tags.oneway.eq(true) ? 1 : 2))
 		],
 		new OsmUnsignedInteger(2),
-		noTransform<"lanes">,
+		undefined,
 		(lanes, { lanesForward, lanesBackward }, warnings) => {
 			// lanes === 0
 			if (lanes.eq(0)) warnings.add(TagWarning.lanesEqualZero("lanes"));
@@ -240,7 +243,8 @@ const allInferences = {
 	 *
 	 * @param tags The current state of the tags.
 	 * @param hasChanged State to change when a change has been made.
-	 * @param inferredTags Set of tags which have been inferred to add this tag to if changes are made.
+	 * @param inferredTags Set of tags which have been inferred to add this tag to if changes are
+	 *   made.
 	 */
 	inferLanesForward: new InferenceCollection(
 		"lanesForward",
@@ -266,7 +270,7 @@ const allInferences = {
 				.setInferenceFn(tags => tags.lanes.divide(2))
 		],
 		new OsmUnsignedInteger(1),
-		noTransform<"lanesForward">,
+		undefined,
 		(lanesForward, _tags, warnings) => {
 			// lanes:forward === 0
 			if (lanesForward.eq(0)) warnings.add(TagWarning.lanesEqualZero("lanesForward"));
@@ -278,7 +282,8 @@ const allInferences = {
 	 *
 	 * @param tags The current state of the tags.
 	 * @param hasChanged State to change when a change has been made.
-	 * @param inferredTags Set of tags which have been inferred to add this tag to if changes are made.
+	 * @param inferredTags Set of tags which have been inferred to add this tag to if changes are
+	 *   made.
 	 */
 	inferLanesBackward: new InferenceCollection(
 		"lanesBackward",
@@ -303,7 +308,7 @@ const allInferences = {
 				.setInferenceFn(tags => tags.lanes.divide(2))
 		],
 		new OsmUnsignedInteger(1),
-		noTransform<"lanesBackward">,
+		undefined,
 		(lanesBackward, tags, warnings) => {
 			// oneway === true && lanes:backward !== 0
 			if (tags.oneway.eq(true) && !lanesBackward.eq(0))
@@ -320,7 +325,8 @@ const allInferences = {
 	 *
 	 * @param tags The current state of the tags.
 	 * @param hasChanged State to change when a change has been made.
-	 * @param inferredTags Set of tags which have been inferred to add this tag to if changes are made.
+	 * @param inferredTags Set of tags which have been inferred to add this tag to if changes are
+	 *   made.
 	 */
 	inferTurnLanesForward: new InferenceCollection(
 		"turnLanesForward",
@@ -360,7 +366,8 @@ const allInferences = {
 	 *
 	 * @param tags The current state of the tags.
 	 * @param hasChanged State to change when a change has been made.
-	 * @param inferredTags Set of tags which have been inferred to add this tag to if changes are made.
+	 * @param inferredTags Set of tags which have been inferred to add this tag to if changes are
+	 *   made.
 	 */
 	inferTurnLanesBackward: new InferenceCollection(
 		"turnLanesBackward",
@@ -395,11 +402,7 @@ const allInferences = {
 	)
 } as const;
 
-export type AllInferences = typeof allInferences;
-
-/**
- * Compiled array of all calculations specified in {@link allInferences}.
- */
+/** Compiled array of all calculations specified in {@link allInferences}. */
 const ALL_CALCULATIONS = Object.values(allInferences)
 	.map<Nodes>(collection => collection.calculations)
 	.flat();

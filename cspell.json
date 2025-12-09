@@ -15,8 +15,10 @@
     "nodenext",
     "realfavicon",
     "stylelint",
+    "swcrc",
     "trivago",
     "tsbuildinfo",
+    "unhandlable",
     "wayid"
   ]
 }

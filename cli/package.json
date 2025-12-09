@@ -1,19 +1,26 @@
 {
-	"name": "merge-cli",
-	"version": "0.0.0",
-	"description": "CLI tool to assist with the development of Merge",
-	"author": {
-		"name": "Lachlan Rehder",
-		"email": "lachlan.rehder@outlook.com",
-		"url": "https://lachlan2357.github.io/"
-	},
-	"license": "GPL-3.0-only",
-	"private": true,
-	"main": "index.js",
-	"type": "module",
-	"scripts": {},
-	"dependencies": {
-		"express": "^4.21.2",
-		"ws": "^8.18.0"
-	}
+  "name": "merge-cli",
+  "version": "0.0.0",
+  "description": "CLI tool to assist with the development of Merge",
+  "author": {
+    "name": "Lachlan Rehder",
+    "email": "lachlan.rehder@outlook.com",
+    "url": "https://lachlan2357.github.io/"
+  },
+  "license": "GPL-3.0-only",
+  "private": true,
+  "main": "./src/index.ts",
+  "type": "module",
+  "dependencies": {
+    "@swc/core": "^1.10.18",
+    "chokidar": "^4.0.3",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "sass": "^1.85.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/ws": "^8.5.14"
+  }
 }

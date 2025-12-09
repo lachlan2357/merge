@@ -1,13 +1,13 @@
 import { ElementBuilder } from "../elements.js";
 import { MessageBoxError } from "../messages.js";
-import { ToString } from "../types/osm.js";
+import type { OsmInnerValue } from "../overpass/osm-values.js";
 
 /**
  * Container for storing information about a particular application setting.
  *
  * @template T The type for the underlying data this container stores.
  */
-export abstract class Setting<T extends ToString> {
+export abstract class Setting<T extends OsmInnerValue> {
 	/**
 	 * Set of all the keys already used by a setting.
 	 *
@@ -17,41 +17,28 @@ export abstract class Setting<T extends ToString> {
 	 */
 	static readonly #registeredKeys = new Set<string>();
 
-	/**
-	 * The display name of this setting.
-	 */
+	/** The display name of this setting. */
 	readonly name: string;
 
-	/**
-	 * The key to use when storing persistent data.
-	 */
+	/** The key to use when storing persistent data. */
 	readonly key: string;
 
-	/**
-	 * A short description of what this setting changes.
-	 */
+	/** A short description of what this setting changes. */
 	readonly description: string;
 
-	/**
-	 * Whether the value of this setting should be stored to persist across application sessions.
-	 */
+	/** Whether the value of this setting should be stored to persist across application sessions. */
 	readonly isPersistent: boolean;
 
-	/**
-	 * Whether this setting should appear and be modifiable by the user in the settings menu.
-	 */
+	/** Whether this setting should appear and be modifiable by the user in the settings menu. */
 	readonly inSettingsMenu: boolean;
 
-	/**
-	 * The default value of this setting.
-	 */
+	/** The default value of this setting. */
 	readonly #defaultValue: T;
 
+	/** The method to run when the value of this setting changes. */
 	readonly #onChange: (newValue: T) => void;
 
-	/**
-	 * The current value of this setting.
-	 */
+	/** The current value of this setting. */
 	#currentValue: T;
 
 	/**
@@ -69,10 +56,10 @@ export abstract class Setting<T extends ToString> {
 	 * Setting the value will cause the new value to be saved in {@link localStorage}, provided
 	 * {@link isPersistent} is `true`.
 	 *
-	 * Setting this value will also cause the {@link inputElement} to have it's value set to the
-	 * new value. In almost all cases, since this value is being called from an event listener on
-	 * that element, it will functionally be redundant, however there is the possibility of the
-	 * value being set from elsewhere, in which this is necessary.
+	 * Setting this value will also cause the {@link inputElement} to have it's value set to the new
+	 * value. In almost all cases, since this value is being called from an event listener on that
+	 * element, it will functionally be redundant, however there is the possibility of the value
+	 * being set from elsewhere, in which this is necessary.
 	 *
 	 * @param newValue The new value to overwrite this container's value with.
 	 */
@@ -99,7 +86,8 @@ export abstract class Setting<T extends ToString> {
 	 * @param name The display name of this setting.
 	 * @param key The key used when reading/writing to {@link localStorage}.
 	 * @param description A description of the function this setting changes.
-	 * @param value The default value of this setting if it isn't fetched from persistent storage.
+	 * @param defaultValue The default value of this setting if it isn't fetched from persistent
+	 *   storage.
 	 * @param isPersistent Whether this setting should be persistent across sessions.
 	 * @param inSettingsMenu Whether this setting should appear in the settings menu.
 	 * @param onChange A callback function to be called whenever the stored value changes.
@@ -139,9 +127,7 @@ export abstract class Setting<T extends ToString> {
 		this.setInputValue();
 	}
 
-	/**
-	 * Reset this setting to its {@link #defaultValue}.
-	 */
+	/** Reset this setting to its default value. */
 	reset() {
 		this.value = this.#defaultValue;
 	}
@@ -149,7 +135,7 @@ export abstract class Setting<T extends ToString> {
 	/**
 	 * Load this value from {@link localStorage}, overwriting the currently stored value.
 	 *
-	 * If either {@link this.isPersistent} is `false`, there doesn't exist a value stored in
+	 * If either {@link isPersistent} is `false`, there doesn't exist a value stored in
 	 * {@link localStorage} or the value stored cannot be processed correctly, the currently stored
 	 * value is not updated.
 	 */
@@ -169,7 +155,7 @@ export abstract class Setting<T extends ToString> {
 	/**
 	 * Save this value to {@link localStorage}, overwriting the value stored there.
 	 *
-	 * If {@link this.isPersistent} is `false`, nothing is written to {@link localStorage}.
+	 * If {@link isPersistent} is `false`, nothing is written to {@link localStorage}.
 	 */
 	protected save() {
 		if (!this.isPersistent) return;
@@ -202,7 +188,7 @@ export abstract class Setting<T extends ToString> {
 	}
 
 	/**
-	 * Configure the {@link this.inputElement} to be specialised for this input type.
+	 * Configure the {@link inputElement} to be specialised for this input type.
 	 *
 	 * @param builder The {@link ElementBuilder} configure.
 	 */
@@ -211,29 +197,25 @@ export abstract class Setting<T extends ToString> {
 	/**
 	 * Process an incoming `string` from {@link localStorage} into the correct setting type.
 	 *
-	 * @param valueString The `string` value to process
-	 * @throws {SettingTypeError} If the value could not be processed.
+	 * @param input The `string` value to process.
 	 * @returns The processed value.
+	 * @throws {SettingTypeError} If the value could not be processed.
 	 */
 	protected abstract process(input: string): T;
 
 	/**
 	 * Retrieve a new value for this container from a {@link HTMLInputElement}.
 	 *
+	 * @param input The {@link HTMLInputElement} to retrieve the value from.
 	 * @throws {SettingTypeError} If the value of the input field is not valid for this setting.
-	 * @param input The {@link HTMLInputField} to retrieve the value from.
 	 */
 	protected abstract getValueFromInput(input: HTMLInputElement): T;
 
-	/**
-	 * Set the value of {@link inputElement} to the value stored in this container.
-	 */
+	/** Set the value of {@link inputElement} to the value stored in this container. */
 	protected abstract setInputValue(): void;
 }
 
-/**
- * Container for storing a setting represented as a boolean.
- */
+/** Container for storing a setting represented as a boolean. */
 export class BooleanSetting extends Setting<boolean> {
 	configureInputElement(builder: ElementBuilder<"input">) {
 		builder.inputType("checkbox");
@@ -259,9 +241,7 @@ export class BooleanSetting extends Setting<boolean> {
 	}
 }
 
-/**
- * Container for storing a setting represented as a url.
- */
+/** Container for storing a setting represented as a url. */
 export class UrlSetting extends Setting<URL> {
 	configureInputElement(builder: ElementBuilder<"input">): void {
 		builder.inputType("url").setRequired();
@@ -269,7 +249,6 @@ export class UrlSetting extends Setting<URL> {
 
 	protected process(value: string) {
 		try {
-			if (value === "") throw null;
 			return new URL(value);
 		} catch {
 			throw SettingError.invalidValue(value, "url");
@@ -299,7 +278,8 @@ class SettingError extends MessageBoxError {
 	}
 
 	/**
-	 * Error constructor for when a setting's value is attempted to be updated with an invalid value.
+	 * Error constructor for when a setting's value is attempted to be updated with an invalid
+	 * value.
 	 *
 	 * @param value The string value that was attempted to be converted.
 	 * @param type The type the string value was attempted to be converted into.

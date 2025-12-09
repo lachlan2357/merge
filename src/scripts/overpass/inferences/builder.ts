@@ -1,36 +1,34 @@
-import { OsmInner, OsmMaybe, OsmValue, OsmValueForTag, ToString } from "../../types/osm.js";
 import {
+	type OsmInner,
+	OsmMaybe,
+	OsmValue,
+	type OsmValueForTag,
+	type OsmInnerValue
+} from "../osm-values.js";
+import type {
 	Certain,
 	MergeCertain,
 	MergeWayTag,
 	MergeWayTagIn,
 	MergeWayTagsIn,
 	Pretty
-} from "../../types/processed.js";
+} from "../structures-processed.js";
 import { InferenceGraph } from "./graph.js";
 
-/**
- * Typed object for a subset of {@link MergeWayTagsIn}.
- */
+/** Typed object for a subset of {@link MergeWayTagsIn}. */
 type SetObject<Tags extends readonly MergeWayTagIn[]> = Pretty<
 	MergeCertain<Pick<MergeWayTagsIn, Tags[number]>>
 >;
 
-/**
- * A function used to infer a certain {@link Tag}.
- */
+/** A function used to infer a certain {@link Tag}. */
 type InferenceFn<Tag extends MergeWayTagIn, SetTags extends readonly MergeWayTagIn[]> = (
 	tags: SetObject<SetTags>
 ) => Certain<MergeWayTagsIn[Tag]>;
 
-/**
- * A function used to compare a value with an expected value.
- */
-type CompareFn = (tag: OsmValue<ToString>) => boolean;
+/** A function used to compare a value with an expected value. */
+type CompareFn = (tag: OsmValue<OsmInnerValue>) => boolean;
 
-/**
- * A loosely-typed {@link Inference} object to allow polymorphism.
- */
+/** A loosely-typed {@link Inference} object to allow polymorphism. */
 export type UnknownInference<Tag extends MergeWayTag> = Inference<
 	Tag,
 	Readonly<Array<MergeWayTagIn>>
@@ -41,12 +39,12 @@ export type UnknownInference<Tag extends MergeWayTag> = Inference<
  *
  * A pathway requires two components:
  *
- * 1. Assertions. Each assertion forms a check that must be true in order for this inference to be
- * able to be made. Some common assertions are provided as their own functions, such as
- * {@link InferenceBuilder.assertIsSet()}, {@link InferenceBuilder.assertIsEq()}, etc., however a
- * catch-all {@link InferenceBuilder.assertThat()} is provided for extended functionality.
- * 2. Inference Function. Given all the assertions to be true, an inference function is required
- * to transform the assertions into an inferred value.
+ * 1. Assertions. Each assertion forms a check that must be true in order for this inference to be able
+ *    to be made. Some common assertions are provided as their own functions, such as
+ *    {@link InferenceBuilder.assertIsSet()}, {@link InferenceBuilder.assertIsEq()}, etc., however a
+ *    catch-all {@link InferenceBuilder.assertThat()} is provided for extended functionality.
+ * 2. Inference Function. Given all the assertions to be true, an inference function is required to
+ *    transform the assertions into an inferred value.
  *
  * @template Tag The {@link MergeWayTag} which this creator is building for.
  * @template SetTags All tags this pathway requires to be present to evaluate an inference.
@@ -55,19 +53,13 @@ export class InferenceBuilder<
 	Tag extends MergeWayTag,
 	SetTags extends readonly MergeWayTagIn[] = []
 > {
-	/**
-	 * The {@link MergeWayTag} this inference is being built for.
-	 */
+	/** The {@link MergeWayTag} this inference is being built for. */
 	readonly tag: Tag;
 
-	/**
-	 * All tags that have been asserted to exist.
-	 */
+	/** All tags that have been asserted to exist. */
 	readonly setTags: SetTags;
 
-	/**
-	 * All comparison functions which must return true to be able to use this inference path.
-	 */
+	/** All comparison functions which must return true to be able to use this inference path. */
 	readonly cmpFns: Array<[MergeWayTagIn, CompareFn]>;
 
 	/**
@@ -166,14 +158,10 @@ export class Inference<
 	InferFn extends InferenceFn<Tag, SetTags> = InferenceFn<Tag, SetTags>,
 	Builder extends InferenceBuilder<Tag, SetTags> = InferenceBuilder<Tag, SetTags>
 > {
-	/**
-	 * The {@link InferenceBuilder} used to create this {@link Inference}.
-	 */
+	/** The {@link InferenceBuilder} used to create this {@link Inference}. */
 	readonly builder: Builder;
 
-	/**
-	 * The function to be used to infer a the {@link Tag} value.
-	 */
+	/** The function to be used to infer a the {@link Tag} value. */
 	readonly inferenceFn: InferFn;
 
 	/**
@@ -188,19 +176,20 @@ export class Inference<
 	}
 
 	/**
-	 * Attempt to infer the value for {@link this.builder.tag}.
+	 * Attempt to infer the value for a {@link builder}'s tag.
 	 *
-	 * In the case this inference cannot be successfully completed, nothing will be updated.
-	 * However in the event it can be, the value stored in {@link tags} will be set and
-	 * {@link inferenceGraph} will be notified that the value has been set.
+	 * In the case this inference cannot be successfully completed, nothing will be updated. However
+	 * in the event it can be, the value stored in {@link tags} will be set and {@link inferenceGraph}
+	 * will be notified that the value has been set.
 	 *
 	 * It is also possible for it to be determined that it is impossible for this inference to ever
 	 * yield a result. In this case, {@link inferenceGraph} will be notified as such.
 	 *
-	 * Note that if {@link inferenceGraph} is not passed, all hooks into a graph will be disabled
-	 * and nothing will be notified.
+	 * Note that if {@link inferenceGraph} is not passed, all hooks into a graph will be disabled and
+	 * nothing will be notified.
 	 *
 	 * @param tags The current state of the tags.
+	 * @param inferredTags Set to keep track of tags which have had their values inferred.
 	 * @param inferenceGraph The graph this inference is attached to.
 	 * @returns The inferred value, if it is possible to be inferred.
 	 */
@@ -214,12 +203,15 @@ export class Inference<
 		if (currentValue.isSet()) return false;
 
 		// check and type set values
-		const partialTagsSubset: Partial<Record<SetTags[number], OsmValue<ToString>>> = {};
+		const partialTagsSubset: Partial<Record<SetTags[number], OsmValue<OsmInnerValue>>> = {};
 		for (const tag of this.builder.setTags) {
 			const maybeValue = tags[tag];
 			if (!maybeValue.isSet()) return false;
 
-			const typedMaybe: OsmMaybe<OsmValue<ToString>, OsmValue<ToString>> = maybeValue;
+			const typedMaybe: OsmMaybe<
+				OsmValue<OsmInnerValue>,
+				OsmValue<OsmInnerValue>
+			> = maybeValue;
 			partialTagsSubset[tag as SetTags[number]] = typedMaybe.get();
 		}
 		const tagsSubset = partialTagsSubset as SetObject<SetTags>;
@@ -241,7 +233,7 @@ export class Inference<
 
 		// set inferred value
 		const tag = this.builder.tag;
-		(tags[tag] as OsmMaybe<OsmValue<ToString>>) = newValue.maybe();
+		(tags[tag] as OsmMaybe<OsmValue<OsmInnerValue>>) = newValue.maybe();
 		inferredTags.add(tag);
 		inferenceGraph?.notifySet(tag, inferredTags, tags);
 		return true;

@@ -4,9 +4,10 @@ import { ElementBuilder } from "../elements.js";
 import { State } from "../state/index.js";
 import { createCustomElement } from "../supplement/elements.js";
 import { POPUP_DIALOG, Popup } from "./index.js";
-import sidebar from "../map/sidebar.js";
+import * as Sidebar from "../map/sidebar.js";
 
-export class WarningsPopup extends Popup {
+/** Popup definition for the warnings screen. */
+class WarningsPopup extends Popup {
 	protected readonly title = "Warnings";
 
 	build(): Array<HTMLElement> {
@@ -32,7 +33,7 @@ export class WarningsPopup extends Popup {
 				.tooltip("Inspect Way", "left")
 				.event("click", () => {
 					POPUP_DIALOG.close();
-					sidebar.show(id);
+					Sidebar.show(id);
 				})
 				.children(icon)
 				.build();
@@ -61,4 +62,5 @@ export class WarningsPopup extends Popup {
 	}
 }
 
+/** Instance of {@link WarningsPopup}. */
 export const WARNINGS_POPUP = new WarningsPopup();

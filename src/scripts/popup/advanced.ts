@@ -1,7 +1,8 @@
 import { ElementBuilder } from "../elements.js";
 import { Popup } from "./index.js";
 
-export class AdvancedPopup extends Popup {
+/** Popup definition for the advanced screen. */
+class AdvancedPopup extends Popup {
 	protected readonly title = "Advanced";
 
 	build(): Array<HTMLElement> {
@@ -10,4 +11,5 @@ export class AdvancedPopup extends Popup {
 	}
 }
 
+/** Instance of {@link AdvancedPopup}. */
 export const ADVANCED_POPUP = new AdvancedPopup();

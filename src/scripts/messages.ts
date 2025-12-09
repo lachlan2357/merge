@@ -12,50 +12,54 @@ const appMsgMap = {
 	error: "Something went wrong."
 } as const;
 
-export type AppMsg = keyof typeof appMsgMap;
+type AppMsg = keyof typeof appMsgMap;
 
 const element = getElement("messages", HTMLDivElement);
 
+/**
+ * Display a application message.
+ *
+ * @param key The key of the message to display.
+ */
 export function displayMessage(key: AppMsg) {
 	const message = appMsgMap[key];
-	displayMessageString(message);
+	displayString(message);
 }
 
-export async function displayMessageString(msg: string) {
+/**
+ * Display a custom message.
+ *
+ * @param msg The message to display.
+ */
+export function displayString(msg: string) {
+	// display message
 	const messageText = new ElementBuilder("p").text(msg).build();
-
 	const message = new ElementBuilder("div")
-		.class("message-box")
+		.addClasses("message-box")
 		.children(messageText)
 		.attribute("visible", "")
 		.build();
-
 	element.append(message);
 
-	await new Promise(resolve => setTimeout(resolve, 5000));
-
-	message.setAttribute("closing", "");
-	message.addEventListener(
-		"animationend",
-		() => {
-			message.removeAttribute("closing");
-			message.removeAttribute("visible");
-			message.parentElement?.removeChild(message);
-		},
-		{ once: true }
-	);
+	// remove message after timeout
+	setTimeout(() => {
+		message.setAttribute("closing", "");
+		message.addEventListener(
+			"animationend",
+			() => {
+				message.removeAttribute("closing");
+				message.removeAttribute("visible");
+				message.parentElement?.removeChild(message);
+			},
+			{ once: true }
+		);
+	}, 5000);
 }
 
-export const MESSAGE_BOX = {
-	display: displayMessage,
-	displayString: displayMessageString
-};
-
-/**
- * An error type that can directly send the contents of it's error to the {@link Message} box.
- */
+/** An error type that can directly send the contents of it's error to the message box. */
 export class MessageBoxError extends Error {
+	/** Display this error in the message box. */
 	display() {
-		displayMessageString(this.message);
+		displayString(this.message);
 	}
 }

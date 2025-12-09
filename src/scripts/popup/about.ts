@@ -1,9 +1,10 @@
-import { FontAwesomeIcon } from "../components/icon.js";
-import { ElementBuilder, LinkChip } from "../elements.js";
+import { LinkChip } from "../components/link-chip.js";
+import { ElementBuilder } from "../elements.js";
 import { createCustomElement } from "../supplement/elements.js";
 import { Popup } from "./index.js";
 
-export class AboutPopup extends Popup {
+/** Popup definition for the about screen. */
+class AboutPopup extends Popup {
 	protected readonly title = "About";
 
 	build(): Array<HTMLElement> {
@@ -13,15 +14,14 @@ export class AboutPopup extends Popup {
 			)
 			.build();
 
-		const icon = createCustomElement(FontAwesomeIcon).setFamily("brands").setIcon("github");
-		const chip = new LinkChip()
-			.url("https://www.github.com/lachlan2357/merge")
-			.text("GitHub")
-			.icon(icon)
-			.build();
+		const chip = createCustomElement(LinkChip)
+			.setUrl("https://www.github.com/lachlan2357/merge")
+			.setLabel("GitHub")
+			.setIcon("brands", "github");
 
 		return [description, chip];
 	}
 }
 
+/** Instance of {@link AboutPopup}. */
 export const ABOUT_POPUP = new AboutPopup();

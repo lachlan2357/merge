@@ -1,0 +1,26 @@
+{
+  "plugin": ["typedoc-plugin-missing-exports"],
+  "entryPoints": ["./src/scripts/**/*.ts"],
+
+  "exclude": ["node_modules"],
+
+  "excludeTags": [],
+  "excludeExternals": false,
+  "excludeInternal": false,
+  "excludeNotDocumented": false,
+  "excludePrivate": false,
+  "excludeProtected": false,
+  "excludeReferences": false,
+
+  "tsconfig": "./tsconfig.json",
+  "useTsLinkResolution": true,
+  "favicon": "./assets/merge.png",
+
+  "validation": {
+    "invalidLink": true,
+    "notDocumented": true,
+    "notExported": true,
+    "rewrittenLink": false,
+    "unusedMergeModuleWith": true
+  }
+}

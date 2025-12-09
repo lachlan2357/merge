@@ -1,9 +1,24 @@
 import js from "@eslint/js";
 import prettier from "eslint-config-prettier";
+import jsdoc from "eslint-plugin-jsdoc";
 import globals from "globals";
 import ts from "typescript-eslint";
 
-/** @type{Linter.RulesRecord} */
+const jsdocConfig = [
+	jsdoc.configs["flat/recommended-typescript"],
+	{
+		files: ["**/*.ts"],
+		plugins: { jsdoc },
+		rules: {
+			"jsdoc/tag-lines": "off",
+			"jsdoc/require-throws": "warn",
+			"jsdoc/require-description": "warn",
+			"jsdoc/require-description-complete-sentence": "warn",
+			"jsdoc/sort-tags": "warn"
+		}
+	}
+];
+
 const customConfig = {
 	languageOptions: {
 		globals: {
@@ -16,8 +31,27 @@ const customConfig = {
 	},
 
 	rules: {
-		"@typescript-eslint/no-array-constructor": "off"
-	}
+		"@typescript-eslint/no-unused-vars": "off",
+		"@typescript-eslint/no-base-to-string": "off",
+		"@typescript-eslint/restrict-template-expressions": "off"
+	},
+
+	languageOptions: {
+		parserOptions: {
+			projectService: true,
+			tsconfigRootDir: import.meta.dirname
+		}
+	},
+
+	ignores: ["**/*.js", "**/*.mjs", "**/*.cjs", "*.config.ts"]
 };
 
-export default ts.config(js.configs.recommended, ...ts.configs.recommended, prettier, customConfig);
+const config = [
+	js.configs.recommended,
+	...ts.configs.recommendedTypeChecked,
+	jsdocConfig,
+	prettier,
+	customConfig
+];
+
+export default ts.config(...config);

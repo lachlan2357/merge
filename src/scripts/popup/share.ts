@@ -1,11 +1,12 @@
 import { FontAwesomeIcon } from "../components/icon.js";
 import { ElementBuilder } from "../elements.js";
-import external from "../external.js";
+import * as external from "../external.js";
 import { State } from "../state/index.js";
 import { createCustomElement } from "../supplement/elements.js";
 import { Popup } from "./index.js";
 
-export class SharePopup extends Popup {
+/** Popup definition for the share screen. */
+class SharePopup extends Popup {
 	protected readonly title = "Share";
 
 	build(): Array<HTMLElement> {
@@ -16,17 +17,20 @@ export class SharePopup extends Popup {
 		const copyIcon = createCustomElement(FontAwesomeIcon).setIcon("copy");
 		const copyButton = new ElementBuilder("button")
 			.id("copy-button")
-			.class("copy")
+			.addClasses("copy")
 			.tooltip("Copy", "left")
 			.event("click", () => {
-				navigator.clipboard.writeText(shareText).then(() => {
-					copyIcon.setIcon("check");
-					copyButton.tooltip("Copied", "left");
-					setTimeout(() => {
-						copyIcon.setIcon("copy");
-						copyButton.tooltip("Copy", "left");
-					}, 2000);
-				});
+				navigator.clipboard
+					.writeText(shareText)
+					.then(() => {
+						copyIcon.setIcon("check");
+						copyButton.tooltip("Copied", "left");
+						setTimeout(() => {
+							copyIcon.setIcon("copy");
+							copyButton.tooltip("Copy", "left");
+						}, 2000);
+					})
+					.catch(e => console.error(e));
 			})
 			.children(copyIcon);
 
@@ -40,7 +44,7 @@ export class SharePopup extends Popup {
 		const iDIcon = createCustomElement(FontAwesomeIcon).setIcon("map");
 		const iDButton = new ElementBuilder("button")
 			.id("osm")
-			.class("open-with")
+			.addClasses("open-with")
 			.tooltip("Open in iD", "top")
 			.event("click", () => external.relation.iD())
 			.children(iDIcon)
@@ -49,7 +53,7 @@ export class SharePopup extends Popup {
 		const josmIcon = createCustomElement(FontAwesomeIcon).setIcon("desktop");
 		const josmButton = new ElementBuilder("button")
 			.id("josm")
-			.class("open-with")
+			.addClasses("open-with")
 			.tooltip("Open in JOSM", "top")
 			.event("click", () => external.relation.josm())
 			.children(josmIcon)
@@ -64,4 +68,5 @@ export class SharePopup extends Popup {
 	}
 }
 
+/** Instance of {@link SharePopup}. */
 export const SHARE_POPUP = new SharePopup();

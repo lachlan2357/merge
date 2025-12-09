@@ -4,18 +4,40 @@
     "target": "ES2024",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+    "lib": ["DOM", "ES2024"],
+    "types": [],
 
-    /* disallow JavaScript */
+    /* disallow javascript */
     "allowJs": false,
 
-    /* build options */
-    "outDir": "./dist/scripts",
+    /* disable building using tsc */
+    "noEmit": true,
+
+    /* swc compatibility */
+    "isolatedModules": true,
     "esModuleInterop": true,
+    "verbatimModuleSyntax": true,
+    "useDefineForClassFields": true,
 
     /* strictness */
     "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "alwaysStrict": true
+    "alwaysStrict": true,
+
+    /* linting rules */
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitAny": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": false,
+    "noImplicitThis": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": true,
+    "noUncheckedSideEffectImports": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+
+    /* output */
+    "noErrorTruncation": true
   },
   "include": ["./src/scripts/**/*"]
 }

@@ -1,29 +1,28 @@
 import { ElementBuilder } from "../elements.js";
 import { CustomHTMLElement } from "./index.js";
 
-/**
- * Custom container for displaying blocked items inside the popup.
- */
+/** Custom container for displaying blocked items inside the popup. */
 @CustomHTMLElement.registerCustomElement("popup-container")
 export class PopupContainer extends CustomHTMLElement {
-	connectedCallback(): void {
+	override connectedCallback(): void {
 		this.classList.add("container");
 	}
 
 	/**
-	 * Append elements as children of the header of this container.
+	 * Append a title and buttons to the header.
 	 *
-	 * @param children The children to append into the header.
+	 * @param title The title to display in the title bar.
+	 * @param buttons The buttons to add alongside the title.
 	 * @returns This object for method chaining.
 	 */
 	appendToHeader(title: HTMLElement, ...buttons: Array<HTMLElement>) {
 		const icons = new ElementBuilder("div")
-			.class("title-bar-buttons")
+			.addClasses("title-bar-buttons")
 			.children(...buttons)
 			.build();
 		const header = new ElementBuilder("header")
 			.children(title, icons)
-			.class("title-bar")
+			.addClasses("title-bar")
 			.build();
 
 		this.append(header);

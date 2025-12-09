@@ -4,13 +4,14 @@
  * This constructor type is valid for any class inheriting from {@link HTMLElement}, including
  * WebComponents.
  */
-export type ElementConstructor<E extends HTMLElement> = new () => E;
+type ElementConstructor<E extends HTMLElement> = new () => E;
 
 /**
  * Create an instance of a custom element of a specified class.
  *
  * @param constructor The constructor for the class of the element to create.
  * @returns The created element.
+ * @throws {ElementError} If the element could not be created.
  */
 export function createCustomElement<const CustomElement extends typeof HTMLElement>(
 	constructor: CustomElement
@@ -34,9 +35,8 @@ export function createCustomElement<const CustomElement extends typeof HTMLEleme
  *
  * @param id The ID of the element to retrieve.
  * @param constructor The expected type of the element.
- * @param parent The parent to search for an element in. If omitted, search is done globally.
- * @throws {ElementError} If the retrieval was unsuccessful.
  * @returns The element if successfully found.
+ * @throws {ElementError} If the retrieval was unsuccessful.
  */
 export function getElement<E extends HTMLElement>(id: string, constructor: ElementConstructor<E>) {
 	// find element
@@ -48,9 +48,7 @@ export function getElement<E extends HTMLElement>(id: string, constructor: Eleme
 	else throw ElementError.incorrectType(id, element, constructor);
 }
 
-/**
- * Errors which could occur during element retrieval.
- */
+/** Errors which could occur during element retrieval. */
 class ElementError extends Error {
 	/**
 	 * Construct an error for when an element could not be found by ID.
@@ -108,7 +106,8 @@ class ElementError extends Error {
 		// attempt to extract class name from element
 		let className = element.toString();
 		const matches = /\[object (.+?)\]/.exec(className);
-		if (matches !== null) className = matches[1];
+		const classNameOpt = matches?.[1];
+		if (classNameOpt !== undefined) className = classNameOpt;
 
 		return new ElementError(
 			`WebComponent '${tagName.toLowerCase()}' did not create element with prototype of '${constructor.name}', instead created '${className}'.`

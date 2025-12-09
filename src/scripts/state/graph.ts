@@ -1,5 +1,5 @@
 import { MessageBoxError } from "../messages.js";
-import { Compute, Store } from "./index.js";
+import { type Compute, Store, Computed, Effect } from "./index.js";
 
 /**
  * The type that this graph recognises as a dependency.
@@ -13,14 +13,12 @@ type Dependency = Store<unknown>;
 /**
  * Backend implementations for items needing to hook into the dependency graph.
  *
- * This dependency graph only supports {@link Compute}-{@link Store} relationships, so derived
- * classes should ideally implement/extend one of these otherwise it becomes difficult to properly
- * integrate required behaviours.
+ * This dependency graph only supports {@link Compute}-{@link Store} relationships, so derived classes
+ * should ideally implement/extend one of these otherwise it becomes difficult to properly integrate
+ * required behaviours.
  */
 export abstract class GraphItem {
-	/**
-	 * Map to keep track of which {@link Dependency Dependencies} each {@link Compute} relies on.
-	 */
+	/** Map to keep track of which {@link Dependency Dependencies} each {@link Compute} relies on. */
 	static readonly dependencyMap = new Map<Compute, Set<Dependency>>();
 
 	/**
@@ -84,13 +82,13 @@ export abstract class GraphItem {
 	 * Notify the dependency graph that a {@link Compute} has finished its calculation.
 	 *
 	 * It is imperative this method is called at the end of an computation as to properly stop
-	 * tracking its dependencies. Usually, such as in the case of {@link Computed} or
-	 * {@link Effect}, this is done automatically, however any non-standard implementations must
-	 * ensure this method is called itself.
+	 * tracking its dependencies. Usually, such as in the case of {@link Computed} or {@link Effect},
+	 * this is done automatically, however any non-standard implementations must ensure this method
+	 * is called itself.
 	 *
 	 * It is also imperative to call {@link beginCalculation} at the start of any calculation.
 	 *
-	 * @param this
+	 * @throws {DependencyError} If the dependencies could not be collated.
 	 */
 	protected finishCalculation(this: Compute) {
 		// pop top item off the access stack
@@ -119,15 +117,13 @@ export abstract class GraphItem {
 	}
 }
 
-/**
- * Errors relating to the automatic dependency management system.
- */
+/** Errors relating to the automatic dependency management system. */
 class DependencyError extends MessageBoxError {
 	/**
 	 * Error for when a {@link Compute} finishes its calculation while the access stack is empty.
 	 *
-	 * This error usually means a calculation did not call {@link GraphItem.beginCalculation} when
-	 * it should have.
+	 * This error usually means a calculation did not call {@link GraphItem.beginCalculation} when it
+	 * should have.
 	 *
 	 * @param compute The {@link Compute} which just finished its calculation.
 	 * @returns The error.

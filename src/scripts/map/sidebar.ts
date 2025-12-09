@@ -1,9 +1,9 @@
 import { FontAwesomeIcon } from "../components/icon.js";
 import { ElementBuilder } from "../elements.js";
-import external from "../external.js";
+import * as external from "../external.js";
 import { State } from "../state/index.js";
 import { createCustomElement, getElement } from "../supplement/elements.js";
-import { OsmValue } from "../types/osm.js";
+import { OsmValue } from "../overpass/osm-values.js";
 
 const SIDEBAR = getElement("way-info", HTMLDivElement);
 const WAY_EXTERNAL_LINK = getElement("wayid-link", HTMLAnchorElement);
@@ -40,7 +40,7 @@ const usedTags: Array<string> = [
  *
  * @param wayId The ID of the way to populate the content for.
  */
-function show(wayId: number) {
+export function show(wayId: number) {
 	// get data for way
 	const wayData = State.data.get()?.get(wayId);
 	if (wayData === undefined) return;
@@ -63,10 +63,9 @@ function show(wayId: number) {
 	const inferredTagMap = new Map<string, string>();
 	Object.entries(inferredTags).forEach(([tag, value]) => {
 		// format tag
-		const words = Array.from(tag);
 		let formattedTag = "";
-		for (let i = 0; i < words.length; i++) {
-			const letter = words[i];
+		const letters = Array.from(tag);
+		for (const letter of letters) {
 			if (letter.toUpperCase() !== letter) formattedTag += letter;
 			else formattedTag += `:${letter.toLowerCase()}`;
 		}
@@ -95,12 +94,12 @@ function show(wayId: number) {
 		const valueString = inferredValue ?? originalValue ?? "<no value>";
 
 		// build row
-		const tagCell = new ElementBuilder("td").class("code").text(tag.toString()).build();
-		const valueCell = new ElementBuilder("td").class("code").text(valueString);
+		const tagCell = new ElementBuilder("td").addClasses("code").text(tag.toString()).build();
+		const valueCell = new ElementBuilder("td").addClasses("code").text(valueString);
 		if (originalValue === undefined && inferredValueRaw !== undefined) {
 			const icon = createCustomElement(FontAwesomeIcon).setIcon("circle-info");
 			const iconSpan = new ElementBuilder("span")
-				.class("inference-icon")
+				.addClasses("inference-icon")
 				.tooltip("This value has been inferred", "left")
 				.children(icon)
 				.build();
@@ -119,11 +118,7 @@ function show(wayId: number) {
 	SIDEBAR.scrollTop = 0;
 }
 
-/**
- * Close the sidebar.
- */
-function hide() {
+/** Close the sidebar. */
+export function hide() {
 	SIDEBAR.setAttribute("hidden", "true");
 }
-
-export default { show, hide };
